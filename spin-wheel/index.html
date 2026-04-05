@@ -704,7 +704,10 @@ canvas#wheel {
       <!-- Spin Controls -->
       <div class="panel-section">
         <h3>Spin</h3>
-        <button id="spin-btn" disabled>Spin the Wheel</button>
+        <div style="display:flex;gap:8px;">
+          <button id="spin-btn" disabled style="flex:1;">Spin the Wheel</button>
+          <button id="idle-btn" class="btn" style="flex:0 0 auto;display:none;padding:8px 14px;font-size:0.85em;">Idle Spin</button>
+        </div>
         <div style="margin-top: 12px;">
           <div class="setting-row">
             <label>Spin Duration</label>
@@ -1121,6 +1124,7 @@ function showWinner(winner, index) {
   winnerOverlay.classList.add('visible');
   playFanfare();
   startConfetti();
+  pauseIdle();
 
   // postMessage event for bots
   window.parent.postMessage({
@@ -1443,13 +1447,30 @@ window.addEventListener('message', (event) => {
 
 // ─── Idle slow rotation ────────────────────────
 let idleRAF = null;
+let idlePaused = false;
+const idleBtn = document.getElementById('idle-btn');
+
 function idleRotation() {
-  if (!spinning && names.length > 0) {
+  if (!spinning && !idlePaused && names.length > 0) {
     rotation += 0.0003; // very gentle
     drawWheel();
   }
   idleRAF = requestAnimationFrame(idleRotation);
 }
+
+function pauseIdle() {
+  idlePaused = true;
+  idleBtn.style.display = 'inline-block';
+}
+
+function resumeIdle() {
+  idlePaused = false;
+  idleBtn.style.display = 'none';
+}
+
+idleBtn.addEventListener('click', () => {
+  resumeIdle();
+});
 
 // ─── Init ──────────────────────────────────────
 loadNames();
