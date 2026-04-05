@@ -869,7 +869,7 @@ function playTick() {
     gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.06);
     osc.start(ac.currentTime);
     osc.stop(ac.currentTime + 0.06);
-  } catch(e) {}
+  } catch(e) { console.warn('Tick sound failed:', e.message); }
 }
 
 function playFanfare() {
@@ -906,7 +906,7 @@ function playFanfare() {
       osc.start(t);
       osc.stop(t + 1.0);
     }, 500);
-  } catch(e) {}
+  } catch(e) { console.warn('Fanfare failed:', e.message); }
 }
 
 // ─── Draw Wheel ────────────────────────────────
@@ -1060,7 +1060,7 @@ function spin() {
   spinBtn.disabled = true;
 
   // Resume audio context (browser autoplay policy)
-  try { getAudio().resume(); } catch(e) {}
+  try { getAudio().resume(); } catch(e) { console.warn('Audio resume failed:', e.message); }
 
   const totalRotation = Math.PI * 2 * (8 + Math.random() * 6); // 8-14 full rotations
   const startRotation = rotation;
@@ -1081,7 +1081,7 @@ function spin() {
     // Tick sound on segment change
     const n = names.length;
     const arc = (Math.PI * 2) / n;
-    const normalizedAngle = ((Math.PI * 2 - (rotation % (Math.PI * 2))) + Math.PI / 2) % (Math.PI * 2);
+    const normalizedAngle = ((Math.PI * 2 - (rotation % (Math.PI * 2))) - Math.PI / 2 + Math.PI * 4) % (Math.PI * 2);
     const currentSegment = Math.floor(normalizedAngle / arc) % n;
 
     if (currentSegment !== lastSegment) {
@@ -1284,7 +1284,7 @@ function escHtml(s) {
 
 // ─── LocalStorage ──────────────────────────────
 function saveNames() {
-  try { localStorage.setItem('spinwheel_names', JSON.stringify(names)); } catch(e) {}
+  try { localStorage.setItem('spinwheel_names', JSON.stringify(names)); } catch(e) { console.warn('Save failed:', e.message); }
 }
 
 function loadNames() {
@@ -1293,7 +1293,7 @@ function loadNames() {
     if (saved) {
       names = JSON.parse(saved);
     }
-  } catch(e) {}
+  } catch(e) { console.warn('Load names failed:', e.message); }
 }
 
 // ─── Toast ─────────────────────────────────────
