@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spin Wheel — Streamer Games</title>
+<style>
+/* ═══════════════════════════════════════════════
+   CSS RESET & VARIABLES
+   ═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Dark theme (default) */
+  --bg: #0d0d14;
+  --bg2: #14141f;
+  --surface: #1a1a2e;
+  --surface2: #22223a;
+  --border: #2a2a4a;
+  --text: #e8e8f0;
+  --text-dim: #8888aa;
+  --accent: #7c5cfc;
+  --accent-glow: rgba(124, 92, 252, 0.4);
+  --gold: #ffd700;
+  --gold-glow: rgba(255, 215, 0, 0.5);
+  --danger: #ff4466;
+  --success: #44ff88;
+  --wheel-shadow: 0 0 60px rgba(124, 92, 252, 0.3), 0 0 120px rgba(124, 92, 252, 0.1);
+  --panel-width: 360px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+}
+
+[data-theme="light"] {
+  --bg: #f0f0f5;
+  --bg2: #e8e8f0;
+  --surface: #ffffff;
+  --surface2: #f5f5fa;
+  --border: #d0d0e0;
+  --text: #1a1a2e;
+  --text-dim: #666680;
+  --wheel-shadow: 0 0 60px rgba(124, 92, 252, 0.2), 0 8px 32px rgba(0,0,0,0.1);
+}
+
+[data-theme="neon"] {
+  --bg: #0a0a0a;
+  --bg2: #111111;
+  --surface: #1a1a1a;
+  --surface2: #222222;
+  --border: #333333;
+  --text: #ffffff;
+  --text-dim: #888888;
+  --accent: #00ffcc;
+  --accent-glow: rgba(0, 255, 204, 0.4);
+  --gold: #ff00ff;
+  --gold-glow: rgba(255, 0, 255, 0.5);
+  --wheel-shadow: 0 0 60px rgba(0, 255, 204, 0.4), 0 0 120px rgba(255, 0, 255, 0.2);
+}
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.transparent-bg {
+  background: transparent !important;
+}
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════ */
+#app {
+  display: flex;
+  width: 100%; height: 100%;
+  position: relative;
+}
+
+#wheel-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════
+   ADMIN PANEL
+   ═══════════════════════════════════════════════ */
+#admin-panel {
+  width: var(--panel-width);
+  height: 100%;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+#admin-panel.hidden {
+  transform: translateX(100%);
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  pointer-events: none;
+}
+
+#admin-toggle {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 200;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#admin-toggle:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.panel-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.panel-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.panel-header p {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.panel-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-section h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* Form Elements */
+.input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+input[type="text"], textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="text"]:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn:hover {
+  background: var(--surface2);
+  border-color: var(--accent);
+}
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.btn-primary:hover {
+  filter: brightness(1.15);
+  box-shadow: 0 6px 24px var(--accent-glow);
+}
+
+.btn-danger {
+  color: var(--danger);
+  border-color: rgba(255, 68, 102, 0.3);
+}
+.btn-danger:hover {
+  background: rgba(255, 68, 102, 0.1);
+  border-color: var(--danger);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* SPIN BUTTON (large, central-ish) */
+#spin-btn {
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), #9b7cfc);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 6px 30px var(--accent-glow);
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+#spin-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+#spin-btn:hover::before {
+  left: 100%;
+}
+#spin-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 40px var(--accent-glow);
+}
+#spin-btn:active {
+  transform: translateY(0);
+}
+#spin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Names list */
+.name-list {
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.name-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.name-item:hover {
+  background: var(--surface2);
+}
+.name-item .color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.name-item .name-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.name-item .remove-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.name-item .remove-btn:hover {
+  background: rgba(255, 68, 102, 0.15);
+  color: var(--danger);
+}
+
+.name-count {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+/* Settings */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.setting-row label {
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+}
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle .slider {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--border);
+  border-radius: 24px;
+  transition: background 0.2s;
+}
+.toggle .slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.toggle input:checked + .slider {
+  background: var(--accent);
+}
+.toggle input:checked + .slider::before {
+  transform: translateX(20px);
+}
+
+/* Range slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  outline: none;
+  margin: 8px 0;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+.range-value {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════════
+   WHEEL CANVAS & POINTER
+   ═══════════════════════════════════════════════ */
+#wheel-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#wheel-glow {
+  position: absolute;
+  width: calc(100% + 40px);
+  height: calc(100% + 40px);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  animation: glowPulse 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.03); }
+}
+
+canvas#wheel {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 0 30px rgba(124, 92, 252, 0.15));
+}
+
+/* Pointer / ticker */
+#pointer {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: 0;
+  height: 0;
+  border-left: 16px solid transparent;
+  border-right: 16px solid transparent;
+  border-top: 36px solid var(--gold);
+  filter: drop-shadow(0 4px 12px var(--gold-glow));
+  transition: transform 0.05s;
+}
+#pointer.tick {
+  transform: translateX(-50%) scaleY(0.85);
+}
+
+/* Center hub */
+#center-hub {
+  position: absolute;
+  z-index: 5;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #555, #222);
+  border: 3px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#center-hub::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, var(--accent), #4a3aaa);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* ═══════════════════════════════════════════════
+   WINNER OVERLAY
+   ═══════════════════════════════════════════════ */
+#winner-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+#winner-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#winner-card {
+  background: var(--surface);
+  border: 2px solid var(--gold);
+  border-radius: 24px;
+  padding: 48px 64px;
+  text-align: center;
+  box-shadow: 0 0 60px var(--gold-glow), 0 20px 60px rgba(0,0,0,0.5);
+  transform: scale(0.8);
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: 90vw;
+}
+#winner-overlay.visible #winner-card {
+  transform: scale(1);
+}
+
+#winner-label {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--gold);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+#winner-name {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--text);
+  text-shadow: 0 0 30px var(--gold-glow);
+  margin-bottom: 24px;
+  word-break: break-word;
+}
+#winner-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ═══════════════════════════════════════════════
+   CONFETTI CANVAS
+   ═══════════════════════════════════════════════ */
+#confetti-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 499;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════════ */
+#toast-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 600;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  align-items: center;
+}
+.toast {
+  padding: 12px 24px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 2.7s forwards;
+  backdrop-filter: blur(12px);
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-20px); }
+}
+
+/* ═══════════════════════════════════════════════
+   EMPTY STATE
+   ═══════════════════════════════════════════════ */
+#empty-state {
+  position: absolute;
+  text-align: center;
+  color: var(--text-dim);
+  z-index: 2;
+}
+#empty-state .icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+#empty-state p {
+  font-size: 16px;
+  font-weight: 500;
+}
+#empty-state .hint {
+  font-size: 12px;
+  margin-top: 8px;
+  opacity: 0.6;
+}
+</style>
+</head>
+<body>
+<!-- ═══════════ APP STRUCTURE ═══════════ -->
+<div id="app">
+  <div id="wheel-area">
+    <div id="wheel-container">
+      <div id="wheel-glow"></div>
+      <canvas id="wheel" width="600" height="600"></canvas>
+      <div id="pointer"></div>
+      <div id="center-hub"></div>
+    </div>
+    <div id="empty-state" style="display:none;">
+      <div class="icon">&#127922;</div>
+      <p>Add names to spin the wheel</p>
+      <div class="hint">Use the admin panel or send names via postMessage</div>
+    </div>
+  </div>
+
+  <button id="admin-toggle" title="Toggle Admin Panel">&#9881;</button>
+
+  <div id="admin-panel">
+    <div class="panel-header">
+      <h2>Spin Wheel</h2>
+      <p>Streamer Games Collection</p>
+    </div>
+    <div class="panel-scroll">
+      <!-- Add Names -->
+      <div class="panel-section">
+        <h3>Add Names</h3>
+        <div class="input-group">
+          <input type="text" id="name-input" placeholder="Enter a name..." />
+          <button class="btn btn-primary btn-sm" id="add-name-btn">Add</button>
+        </div>
+        <textarea id="bulk-input" placeholder="Paste names here&#10;One per line or comma-separated"></textarea>
+        <div style="margin-top:8px;">
+          <button class="btn btn-sm btn-block" id="bulk-add-btn">Add All Names</button>
+        </div>
+      </div>
+
+      <!-- Names List -->
+      <div class="panel-section" style="flex:1;">
+        <h3>Entries</h3>
+        <div class="name-count" id="name-count">0 names</div>
+        <ul class="name-list" id="name-list"></ul>
+      </div>
+
+      <!-- Spin Controls -->
+      <div class="panel-section">
+        <h3>Spin</h3>
+        <button id="spin-btn" disabled>Spin the Wheel</button>
+        <div style="margin-top: 12px;">
+          <div class="setting-row">
+            <label>Spin Duration</label>
+            <span class="range-value" id="duration-value">5s</span>
+          </div>
+          <input type="range" id="duration-slider" min="2" max="15" step="0.5" value="5" />
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="panel-section">
+        <h3>Settings</h3>
+        <div class="setting-row">
+          <label>Remove winner after spin</label>
+          <label class="toggle">
+            <input type="checkbox" id="remove-winner-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <label>Sound effects</label>
+          <label class="toggle">
+            <input type="checkbox" id="sound-toggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="btn-group" style="margin-top: 8px;">
+          <button class="btn btn-sm btn-danger" id="clear-btn" style="flex:1;">Clear All</button>
+          <button class="btn btn-sm" id="reset-btn" style="flex:1;">Reset Wheel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Winner Overlay -->
+<div id="winner-overlay">
+  <div id="winner-card">
+    <div id="winner-label">Winner</div>
+    <div id="winner-name"></div>
+    <div id="winner-actions">
+      <button class="btn btn-primary" id="winner-close-btn">Close</button>
+      <button class="btn btn-danger" id="winner-remove-btn">Remove &amp; Spin Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confetti -->
+<canvas id="confetti-canvas"></canvas>
+
+<!-- Toasts -->
+<div id="toast-container"></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   STREAMER GAMES — SPIN WHEEL
+   By Bill Crandell | MIT License
+   ═══════════════════════════════════════════════ */
+(() => {
+'use strict';
+
+// ─── Color Palette ─────────────────────────────
+const COLORS = [
+  '#7c5cfc', '#ff6b9d', '#00d4aa', '#ffa726', '#42a5f5',
+  '#ab47bc', '#ef5350', '#26c6da', '#66bb6a', '#ffca28',
+  '#8d6e63', '#ec407a', '#5c6bc0', '#29b6f6', '#9ccc65',
+  '#ff7043', '#78909c', '#d4e157', '#26a69a', '#7e57c2',
+  '#f44336', '#e91e63', '#00bcd4', '#4caf50', '#ff9800',
+  '#3f51b5', '#009688', '#cddc39', '#ff5722', '#607d8b',
+  '#e040fb', '#00e5ff', '#76ff03', '#ffab00', '#6200ea'
+];
+
+// ─── State ─────────────────────────────────────
+let names = [];
+let rotation = 0;        // current wheel rotation in radians
+let spinning = false;
+let spinDuration = 5;
+let removeWinnerAfterSpin = false;
+let soundEnabled = true;
+let adminVisible = true;
+let lastWinner = null;
+
+// ─── DOM ───────────────────────────────────────
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const wheelContainer = document.getElementById('wheel-container');
+const pointer = document.getElementById('pointer');
+const emptyState = document.getElementById('empty-state');
+const adminPanel = document.getElementById('admin-panel');
+const adminToggle = document.getElementById('admin-toggle');
+const nameInput = document.getElementById('name-input');
+const bulkInput = document.getElementById('bulk-input');
+const nameList = document.getElementById('name-list');
+const nameCount = document.getElementById('name-count');
+const spinBtn = document.getElementById('spin-btn');
+const durationSlider = document.getElementById('duration-slider');
+const durationValue = document.getElementById('duration-value');
+const removeWinnerToggle = document.getElementById('remove-winner-toggle');
+const soundToggle = document.getElementById('sound-toggle');
+const winnerOverlay = document.getElementById('winner-overlay');
+const winnerName = document.getElementById('winner-name');
+const confettiCanvas = document.getElementById('confetti-canvas');
+const confettiCtx = confettiCanvas.getContext('2d');
+
+// ─── URL Parameters ────────────────────────────
+const params = new URLSearchParams(window.location.search);
+
+if (params.get('bg') === 'transparent') {
+  document.body.classList.add('transparent-bg');
+}
+
+if (params.get('theme')) {
+  document.documentElement.setAttribute('data-theme', params.get('theme'));
+}
+
+if (params.get('admin') === 'false') {
+  adminVisible = false;
+  adminPanel.classList.add('hidden');
+  adminToggle.style.display = 'none';
+}
+
+if (params.get('names')) {
+  const urlNames = params.get('names').split(',').map(n => n.trim()).filter(Boolean);
+  urlNames.forEach(n => addName(n, true));
+}
+
+// ─── Sizing ────────────────────────────────────
+function resize() {
+  const area = document.getElementById('wheel-area');
+  const size = Math.min(area.clientWidth, area.clientHeight) * 0.82;
+  const canvasSize = Math.max(300, Math.min(700, size));
+  canvas.width = canvasSize * 2;    // retina
+  canvas.height = canvasSize * 2;
+  canvas.style.width = canvasSize + 'px';
+  canvas.style.height = canvasSize + 'px';
+
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+
+  drawWheel();
+}
+window.addEventListener('resize', resize);
+
+// ─── Audio (Web Audio API) ─────────────────────
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTick() {
+  if (!soundEnabled) return;
+  try {
+    const ac = getAudio();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain);
+    gain.connect(ac.destination);
+    osc.type = 'sine';
+    osc.frequency.value = 1200 + Math.random() * 400;
+    gain.gain.setValueAtTime(0.08, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.06);
+    osc.start(ac.currentTime);
+    osc.stop(ac.currentTime + 0.06);
+  } catch(e) {}
+}
+
+function playFanfare() {
+  if (!soundEnabled) return;
+  try {
+    const ac = getAudio();
+    const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+    notes.forEach((freq, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const t = ac.currentTime + i * 0.12;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.15, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      osc.start(t);
+      osc.stop(t + 0.5);
+    });
+    // Shimmer
+    setTimeout(() => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.type = 'sine';
+      osc.frequency.value = 1568; // G6
+      const t = ac.currentTime;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.08, t + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
+      osc.start(t);
+      osc.stop(t + 1.0);
+    }, 500);
+  } catch(e) {}
+}
+
+// ─── Draw Wheel ────────────────────────────────
+function drawWheel() {
+  const w = canvas.width;
+  const h = canvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
+  const r = Math.min(cx, cy) - 20;
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (names.length === 0) {
+    emptyState.style.display = 'flex';
+    emptyState.style.flexDirection = 'column';
+    emptyState.style.alignItems = 'center';
+    // Draw a faint wheel outline
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(124, 92, 252, 0.15)';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  emptyState.style.display = 'none';
+  const n = names.length;
+  const arc = (Math.PI * 2) / n;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotation);
+
+  for (let i = 0; i < n; i++) {
+    const angle = i * arc;
+    const color = COLORS[i % COLORS.length];
+
+    // Segment
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, r, angle, angle + arc);
+    ctx.closePath();
+
+    // Gradient fill for 3D look
+    const grd = ctx.createRadialGradient(0, 0, r * 0.1, 0, 0, r);
+    grd.addColorStop(0, lightenColor(color, 30));
+    grd.addColorStop(0.7, color);
+    grd.addColorStop(1, darkenColor(color, 25));
+    ctx.fillStyle = grd;
+    ctx.fill();
+
+    // Segment border
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Text
+    ctx.save();
+    ctx.rotate(angle + arc / 2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+
+    const maxTextWidth = r * 0.55;
+    let fontSize = Math.min(28, Math.max(12, r * 0.08));
+    if (n > 20) fontSize = Math.max(10, fontSize * 0.7);
+    if (n > 30) fontSize = Math.max(8, fontSize * 0.6);
+    ctx.font = `700 ${fontSize}px ${getComputedStyle(document.documentElement).getPropertyValue('--font').trim()}`;
+
+    let text = names[i];
+    // Truncate if too long
+    while (ctx.measureText(text).width > maxTextWidth && text.length > 3) {
+      text = text.slice(0, -1);
+    }
+    if (text !== names[i]) text += '…';
+
+    ctx.fillText(text, r - 18, fontSize / 3);
+    ctx.restore();
+  }
+
+  // Outer ring (bevel effect)
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(0, 0, r + 3, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  // Inner ring
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.12, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.restore();
+
+  // Tick marks around the rim (nubs)
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotation);
+  for (let i = 0; i < n; i++) {
+    const angle = i * arc;
+    ctx.save();
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.arc(r - 1, 0, 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function lightenColor(hex, percent) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = Math.min(255, (num >> 16) + amt);
+  const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+  const B = Math.min(255, (num & 0x0000FF) + amt);
+  return `rgb(${R},${G},${B})`;
+}
+
+function darkenColor(hex, percent) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = Math.max(0, (num >> 16) - amt);
+  const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+  const B = Math.max(0, (num & 0x0000FF) - amt);
+  return `rgb(${R},${G},${B})`;
+}
+
+// ─── Spin Logic ────────────────────────────────
+let spinRAF = null;
+
+function spin() {
+  if (spinning || names.length < 2) return;
+  spinning = true;
+  spinBtn.disabled = true;
+
+  // Resume audio context (browser autoplay policy)
+  try { getAudio().resume(); } catch(e) {}
+
+  const totalRotation = Math.PI * 2 * (8 + Math.random() * 6); // 8-14 full rotations
+  const startRotation = rotation;
+  const targetRotation = startRotation + totalRotation;
+  const duration = spinDuration * 1000;
+  const startTime = performance.now();
+
+  let lastSegment = -1;
+
+  function animate(now) {
+    const elapsed = now - startTime;
+    const t = Math.min(elapsed / duration, 1);
+
+    // Custom easing: fast start, long deceleration with slight bounce
+    const ease = 1 - Math.pow(1 - t, 4); // quartic ease-out
+    rotation = startRotation + totalRotation * ease;
+
+    // Tick sound on segment change
+    const n = names.length;
+    const arc = (Math.PI * 2) / n;
+    const normalizedAngle = ((Math.PI * 2 - (rotation % (Math.PI * 2))) + Math.PI / 2) % (Math.PI * 2);
+    const currentSegment = Math.floor(normalizedAngle / arc) % n;
+
+    if (currentSegment !== lastSegment) {
+      lastSegment = currentSegment;
+      playTick();
+      // Visual tick on pointer
+      pointer.classList.add('tick');
+      setTimeout(() => pointer.classList.remove('tick'), 50);
+    }
+
+    drawWheel();
+
+    if (t < 1) {
+      spinRAF = requestAnimationFrame(animate);
+    } else {
+      spinning = false;
+      spinBtn.disabled = false;
+
+      // Determine winner
+      const winnerIndex = currentSegment;
+      const winner = names[winnerIndex];
+      lastWinner = winner;
+
+      // Announce winner
+      setTimeout(() => {
+        showWinner(winner, winnerIndex);
+      }, 300);
+    }
+  }
+
+  spinRAF = requestAnimationFrame(animate);
+}
+
+// ─── Winner Display ────────────────────────────
+function showWinner(winner, index) {
+  winnerName.textContent = winner;
+  winnerOverlay.classList.add('visible');
+  playFanfare();
+  startConfetti();
+
+  // postMessage event for bots
+  window.parent.postMessage({
+    type: 'spinwheel:winner',
+    winner: winner,
+    index: index
+  }, '*');
+}
+
+function closeWinner() {
+  winnerOverlay.classList.remove('visible');
+  stopConfetti();
+
+  if (removeWinnerAfterSpin && lastWinner) {
+    removeName(lastWinner);
+    toast(`${lastWinner} removed from wheel`);
+  }
+  lastWinner = null;
+}
+
+document.getElementById('winner-close-btn').addEventListener('click', closeWinner);
+document.getElementById('winner-remove-btn').addEventListener('click', () => {
+  if (lastWinner) {
+    const name = lastWinner;
+    winnerOverlay.classList.remove('visible');
+    stopConfetti();
+    removeName(name);
+    toast(`${name} removed`);
+    lastWinner = null;
+    // Auto-spin again if enough names
+    if (names.length >= 2) {
+      setTimeout(spin, 600);
+    }
+  }
+});
+
+// ─── Confetti ──────────────────────────────────
+let confettiParticles = [];
+let confettiRAF = null;
+
+function startConfetti() {
+  confettiParticles = [];
+  for (let i = 0; i < 200; i++) {
+    confettiParticles.push({
+      x: Math.random() * confettiCanvas.width,
+      y: Math.random() * -confettiCanvas.height,
+      w: Math.random() * 10 + 5,
+      h: Math.random() * 6 + 3,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      vx: (Math.random() - 0.5) * 4,
+      vy: Math.random() * 4 + 2,
+      rot: Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 0.2,
+      opacity: 1
+    });
+  }
+  animateConfetti();
+}
+
+function animateConfetti() {
+  confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  let alive = false;
+
+  confettiParticles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.08;
+    p.rot += p.rotV;
+    p.vx *= 0.99;
+
+    if (p.y > confettiCanvas.height + 20) {
+      p.opacity -= 0.02;
+    }
+
+    if (p.opacity > 0) {
+      alive = true;
+      confettiCtx.save();
+      confettiCtx.translate(p.x, p.y);
+      confettiCtx.rotate(p.rot);
+      confettiCtx.globalAlpha = Math.max(0, p.opacity);
+      confettiCtx.fillStyle = p.color;
+      confettiCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      confettiCtx.restore();
+    }
+  });
+
+  if (alive) {
+    confettiRAF = requestAnimationFrame(animateConfetti);
+  }
+}
+
+function stopConfetti() {
+  if (confettiRAF) {
+    cancelAnimationFrame(confettiRAF);
+    confettiRAF = null;
+  }
+  confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  confettiParticles = [];
+}
+
+// ─── Name Management ───────────────────────────
+function addName(name, silent) {
+  name = name.trim();
+  if (!name) return;
+  if (names.includes(name)) {
+    if (!silent) toast(`"${name}" is already on the wheel`);
+    return;
+  }
+  names.push(name);
+  saveNames();
+  updateUI();
+  if (!silent) toast(`Added "${name}"`);
+}
+
+function removeName(name) {
+  const idx = names.indexOf(name);
+  if (idx !== -1) {
+    names.splice(idx, 1);
+    saveNames();
+    updateUI();
+  }
+}
+
+function clearNames() {
+  names = [];
+  rotation = 0;
+  saveNames();
+  updateUI();
+  toast('Wheel cleared');
+}
+
+function updateUI() {
+  // Name count
+  nameCount.textContent = `${names.length} name${names.length !== 1 ? 's' : ''}`;
+
+  // Name list
+  nameList.innerHTML = '';
+  names.forEach((name, i) => {
+    const li = document.createElement('li');
+    li.className = 'name-item';
+    const color = COLORS[i % COLORS.length];
+    li.innerHTML = `
+      <span class="color-dot" style="background:${color}"></span>
+      <span class="name-text">${escHtml(name)}</span>
+      <button class="remove-btn" data-name="${escHtml(name)}" title="Remove">&times;</button>
+    `;
+    nameList.appendChild(li);
+  });
+
+  // Spin button
+  spinBtn.disabled = names.length < 2 || spinning;
+
+  drawWheel();
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ─── LocalStorage ──────────────────────────────
+function saveNames() {
+  try { localStorage.setItem('spinwheel_names', JSON.stringify(names)); } catch(e) {}
+}
+
+function loadNames() {
+  try {
+    const saved = localStorage.getItem('spinwheel_names');
+    if (saved) {
+      names = JSON.parse(saved);
+    }
+  } catch(e) {}
+}
+
+// ─── Toast ─────────────────────────────────────
+function toast(msg) {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+// ─── Event Listeners ───────────────────────────
+adminToggle.addEventListener('click', () => {
+  adminVisible = !adminVisible;
+  adminPanel.classList.toggle('hidden', !adminVisible);
+  setTimeout(resize, 350);
+});
+
+document.getElementById('add-name-btn').addEventListener('click', () => {
+  addName(nameInput.value);
+  nameInput.value = '';
+  nameInput.focus();
+});
+
+nameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    addName(nameInput.value);
+    nameInput.value = '';
+  }
+});
+
+document.getElementById('bulk-add-btn').addEventListener('click', () => {
+  const text = bulkInput.value;
+  const parsed = text.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+  let added = 0;
+  parsed.forEach(n => {
+    if (!names.includes(n)) {
+      names.push(n);
+      added++;
+    }
+  });
+  if (added > 0) {
+    saveNames();
+    updateUI();
+    toast(`Added ${added} name${added > 1 ? 's' : ''}`);
+  }
+  bulkInput.value = '';
+});
+
+nameList.addEventListener('click', e => {
+  const btn = e.target.closest('.remove-btn');
+  if (btn) {
+    removeName(btn.dataset.name);
+  }
+});
+
+spinBtn.addEventListener('click', spin);
+
+durationSlider.addEventListener('input', () => {
+  spinDuration = parseFloat(durationSlider.value);
+  durationValue.textContent = spinDuration + 's';
+});
+
+removeWinnerToggle.addEventListener('change', () => {
+  removeWinnerAfterSpin = removeWinnerToggle.checked;
+});
+
+soundToggle.addEventListener('change', () => {
+  soundEnabled = soundToggle.checked;
+});
+
+document.getElementById('clear-btn').addEventListener('click', clearNames);
+document.getElementById('reset-btn').addEventListener('click', () => {
+  rotation = 0;
+  drawWheel();
+  toast('Wheel reset');
+});
+
+// Close winner overlay on Escape or click outside
+winnerOverlay.addEventListener('click', e => {
+  if (e.target === winnerOverlay) closeWinner();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && winnerOverlay.classList.contains('visible')) {
+    closeWinner();
+  }
+  // Spacebar to spin
+  if (e.key === ' ' && !spinning && names.length >= 2 && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    spin();
+  }
+});
+
+// ─── postMessage API ───────────────────────────
+// Protocol:
+//   { type: 'spinwheel:add', name: 'username' }
+//   { type: 'spinwheel:add', names: ['user1', 'user2'] }
+//   { type: 'spinwheel:remove', name: 'username' }
+//   { type: 'spinwheel:clear' }
+//   { type: 'spinwheel:spin' }
+//   { type: 'spinwheel:names' }  → responds with { type: 'spinwheel:names', names: [...] }
+//
+// Events emitted:
+//   { type: 'spinwheel:winner', winner: 'username', index: 0 }
+//   { type: 'spinwheel:names', names: [...] }
+
+window.addEventListener('message', (event) => {
+  const data = event.data;
+  if (!data || typeof data !== 'object') return;
+
+  switch (data.type) {
+    case 'spinwheel:add':
+      if (data.names && Array.isArray(data.names)) {
+        data.names.forEach(n => addName(n, true));
+        toast(`Added ${data.names.length} name(s) via bot`);
+      } else if (data.name) {
+        addName(data.name);
+      }
+      break;
+
+    case 'spinwheel:remove':
+      if (data.name) {
+        removeName(data.name);
+        toast(`Removed "${data.name}" via bot`);
+      }
+      break;
+
+    case 'spinwheel:clear':
+      clearNames();
+      break;
+
+    case 'spinwheel:spin':
+      spin();
+      break;
+
+    case 'spinwheel:names':
+      event.source.postMessage({
+        type: 'spinwheel:names',
+        names: [...names]
+      }, '*');
+      break;
+  }
+});
+
+// ─── Ambient Animation (idle gentle glow pulse handled by CSS) ──
+
+// ─── Idle slow rotation ────────────────────────
+let idleRAF = null;
+function idleRotation() {
+  if (!spinning && names.length > 0) {
+    rotation += 0.0003; // very gentle
+    drawWheel();
+  }
+  idleRAF = requestAnimationFrame(idleRotation);
+}
+
+// ─── Init ──────────────────────────────────────
+loadNames();
+resize();
+updateUI();
+idleRotation();
+
+})();
+</script>
+</body>
+</html>
