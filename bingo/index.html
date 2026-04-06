@@ -1718,6 +1718,7 @@ function resetGame() {
    ═══════════════════════════════════════════════ */
 function startAutoDraw() {
   stopAutoDraw();
+  clearInterval(state.autoDrawInterval);
   state.autoDrawInterval = setInterval(() => {
     if (state.gameOver || state.drawnBalls.length >= 75) {
       stopAutoDraw();

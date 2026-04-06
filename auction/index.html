@@ -1263,6 +1263,7 @@ input[type="text"]:focus, input[type="number"]:focus {
   function cancelAuction() {
     if (!S.auction) return;
     clearInterval(S.timerInterval); S.timerInterval = null;
+    S.timerPaused = false;
     S.auction = null;
     endAuctionUI();
     statusMsg('Auction cancelled');

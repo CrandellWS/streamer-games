@@ -955,6 +955,11 @@ function resetCoinVisual() {
    ═══════════════════════════════════════════════ */
 function doFlip(forcedResult) {
   if (state.flipping) return;
+  if (state.heads.length === 0 && state.tails.length === 0) {
+    tossLabel.textContent = 'Add players first!';
+    tossLabel.style.color = 'var(--danger, #ff4d4d)';
+    return;
+  }
   state.flipping = true;
 
   // Determine result

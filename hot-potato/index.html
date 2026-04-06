@@ -1187,10 +1187,16 @@ function movePotato(player) {
    GAME LOGIC
    ═══════════════════════════════════════════════ */
 function startGame() {
+  if (state.players.length === 0) {
+    setStatus('Add players first!', 'idle');
+    setTimeout(() => updateStatus(), 2000);
+    return;
+  }
   if (state.players.length < 2) {
     setStatus('Need at least 2 players!', 'idle');
     return;
   }
+  if (resizeTimer) { clearTimeout(resizeTimer); resizeTimer = null; }
   resumeAudio();
 
   // Reset state
@@ -1633,10 +1639,11 @@ document.addEventListener('keydown', e => {
 });
 
 // Resize handler
-let resizeTimer;
+let resizeTimer = null;
 window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
+  if (resizeTimer) clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
+    resizeTimer = null;
     if (!state.gameRunning) layoutRing();
     else relayoutAlive();
   }, 150);

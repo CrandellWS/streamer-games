@@ -960,6 +960,7 @@ const state = {
   round: 0,
   theme: 'dark',
   adminVisible: true,
+  ambientInterval: null,
 };
 
 /* ═══════════════════════════════════════════════
@@ -1109,6 +1110,7 @@ function removePlayer(name) {
 }
 
 function clearPlayers() {
+  if (state.ambientInterval) { clearInterval(state.ambientInterval); state.ambientInterval = null; }
   state.players = [];
   state.round = 0;
   renderPanel();
@@ -1117,6 +1119,7 @@ function clearPlayers() {
   setStatus('ready', 'Ready');
   hideAnnouncer();
   emitNames();
+  state.ambientInterval = setInterval(spawnAmbient, 2500);
 }
 
 /* ═══════════════════════════════════════════════
@@ -1459,7 +1462,7 @@ function spawnAmbient() {
   el.addEventListener('animationend', () => el.remove(), { once: true });
 }
 
-setInterval(spawnAmbient, 2500);
+state.ambientInterval = setInterval(spawnAmbient, 2500);
 
 /* ═══════════════════════════════════════════════
    THEME
@@ -1584,6 +1587,7 @@ document.getElementById('admin-toggle').addEventListener('click', () => {
 function init() {
   if (!state.adminVisible) {
     document.getElementById('admin-panel').classList.add('hidden');
+    document.getElementById('admin-toggle').style.display = 'none';
   }
   renderDiceStage();
   renderPanel();

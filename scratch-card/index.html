@@ -753,6 +753,7 @@ const CARD_STATES = { READY: 'ready', REVEALING: 'revealing', WIN: 'win', LOSE: 
    ═══════════════════════════════════════════════ */
 const state = {
   cardState: CARD_STATES.READY,
+  revealing: false,
   currentSet: 'fruits',
   customSymbols: [],
   customLabels: [],
@@ -1233,7 +1234,9 @@ function setCardState(newState) {
    MAIN REVEAL SEQUENCE
    ═══════════════════════════════════════════════ */
 function doReveal() {
+  if (state.revealing) return;
   if (state.cardState !== CARD_STATES.READY) return;
+  state.revealing = true;
   setCardState(CARD_STATES.REVEALING);
 
   const revealBtn = document.getElementById('reveal-btn');
@@ -1274,6 +1277,8 @@ function finishReveal() {
     playLoseSound();
     showResult(false);
   }
+
+  state.revealing = false;
 
   // Re-enable reveal button
   const revealBtn = document.getElementById('reveal-btn');
@@ -1332,6 +1337,7 @@ function pickPrize() {
    ═══════════════════════════════════════════════ */
 function resetCard() {
   stopCelebration();
+  state.revealing = false;
   state.cardCount++;
   updateCardId();
   setCardState(CARD_STATES.READY);

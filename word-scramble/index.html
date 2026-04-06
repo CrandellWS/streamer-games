@@ -1023,7 +1023,9 @@ const state = {
   soundEnabled: true,
   confettiEnabled: true,
   adminVisible: true,
-  theme: 'dark'
+  theme: 'dark',
+  transitioning: false,
+  hintAnimating: false
 };
 
 /* ═══════════════════════════════════════════════
@@ -1310,6 +1312,7 @@ function startNewWord(word) {
   state.hintsGiven = 0;
   state.hintPositions = [];
   state.usedWords.add(word);
+  state.hintAnimating = false;
 
   buildTiles(state.scrambled, word.length);
   renderHintPattern();
@@ -1327,6 +1330,9 @@ function startNewWord(word) {
 }
 
 function nextRound() {
+  if (state.transitioning) return;
+  state.transitioning = true;
+
   state.round++;
   roundBadge.textContent = state.round;
   panelRound.textContent = `Round ${state.round}`;
@@ -1335,10 +1341,14 @@ function nextRound() {
   startNewWord(word);
 
   emit({ type: 'scramble:next', round: state.round });
+
+  setTimeout(() => { state.transitioning = false; }, 600);
 }
 
 function giveHint() {
   if (!state.currentWord || state.solved) return;
+  if (state.hintAnimating) return;
+  state.hintAnimating = true;
 
   // Find an unrevealed position
   const unrevealed = [];
@@ -1381,6 +1391,8 @@ function giveHint() {
 
   renderHintPattern();
   soundHint();
+
+  setTimeout(() => { state.hintAnimating = false; }, 600);
 }
 
 function revealAnswer() {

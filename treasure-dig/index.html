@@ -752,6 +752,7 @@ const STATE = {
   grid: [],          // array of { dug:bool, name:string|null, isTreasure:bool }
   gameActive: false,
   soundEnabled: true,
+  roster: [],        // player names added via postMessage
 };
 
 /* ════════════════════════════════════════════════════════
@@ -1293,6 +1294,26 @@ window.addEventListener('message', e => {
       digTile(p.col, p.row, escHtml(msg.name || 'viewer'));
       break;
     }
+
+    case 'treasure:add': {
+      const toAdd = msg.names ? msg.names : (msg.name ? [msg.name] : []);
+      toAdd.forEach(n => {
+        n = String(n).trim().slice(0, 32);
+        if (n && !STATE.roster.includes(n)) STATE.roster.push(n);
+      });
+      break;
+    }
+
+    case 'treasure:remove': {
+      if (msg.name) {
+        STATE.roster = STATE.roster.filter(n => n !== msg.name);
+      }
+      break;
+    }
+
+    case 'treasure:names':
+      emit('treasure:names', { names: [...STATE.roster] });
+      break;
 
     case 'treasure:reset':
       newGame(STATE.size);

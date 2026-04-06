@@ -1051,6 +1051,7 @@ function newGame() {
   flipNumber('?', false);
   updateHeatMarker(null);
   updateStatusBadge();
+  $('btn-hint').disabled = true;
   logEvent('New game started. Range: '+state.min+'–'+state.max, 'log-hint');
   saveState();
 }
@@ -1109,6 +1110,7 @@ function submitGuess(name, number) {
 
   playBlip();
   guessCount.textContent = state.guesses.length;
+  $('btn-hint').disabled = false;
 
   // Check exact match
   if (dist === 0) {
@@ -1209,9 +1211,11 @@ function flipNumber(val, isReveal) {
    ═══════════════════════════════════════════════ */
 function updateHeatMarker(pct) {
   if (pct === null) {
+    heatMarker.style.transition = 'left 0.6s cubic-bezier(0.4,0,0.2,1)';
     heatMarker.style.left = '0%';
     return;
   }
+  heatMarker.style.transition = 'left 0.6s cubic-bezier(0.4,0,0.2,1)';
   heatMarker.style.left = Math.max(0, Math.min(100, pct)) + '%';
 }
 
@@ -1309,6 +1313,7 @@ function resetGame() {
   numDisplay.textContent = '?';
   updateHeatMarker(null);
   updateStatusBadge();
+  $('btn-hint').disabled = true;
   logEvent('Game reset', 'log-hint');
   emit({ type: 'guess:reset' });
   saveState();
@@ -1337,33 +1342,13 @@ function loadState() {
     const raw = localStorage.getItem('guess_state');
     if (!raw) return;
     const s = JSON.parse(raw);
-    Object.assign(state, s);
+    // Only restore settings, not in-game state
+    if (s.min !== undefined) state.min = s.min;
+    if (s.max !== undefined) state.max = s.max;
     $('input-min').value = state.min;
     $('input-max').value = state.max;
     rangeMin.textContent = state.min;
     rangeMax.textContent = state.max;
-    guessCount.textContent = state.guesses.length;
-    secretDisplay.textContent = state.secret || '—';
-    $('toggle-accepting').checked = state.accepting;
-
-    if (state.revealed && state.secret) {
-      numDisplay.textContent = state.secret;
-      numDisplay.classList.add('gold-reveal');
-    }
-    if (state.winner) {
-      winnerNameTxt.textContent = escapeHtml(state.winner.name);
-      winnerDetail.textContent  = 'Guessed ' + state.winner.number + ' — ' + (state.winner.dist === 0 ? 'Exact match!' : 'Closest guess!');
-      winnerBanner.classList.add('show');
-    }
-    if (state.hintGiven && state.guesses.length) {
-      const best = getBestGuess();
-      const dir  = best.number < state.secret ? 'higher' : 'lower';
-      hintArrow.textContent = dir === 'higher' ? '↑' : '↓';
-      hintText.textContent  = dir === 'higher' ? 'HIGHER' : 'LOWER';
-      hintIndicator.className = 'visible hint-' + dir;
-    }
-    renderHistory();
-    updateHeatFromBest();
     updateStatusBadge();
   } catch(e) {}
 }
@@ -1438,6 +1423,7 @@ $('input-max').addEventListener('change', function() {
    INIT
    ═══════════════════════════════════════════════ */
 loadState();
+$('btn-hint').disabled = true;
 
 // Notify ready
 emit({ type: 'guess:ready' });

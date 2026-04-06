@@ -1607,6 +1607,10 @@ function removeName(index) {
 }
 
 function clearNames() {
+  if (STATE.spinTimeouts && STATE.spinTimeouts.length) {
+    STATE.spinTimeouts.forEach(id => cancelAnimationFrame(id));
+    STATE.spinTimeouts = [];
+  }
   STATE.names = [];
   saveNames();
   renderNameList();
@@ -1758,7 +1762,9 @@ function applyUrlParams() {
 
   const names = p.get('names');
   if (names) {
-    names.split(',').forEach(n => n.trim() && addName(n.trim().substring(0, 24)));
+    const rawNames = names.split(',').map(n => n.trim()).filter(n => n);
+    const uniqueNames = [...new Set(rawNames)];
+    uniqueNames.forEach(n => addName(n.substring(0, 24)));
   }
 }
 

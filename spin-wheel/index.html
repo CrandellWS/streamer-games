@@ -875,7 +875,7 @@ function playTick() {
     gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.06);
     osc.start(ac.currentTime);
     osc.stop(ac.currentTime + 0.06);
-  } catch(e) { console.warn('Tick sound failed:', e.message); }
+  } catch(e) {}
 }
 
 function playFanfare() {

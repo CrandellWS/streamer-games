@@ -1249,6 +1249,7 @@ textarea {
   let players = [];           // all registered player names
   let soundOn = true;
   let currentTheme = themeParam;
+  let waitingInterval = null; // interval ID for waiting icon animation
 
   // Tournament state
   let tournament = null;
@@ -1473,6 +1474,7 @@ textarea {
   clearBtn.addEventListener('click', () => {
     players = [];
     tournament = null;
+    if (waitingInterval) { clearInterval(waitingInterval); waitingInterval = null; }
     renderPlayersList();
     updateStartButton();
     simulateBtn.disabled = true;
@@ -1524,6 +1526,7 @@ textarea {
 
   function startTournament() {
     if (players.length < 2) return;
+    if (waitingInterval) { clearInterval(waitingInterval); waitingInterval = null; }
     tournament = {
       bracket: buildBracket(players),
       currentRound: 0,
@@ -1811,6 +1814,7 @@ textarea {
   // ═══════════════════════════════════════════════
   function showChampion(name) {
     tournament.phase = 'champion';
+    if (waitingInterval) { clearInterval(waitingInterval); waitingInterval = null; }
     vsPlayers.style.display = 'none';
     champName.textContent = name;
     championState.classList.add('show');
@@ -1973,7 +1977,8 @@ textarea {
   // Animate the waiting icon through RPS
   let waitIconIdx = 0;
   const waitIcons = ['✊', '✋', '✌️'];
-  setInterval(() => {
+  if (waitingInterval) clearInterval(waitingInterval);
+  waitingInterval = setInterval(() => {
     if (waitingState.style.display !== 'none') {
       waitIconIdx = (waitIconIdx + 1) % waitIcons.length;
       waitingIcon.textContent = waitIcons[waitIconIdx];

@@ -908,6 +908,7 @@ textarea {
         <div class="winner-label">Winner</div>
         <div class="winner-name" id="winner-name-text">—</div>
         <div class="winner-tagline">Last one standing</div>
+        <button id="play-again-btn" style="display:none;margin-top:16px;padding:10px 28px;font-size:1rem;font-weight:700;border:none;border-radius:8px;background:var(--gold,#f5c518);color:#1a1a2e;cursor:pointer;letter-spacing:1px;" onclick="resetGame()">▶ Play Again</button>
       </div>
     </div>
 
@@ -1010,6 +1011,7 @@ const state = {
   soundOn: true,
   spotlightIndex: -1,
   spotlightTimer: null,
+  sweepTimeouts: [],  // all pending sweep-related timeout IDs
   sweepCount: 0,
   targetIndex: -1,
   phase: 'idle',      // idle | sweeping | victim | shattering | showdown | done
@@ -1211,12 +1213,12 @@ function startGame() {
   $statusSub.textContent = 'Let\'s begin…';
 
   // Auto-start first elimination after brief pause
-  setTimeout(() => {
+  state.sweepTimeouts.push(setTimeout(() => {
     if (state.speed !== 'fast') {
       soundDrumroll();
     }
     beginElimination();
-  }, 700);
+  }, 700));
 }
 
 /* ═══════════════════════════════════════════
@@ -1271,7 +1273,7 @@ function sweepStep(alive, totalSweeps) {
     soundElimBuzz();
     if (SPEEDS[state.speed].flashOnElim) triggerFlash('danger-flash');
 
-    setTimeout(() => doEliminate(victim), SPEEDS[state.speed].victimPause);
+    state.sweepTimeouts.push(setTimeout(() => doEliminate(victim), SPEEDS[state.speed].victimPause));
     return;
   }
 
@@ -1294,6 +1296,7 @@ function sweepStep(alive, totalSweeps) {
   if (progress > 0.9) interval = interval * 1.8;
 
   state.spotlightTimer = setTimeout(() => sweepStep(alive, totalSweeps), interval);
+  state.sweepTimeouts.push(state.spotlightTimer);
 }
 
 function doEliminate(victim) {
@@ -1305,7 +1308,7 @@ function doEliminate(victim) {
   state.eliminated.push(victim.name);
 
   // After shatter, show greyed card
-  setTimeout(() => {
+  state.sweepTimeouts.push(setTimeout(() => {
     victim.el.classList.remove('shattering');
     victim.el.classList.add('eliminated');
     victim.el.textContent = victim.name; // restore text (animation may have hidden it)
@@ -1325,10 +1328,10 @@ function doEliminate(victim) {
       // Continue automatically unless manual mode
       if (state.speed !== 'manual') {
         const pause = state.speed === 'dramatic' ? 1200 : state.speed === 'fast' ? 200 : 600;
-        setTimeout(beginElimination, pause);
+        state.sweepTimeouts.push(setTimeout(beginElimination, pause));
       }
     }
-  }, 620);
+  }, 620));
 }
 
 /* ═══════════════════════════════════════════
@@ -1348,16 +1351,16 @@ function triggerShowdown(alive) {
 
   $elimNextBtn.disabled = false;
 
-  setTimeout(() => {
+  state.sweepTimeouts.push(setTimeout(() => {
     $showdownBanner.style.display = 'none';
     state.phase = 'showdown_ready';
     $statusSub.textContent = 'Press Eliminate Next to decide the winner!';
     // In auto modes, pause for dramatic effect before final elimination
     const delay = state.speed === 'dramatic' ? 3500 : state.speed === 'fast' ? 500 : 1800;
-    setTimeout(() => {
+    state.sweepTimeouts.push(setTimeout(() => {
       if (state.phase === 'showdown_ready') beginElimination();
-    }, delay);
-  }, 3200);
+    }, delay));
+  }, 3200));
 }
 
 /* ═══════════════════════════════════════════
@@ -1373,6 +1376,7 @@ function finishGame(winner) {
 
   $winnerNameText.textContent = winner.name;
   $winnerBanner.style.display = 'flex';
+  document.getElementById('play-again-btn').style.display = 'inline-block';
 
   $statusTitle.textContent = '🏆 WINNER';
   $statusSub.textContent = winner.name + ' is the last one standing!';
@@ -1408,6 +1412,8 @@ function resetGame() {
   state.done = false;
   state.phase = 'idle';
   if (state.spotlightTimer) clearTimeout(state.spotlightTimer);
+  state.sweepTimeouts.forEach(id => clearTimeout(id));
+  state.sweepTimeouts = [];
   state.players = [];
   state.eliminated = [];
   state.spotlightIndex = -1;
@@ -1415,6 +1421,7 @@ function resetGame() {
 
   $showdownBanner.style.display = 'none';
   $winnerBanner.style.display = 'none';
+  document.getElementById('play-again-btn').style.display = 'none';
   $elimLog.innerHTML = '';
 
   $elimNextBtn.disabled = true;
