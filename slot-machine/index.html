@@ -801,7 +801,8 @@ input[type="range"]::-moz-range-thumb {
    ═══════════════════════════════════════════════ */
 #slot-machine {
   position: relative;
-  width: min(680px, 95vw);
+  width: min(90%, 95vw);
+  max-width: 900px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1008,7 +1009,7 @@ input[type="range"]::-moz-range-thumb {
 
 .reel-window {
   flex: 1;
-  height: 240px;
+  height: 320px;
   background: var(--reel-bg);
   border-radius: 10px;
   overflow: hidden;
@@ -1046,7 +1047,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .reel-item {
-  height: 64px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1056,10 +1057,10 @@ input[type="range"]::-moz-range-thumb {
 
 .reel-badge {
   width: 100%;
-  padding: 6px 8px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
   text-align: center;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1096,13 +1097,13 @@ input[type="range"]::-moz-range-thumb {
    LEVER
    ═══════════════════════════════════════════════ */
 #lever-assembly {
-  width: 50px;
+  width: 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-left: 10px;
+  padding-left: 12px;
   position: relative;
-  height: 200px;
+  height: 280px;
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
@@ -1116,7 +1117,7 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 7px;
   position: absolute;
   top: 20px;
-  height: 160px;
+  height: 230px;
   transition: height 0.1s ease;
   box-shadow: 2px 0 8px rgba(0,0,0,0.5);
   z-index: 2;
@@ -1909,8 +1910,8 @@ const STATE = {
 };
 
 const REEL_COUNT = 3;
-const ITEM_HEIGHT = 64;
-const REEL_WINDOW_HEIGHT = 240;
+const ITEM_HEIGHT = 80;
+const REEL_WINDOW_HEIGHT = 320;
 const PAYLINE_CENTER = REEL_WINDOW_HEIGHT / 2;
 
 /* ═══════════════════════════════════════════════
@@ -3284,7 +3285,7 @@ function bindEvents() {
     const shaft = document.getElementById('lever-shaft');
 
     const RESTING_TOP = 0;
-    const SHAFT_HEIGHT = 160;
+    const SHAFT_HEIGHT = 230;
     const SHAFT_TOP = 20;
     const TRIGGER_PERCENT = 0.45;
     const MAX_PULL = SHAFT_HEIGHT;
