@@ -917,6 +917,167 @@ textarea {
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
 .status-dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
 
+
+/* ═══════════════════════════════════════════════
+   PREMIUM VISUAL POLISH — Overshoot easing, glows, animations
+   ═══════════════════════════════════════════════ */
+
+/* Scanline overlay for OBS aesthetic */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Winner pulse — gold glow for winner elements */
+@keyframes winnerPulse {
+  0%,100% { filter: drop-shadow(0 0 18px rgba(255,215,0,0.9)) drop-shadow(0 0 50px rgba(255,215,0,0.4)); }
+  50%     { filter: drop-shadow(0 0 32px rgba(255,215,0,1)) drop-shadow(0 0 80px rgba(255,215,0,0.7)); }
+}
+.winner-pulse {
+  animation: winnerPulse 2s ease-in-out infinite;
+}
+
+/* Card flip entrance for list items */
+@keyframes cardFlipIn {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.9); }
+  60%  { transform: translateY(-4px) scale(1.02); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Ambient idle breathing */
+@keyframes idleBreathe {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.03); }
+}
+
+/* Title shimmer */
+@keyframes titleShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Tension shake for near-miss moments */
+@keyframes tensionShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px) rotate(-0.5deg); }
+  40% { transform: translateX(3px) rotate(0.5deg); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+.tension-shake {
+  animation: tensionShake 0.5s cubic-bezier(0.55, 0, 0.75, 0.06);
+}
+
+/* Overshoot button transitions */
+button, .btn {
+  transition: all 0.3s cubic-bezier(0.22, 1.2, 0.36, 1) !important;
+}
+button:hover, .btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(124,92,252,0.4);
+}
+button:active, .btn:active {
+  transform: translateY(0) scale(0.98) !important;
+  transition-duration: 0.1s !important;
+}
+
+/* Triple-layer text shadow for headings */
+h1, .game-title, .winner-text, .title {
+  text-shadow:
+    0 0 10px rgba(124,92,252,0.8),
+    0 0 30px rgba(124,92,252,0.4),
+    0 0 60px rgba(124,92,252,0.2);
+}
+
+/* Multi-layer accent glow */
+.accent-glow {
+  box-shadow: 0 0 8px rgba(124,92,252,0.6), 0 0 20px rgba(124,92,252,0.3), 0 0 40px rgba(124,92,252,0.1);
+}
+
+/* Gold glow for winners/highlights */
+.gold-glow {
+  box-shadow: 0 0 8px rgba(255,215,0,0.6), 0 0 20px rgba(255,215,0,0.3), 0 0 40px rgba(255,215,0,0.1);
+}
+
+/* Danger glow */
+.danger-glow {
+  box-shadow: 0 0 8px rgba(255,68,68,0.6), 0 0 20px rgba(255,68,68,0.3);
+}
+
+/* State-driven desaturation */
+.eliminated, .inactive, .used {
+  filter: saturate(0.4) brightness(0.6) !important;
+  opacity: 0.7 !important;
+  transition: all 0.5s cubic-bezier(0.55, 0, 0.75, 0.06) !important;
+}
+
+/* Light theme adjustments */
+[data-theme="light"] button:hover,
+[data-theme="light"] .btn:hover {
+  box-shadow: 0 8px 25px rgba(124,92,252,0.2);
+}
+[data-theme="light"] h1,
+[data-theme="light"] .game-title,
+[data-theme="light"] .winner-text,
+[data-theme="light"] .title {
+  text-shadow:
+    0 0 10px rgba(124,92,252,0.4),
+    0 0 20px rgba(124,92,252,0.2);
+}
+
+
+/* Idle breathing on game canvas area */
+#wheel-area, #game-area, #arena, #stage, #canvas-wrap, #game-canvas,
+#marble-track, #bingo-area, #question-area, #battle-area, #auction-area,
+#slot-area, .game-main, .game-content, .game-field, .play-area,
+#potato-area, #scramble-area, #dig-area, #card-area, #flip-area,
+#guess-area, #dice-area {
+  animation: idleBreathe 4s ease-in-out infinite;
+}
+
+/* Title shimmer effect */
+h1, .game-title, .panel-title, .app-title {
+  background: linear-gradient(
+    90deg,
+    var(--text) 0%,
+    var(--accent) 40%,
+    var(--gold) 60%,
+    var(--text) 100%
+  );
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  animation: titleShimmer 5s linear infinite;
+}
+/* Reset text-fill for light theme */
+[data-theme="light"] h1,
+[data-theme="light"] .game-title,
+[data-theme="light"] .panel-title {
+  background: linear-gradient(
+    90deg,
+    var(--text) 0%,
+    var(--accent) 45%,
+    #a080ff 55%,
+    var(--text) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 </style>
 </head>
 <body>
@@ -1586,6 +1747,14 @@ function loadQuestion(q) {
   void card.offsetWidth;
   card.classList.add('entering');
   setTimeout(() => card.classList.remove('entering'), 600);
+  // Stagger answer button entrances
+  LETTERS.forEach((L, i) => {
+    const btn = document.getElementById(`answer-${L}`);
+    btn.style.animation = 'none';
+    void btn.offsetWidth;
+    btn.style.animation = 'cardFlipIn 0.4s cubic-bezier(0.22, 1.2, 0.36, 1) both';
+    btn.style.animationDelay = (i * 0.08) + 's';
+  });
 
   document.getElementById('question-counter').textContent =
     `Question ${state.currentIdx + 1} / ${state.questions.length}`;
@@ -1722,6 +1891,7 @@ function showWinner(name, score) {
   document.getElementById('winner-name').textContent = name;
   document.getElementById('winner-score').textContent = `${score} point${score !== 1 ? 's' : ''}`;
   document.getElementById('winner-overlay').classList.add('show');
+  document.getElementById('winner-card')?.classList.add('winner-pulse');
   launchConfetti();
 }
 
