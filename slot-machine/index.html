@@ -961,58 +961,13 @@ input[type="range"]::-moz-range-thumb {
   position: relative;
 }
 
-#reels-container::after {
-  content: '';
-  position: absolute;
-  left: 8px; right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 64px;
-  border-top: 2px solid rgba(255,215,0,0.8);
-  border-bottom: 2px solid rgba(255,215,0,0.8);
-  pointer-events: none;
-  z-index: 10;
-  box-shadow:
-    0 -1px 8px var(--gold-glow),
-    0 1px 8px var(--gold-glow);
-  transition: border-color 0.3s, box-shadow 0.3s;
+/* Payline near-miss amber tint on the container */
+@keyframes paylineAmberBg {
+  0%, 100% { box-shadow: inset 0 4px 12px rgba(0,0,0,0.9), inset 0 -2px 6px rgba(0,0,0,0.5); }
+  50% { box-shadow: inset 0 4px 12px rgba(0,0,0,0.9), inset 0 -2px 6px rgba(0,0,0,0.5), 0 0 20px rgba(255,165,0,0.4); }
 }
-
-#payline-left, #payline-right {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 11;
-  width: 0; height: 0;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
-}
-#payline-left {
-  left: 2px;
-  border-right: 14px solid var(--gold);
-  filter: drop-shadow(0 0 4px var(--gold-glow));
-}
-#payline-right {
-  right: 2px;
-  border-left: 14px solid var(--gold);
-  filter: drop-shadow(0 0 4px var(--gold-glow));
-}
-
-/* Payline win flash */
-@keyframes paylineFlash {
-  0%, 100% { border-color: rgba(255,215,0,0.8); box-shadow: 0 -1px 8px var(--gold-glow), 0 1px 8px var(--gold-glow); }
-  25%, 75% { border-color: var(--gold); box-shadow: 0 -1px 20px var(--gold-glow), 0 1px 20px var(--gold-glow), 0 0 40px var(--gold-glow); }
-}
-@keyframes paylineAmber {
-  0%, 100% { border-color: rgba(255,165,0,0.4); box-shadow: none; }
-  50% { border-color: rgba(255,165,0,0.9); box-shadow: 0 0 15px rgba(255,165,0,0.5); }
-}
-#reels-container.payline-win-flash::after {
-  animation: paylineFlash 0.33s ease 3;
-}
-#reels-container.payline-near-miss::after {
-  animation: paylineAmber 0.5s ease 4;
-  border-color: rgba(255,165,0,0.6);
+#reels-container.payline-near-miss {
+  animation: paylineAmberBg 0.5s ease 4;
 }
 
 .reel-window {
@@ -1596,6 +1551,90 @@ h1, .game-title, .winner-text, .title {
 }
 
 
+/* ═══════════════════════════════════════════════
+   ROWS BUTTONS
+   ═══════════════════════════════════════════════ */
+.rows-btn {
+  flex: 1;
+  padding: 8px 6px;
+  min-height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.rows-btn:hover { border-color: var(--accent); color: var(--text); }
+.rows-btn.active {
+  border-color: var(--gold);
+  background: rgba(255,215,0,0.15);
+  color: var(--gold);
+}
+
+/* ═══════════════════════════════════════════════
+   PAY LINE INDICATOR
+   ═══════════════════════════════════════════════ */
+#payline-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, var(--gold) 10%, var(--gold) 90%, transparent 100%);
+  box-shadow: 0 0 8px rgba(255,215,0,0.6), 0 0 20px rgba(255,215,0,0.3);
+  z-index: 10;
+  pointer-events: none;
+  animation: paylineIdlePulse 3s ease-in-out infinite;
+}
+
+#payline-arrow-left,
+#payline-arrow-right {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 11;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+#payline-arrow-left {
+  left: 4px;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-right: 13px solid var(--gold);
+  filter: drop-shadow(0 0 4px rgba(255,215,0,0.8));
+}
+#payline-arrow-right {
+  right: 4px;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 13px solid var(--gold);
+  filter: drop-shadow(0 0 4px rgba(255,215,0,0.8));
+}
+
+@keyframes paylineIdlePulse {
+  0%, 100% { opacity: 0.7; box-shadow: 0 0 6px rgba(255,215,0,0.4), 0 0 14px rgba(255,215,0,0.2); }
+  50% { opacity: 1; box-shadow: 0 0 10px rgba(255,215,0,0.7), 0 0 24px rgba(255,215,0,0.4); }
+}
+
+@keyframes paylineWinFlash {
+  0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(255,215,0,0.9), 0 0 30px rgba(255,215,0,0.6); }
+  50% { opacity: 1; box-shadow: 0 0 24px rgba(255,215,0,1), 0 0 60px rgba(255,215,0,0.8); }
+}
+
+#reels-container.payline-win-flash #payline-indicator {
+  animation: paylineWinFlash 0.33s ease 6;
+}
+
 /* Idle breathing on game canvas area */
 #wheel-area, #game-area, #arena, #stage, #canvas-wrap, #game-canvas,
 #marble-track, #bingo-area, #question-area, #battle-area, #auction-area,
@@ -1664,8 +1703,9 @@ h1, .game-title, .panel-title, .app-title {
         <!-- Reels + Lever -->
         <div id="reel-section">
           <div id="reels-container">
-            <div id="payline-left"></div>
-            <div id="payline-right"></div>
+            <div id="payline-indicator"></div>
+            <div id="payline-arrow-left"></div>
+            <div id="payline-arrow-right"></div>
             <div class="reel-window" id="reel-0">
               <div class="reel-strip" id="strip-0"></div>
             </div>
@@ -1853,6 +1893,16 @@ h1, .game-title, .panel-title, .app-title {
         </button>
       </div>
 
+      <!-- VISIBLE ROWS -->
+      <div class="panel-section">
+        <h3>Visible Rows</h3>
+        <div class="btn-group">
+          <button class="rows-btn active" data-rows="3">3</button>
+          <button class="rows-btn" data-rows="5">5</button>
+          <button class="rows-btn" data-rows="7">7</button>
+        </div>
+      </div>
+
       <!-- THEME -->
       <div class="panel-section">
         <h3>Theme</h3>
@@ -1915,21 +1965,37 @@ const STATE = {
   autoInterval: null,
   gameOver: false,
   autoWinPause: false,
+  visibleRows: 3,           // 3 | 5 | 7
 };
 
+const EMOTES = ['🔥','⭐','💎','🎯','👑','🌟','💜','🍀','🎪','⚡',
+                '🦊','🐉','🎸','🌈','🍕','🎭','🦁','🌙','💫','🎲',
+                '🦄','🍒','🎵','🔮','🎬','🏆','🦅','💰','🎃','🌸'];
+const nameEmoteMap = new Map();
+let emoteIdx = 0;
+function getNameEmote(name) {
+  if (!nameEmoteMap.has(name)) {
+    nameEmoteMap.set(name, EMOTES[emoteIdx % EMOTES.length]);
+    emoteIdx++;
+  }
+  return nameEmoteMap.get(name);
+}
+
 const REEL_COUNT = 3;
-const ITEM_HEIGHT = 80;
 let REEL_WINDOW_HEIGHT = 320;
 // Update dynamically after DOM renders
 setTimeout(() => {
   const rw = document.getElementById('reel-0');
   if (rw) REEL_WINDOW_HEIGHT = rw.offsetHeight;
+  rebuildReelsForRows();
 }, 100);
 window.addEventListener('resize', () => {
   const rw = document.getElementById('reel-0');
   if (rw) REEL_WINDOW_HEIGHT = rw.offsetHeight;
+  rebuildReelsForRows();
 });
 function getPaylineCenter() { return REEL_WINDOW_HEIGHT / 2; }
+function getItemHeight() { return REEL_WINDOW_HEIGHT / STATE.visibleRows; }
 
 /* ═══════════════════════════════════════════════
    COLOR PALETTES
@@ -2155,16 +2221,29 @@ function buildStrip(names) {
   return strip;
 }
 
+function getRowStyles() {
+  switch (STATE.visibleRows) {
+    case 7:  return { fontSize: '11px', padding: '4px 6px' };
+    case 5:  return { fontSize: '14px', padding: '8px 10px' };
+    default: return { fontSize: '20px', padding: '14px 16px' };
+  }
+}
+
 function createReelItem(name) {
+  const ih = getItemHeight();
+  const rs = getRowStyles();
   const div = document.createElement('div');
   div.className = 'reel-item';
+  div.style.height = ih + 'px';
   const badge = document.createElement('div');
   badge.className = 'reel-badge';
   const c = getNameColor(name);
   badge.style.background = c.bg;
   badge.style.border = `1px solid ${c.border}`;
   badge.style.color = c.text;
-  badge.textContent = escapeHtml(name);
+  badge.style.fontSize = rs.fontSize;
+  badge.style.padding = rs.padding;
+  badge.textContent = getNameEmote(name) + ' ' + escapeHtml(name);
   div.appendChild(badge);
   return div;
 }
@@ -2204,9 +2283,40 @@ function populateReels() {
 }
 
 function positionStripAtIndex(strip, idx) {
-  const offsetY = -(idx * ITEM_HEIGHT) + (getPaylineCenter() - ITEM_HEIGHT / 2);
+  const ih = getItemHeight();
+  const offsetY = -(idx * ih) + (getPaylineCenter() - ih / 2);
   strip.style.transform = `translateY(${offsetY}px)`;
   strip._currentIndex = idx;
+}
+
+function setVisibleRows(rows) {
+  STATE.visibleRows = rows;
+  document.querySelectorAll('.rows-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.rows) === rows);
+  });
+  try { localStorage.setItem('slots_rows', rows); } catch(e) {}
+  rebuildReelsForRows();
+}
+
+function rebuildReelsForRows() {
+  // Update reel-item heights already in DOM
+  const ih = getItemHeight();
+  const rs = getRowStyles();
+  document.querySelectorAll('.reel-item').forEach(item => {
+    item.style.height = ih + 'px';
+    const badge = item.querySelector('.reel-badge');
+    if (badge) {
+      badge.style.fontSize = rs.fontSize;
+      badge.style.padding = rs.padding;
+    }
+  });
+  // Re-center strips on payline
+  for (let r = 0; r < REEL_COUNT; r++) {
+    const strip = document.getElementById(`strip-${r}`);
+    if (strip && strip._currentIndex !== undefined) {
+      positionStripAtIndex(strip, strip._currentIndex);
+    }
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -2366,7 +2476,8 @@ function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome, isNearMissS
         ? 1 - Math.pow(1 - progress, 5)
         : 1 - Math.pow(1 - progress, 3);
       const targetIdx = findBestLandingIndex(strip._items, targetName, slowStartY);
-      const targetY = -(targetIdx * ITEM_HEIGHT) + (getPaylineCenter() - ITEM_HEIGHT / 2);
+      const ih = getItemHeight();
+      const targetY = -(targetIdx * ih) + (getPaylineCenter() - ih / 2);
       const y = slowStartY + (targetY - slowStartY) * ease;
       strip.style.transform = `translateY(${y}px)`;
 
@@ -2388,7 +2499,8 @@ function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome, isNearMissS
 }
 
 function findBestLandingIndex(items, targetName, currentY) {
-  const approxIdx = Math.round((-currentY + getPaylineCenter() - ITEM_HEIGHT / 2) / ITEM_HEIGHT);
+  const ih = getItemHeight();
+  const approxIdx = Math.round((-currentY + getPaylineCenter() - ih / 2) / ih);
   for (let offset = 0; offset < items.length; offset++) {
     const idx = (approxIdx + offset) % items.length;
     if (items[idx] === targetName) return idx;
@@ -2454,7 +2566,7 @@ function finalizeSpin(outcome) {
       reelsContainer.classList.remove('payline-near-miss');
       playSound('nearMissFail');
     }, 2000);
-    setStatus(`So close! ${outcome.results.join('  ·  ')}`, false);
+    setStatus(`So close! ${outcome.results.map(n => getNameEmote(n) + ' ' + n).join('  ·  ')}`, false);
     emitMessage('slots:result', { symbols: outcome.results });
 
     // Credit Stack: game over when credits hit 0 after a losing spin
@@ -2467,7 +2579,7 @@ function finalizeSpin(outcome) {
     }
   } else {
     STATE.pullsSinceLastWin++;
-    setStatus(`${outcome.results.join('  ·  ')}`, false);
+    setStatus(`${outcome.results.map(n => getNameEmote(n) + ' ' + n).join('  ·  ')}`, false);
     emitMessage('slots:result', { symbols: outcome.results });
 
     // Credit Stack: game over when credits hit 0 after a losing spin
@@ -2489,11 +2601,11 @@ function triggerWin(winner, symbols) {
     document.getElementById(`reel-${r}`).classList.add('win-highlight');
   }
   const wd = document.getElementById('win-display');
-  wd.textContent = `🎉 ${escapeHtml(winner)} WINS! 🎉`;
+  wd.textContent = `🎉 ${getNameEmote(winner)} ${escapeHtml(winner)} WINS! 🎉`;
   wd.classList.add('visible');
   wd.classList.add('winner-pulse');
   document.getElementById('jackpot-overlay').classList.add('visible');
-  document.getElementById('winner-name-display').textContent = winner;
+  document.getElementById('winner-name-display').textContent = getNameEmote(winner) + ' ' + winner;
   startLedFlash();
   startCoinShower();
   playSound('jackpot');
@@ -2590,7 +2702,7 @@ function showGameOver() {
       const rank = i < 3 ? medals[i] : `${i + 1}.`;
       item.innerHTML = `
         <span class="podium-rank">${rank}</span>
-        <span class="podium-name">${escapeHtml(w.name)}</span>
+        <span class="podium-name">${getNameEmote(w.name)} ${escapeHtml(w.name)}</span>
         <span class="podium-spin">spin #${w.spin}</span>
       `;
       const c = getNameColor(w.name);
@@ -3021,6 +3133,9 @@ function renderNameList() {
     const c = getNameColor(name);
     const dot = document.createElement('div');
     dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:${c.text};flex-shrink:0`;
+    const emoteSpan = document.createElement('span');
+    emoteSpan.textContent = getNameEmote(name);
+    emoteSpan.style.cssText = 'font-size:14px;flex-shrink:0';
     const text = document.createElement('div');
     text.className = 'name-item-text';
     text.textContent = name;
@@ -3036,6 +3151,7 @@ function renderNameList() {
     removeBtn.title = `Remove "${name}"`;
     removeBtn.addEventListener('click', () => removeName(name));
     item.appendChild(dot);
+    item.appendChild(emoteSpan);
     item.appendChild(text);
     item.appendChild(removeBtn);
     list.appendChild(item);
@@ -3471,6 +3587,11 @@ function bindEvents() {
     try { localStorage.setItem('slots_sound', STATE.soundEnabled ? '1' : '0'); } catch(e) {}
   });
 
+  // Rows buttons
+  document.querySelectorAll('.rows-btn').forEach(btn => {
+    btn.addEventListener('click', () => setVisibleRows(parseInt(btn.dataset.rows)));
+  });
+
   // Theme dropdown
   document.getElementById('theme-select').addEventListener('change', function() {
     setTheme(this.value);
@@ -3516,6 +3637,16 @@ function init() {
     if (rw === '0') {
       STATE.removeWinners = false;
       document.getElementById('remove-winners-toggle').checked = false;
+    }
+    const savedRows = localStorage.getItem('slots_rows');
+    if (savedRows) {
+      const rowsVal = parseInt(savedRows);
+      if ([3,5,7].includes(rowsVal)) {
+        STATE.visibleRows = rowsVal;
+        document.querySelectorAll('.rows-btn').forEach(b => {
+          b.classList.toggle('active', parseInt(b.dataset.rows) === rowsVal);
+        });
+      }
     }
   } catch(e) {}
 
