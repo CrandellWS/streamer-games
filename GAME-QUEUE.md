@@ -28,6 +28,7 @@ Each game follows the spec in [CLAUDE.md](./CLAUDE.md): single self-contained HT
 | 13 | Number Guess | `number-guess/` | ✅ | Higher/lower guessing game — closest to the secret number wins |
 | 14 | Elimination | `elimination/` | ✅ | Last one standing — random eliminations with dramatic reveals |
 | 15 | Dice Roll | `dice-roll/` | ✅ | Animated 3D dice — viewers roll, highest total wins |
+| 16 | Plinko | `plinko/` | ✅ | Classic Plinko board — drop disc, bounce pegs, land in viewer slot |
 
 ---
 

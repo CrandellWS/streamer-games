@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plinko — Test Harness</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #0d0d14;
+  color: #e8e8f0;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+#game-frame-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+iframe {
+  flex: 1;
+  border: none;
+  border-right: 1px solid #2a2a4a;
+}
+#controls {
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #14141f;
+}
+h1 {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 14px 16px;
+  border-bottom: 1px solid #2a2a4a;
+  color: #7c5cfc;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.section {
+  padding: 12px 14px;
+  border-bottom: 1px solid #2a2a4a;
+}
+.section h2 {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #8888aa;
+  margin-bottom: 8px;
+}
+.btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+button {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #2a2a4a;
+  background: #1a1a2e;
+  color: #e8e8f0;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+button:hover { background: #22223a; border-color: #7c5cfc; }
+button.primary { background: #7c5cfc; border-color: #7c5cfc; color: #fff; }
+button.danger  { color: #ff4466; border-color: rgba(255,68,102,0.3); }
+button.danger:hover { background: rgba(255,68,102,0.1); border-color: #ff4466; }
+button.full    { grid-column: 1/-1; }
+
+#log-wrap {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+#log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a4a transparent;
+}
+.log-entry {
+  padding: 3px 6px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  border-left: 2px solid transparent;
+}
+.log-entry.send    { border-color: #7c5cfc; }
+.log-entry.recv    { border-color: #44ff88; background: rgba(68,255,136,0.04); }
+.log-entry.info    { border-color: #8888aa; color: #8888aa; }
+.log-entry.pass    { border-color: #44ff88; color: #44ff88; background: rgba(68,255,136,0.06); }
+.log-entry.fail    { border-color: #ff4466; color: #ff4466; background: rgba(255,68,102,0.06); }
+.log-time          { color: #8888aa; margin-right: 6px; }
+
+#test-results {
+  padding: 10px 14px;
+  border-top: 1px solid #2a2a4a;
+  font-size: 12px;
+  font-weight: 600;
+}
+</style>
+</head>
+<body>
+
+<div id="game-frame-wrap">
+  <iframe id="game" src="index.html" title="Plinko game"></iframe>
+</div>
+
+<div id="controls">
+  <h1>Plinko Test Harness</h1>
+
+  <div class="section">
+    <h2>postMessage — Players</h2>
+    <div class="btn-grid">
+      <button onclick="send({type:'plinko:add',name:'Alice'})">add Alice</button>
+      <button onclick="send({type:'plinko:add',name:'Bob'})">add Bob</button>
+      <button onclick="send({type:'plinko:add',names:['Carol','Dave','Eve']})">add 3 bulk</button>
+      <button onclick="send({type:'plinko:remove',name:'Alice'})">remove Alice</button>
+      <button onclick="send({type:'plinko:names'})">query names</button>
+      <button class="danger" onclick="send({type:'plinko:clear'})">clear all</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>postMessage — Drop</h2>
+    <div class="btn-grid">
+      <button onclick="send({type:'plinko:drop'})">random drop</button>
+      <button onclick="send({type:'plinko:drop',position:0.5})">center drop</button>
+      <button onclick="send({type:'plinko:drop',position:0.1})">left drop</button>
+      <button onclick="send({type:'plinko:drop',position:0.9})">right drop</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>URL Parameters</h2>
+    <div class="btn-grid">
+      <button onclick="reload('?theme=dark')">theme=dark</button>
+      <button onclick="reload('?theme=light')">theme=light</button>
+      <button onclick="reload('?theme=neon')">theme=neon</button>
+      <button onclick="reload('?admin=false')">admin=false</button>
+      <button class="full" onclick="reload('?names=Alice,Bob,Carol,Dave,Eve')">names= (5 pre-loaded)</button>
+      <button class="full" onclick="reload('?bg=transparent&admin=false')">OBS mode</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Automated Tests</h2>
+    <div class="btn-grid">
+      <button class="primary full" onclick="runTests()">▶ Run All Tests</button>
+    </div>
+  </div>
+
+  <div id="log-wrap">
+    <div id="log"></div>
+  </div>
+
+  <div id="test-results" style="display:none"></div>
+</div>
+
+<script>
+const iframe = document.getElementById('game');
+const logEl  = document.getElementById('log');
+
+// ── Logging ───────────────────────────────────────────────────────────────────
+function logLine(text, cls) {
+  const el = document.createElement('div');
+  el.className = `log-entry ${cls || 'info'}`;
+  const ts = new Date().toLocaleTimeString('en-US', {hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  el.innerHTML = `<span class="log-time">${ts}</span>${escHtml(text)}`;
+  logEl.appendChild(el);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── PostMessage send/receive ───────────────────────────────────────────────────
+function send(msg) {
+  iframe.contentWindow.postMessage(msg, '*');
+  logLine('→ ' + JSON.stringify(msg), 'send');
+}
+
+window.addEventListener('message', (e) => {
+  if (e.source !== iframe.contentWindow) return;
+  logLine('← ' + JSON.stringify(e.data), 'recv');
+  // Notify test runner if waiting
+  if (typeof pendingResolve === 'function') {
+    const fn = pendingResolve;
+    pendingResolve = null;
+    fn(e.data);
+  }
+});
+
+function reload(params) {
+  logLine('Reloading: ' + params, 'info');
+  iframe.src = 'index.html' + params;
+}
+
+// ── Test framework ────────────────────────────────────────────────────────────
+let pendingResolve = null;
+
+function waitForMessage(timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      pendingResolve = null;
+      reject(new Error('Timeout waiting for postMessage'));
+    }, timeoutMs || 3000);
+    pendingResolve = (data) => {
+      clearTimeout(timer);
+      resolve(data);
+    };
+  });
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+let passed = 0;
+let failed = 0;
+
+async function test(name, fn) {
+  try {
+    await fn();
+    logLine(`✓ ${name}`, 'pass');
+    passed++;
+  } catch(err) {
+    logLine(`✗ ${name}: ${err.message}`, 'fail');
+    failed++;
+  }
+}
+
+function assert(cond, msg) {
+  if (!cond) throw new Error(msg || 'Assertion failed');
+}
+
+// ── Test suite ────────────────────────────────────────────────────────────────
+async function runTests() {
+  passed = 0;
+  failed = 0;
+  logLine('═══ Starting Automated Tests ═══', 'info');
+  document.getElementById('test-results').style.display = 'none';
+
+  // Reset game state
+  iframe.src = 'index.html';
+  await sleep(600);
+
+  // ── Test 1: plinko:add (single) ───────────────────────────────────────────
+  await test('plinko:add single name', async () => {
+    send({ type: 'plinko:clear' });
+    await sleep(80);
+    send({ type: 'plinko:add', name: 'TestUser' });
+    await sleep(80);
+    send({ type: 'plinko:names' });
+    const resp = await waitForMessage(2000);
+    assert(resp.type === 'plinko:names', `Expected plinko:names, got ${resp.type}`);
+    assert(Array.isArray(resp.names), 'names should be array');
+    assert(resp.names.includes('TestUser'), `Expected TestUser in names, got: ${JSON.stringify(resp.names)}`);
+  });
+
+  // ── Test 2: plinko:add (bulk) ─────────────────────────────────────────────
+  await test('plinko:add bulk names', async () => {
+    send({ type: 'plinko:clear' });
+    await sleep(80);
+    send({ type: 'plinko:add', names: ['Alice', 'Bob', 'Carol'] });
+    await sleep(80);
+    send({ type: 'plinko:names' });
+    const resp = await waitForMessage(2000);
+    assert(resp.type === 'plinko:names', 'Expected plinko:names response');
+    assert(resp.names.length >= 3, `Expected at least 3 names, got ${resp.names.length}`);
+    assert(resp.names.includes('Alice'), 'Alice should be in names');
+    assert(resp.names.includes('Bob'), 'Bob should be in names');
+    assert(resp.names.includes('Carol'), 'Carol should be in names');
+  });
+
+  // ── Test 3: plinko:remove ─────────────────────────────────────────────────
+  await test('plinko:remove removes a name', async () => {
+    send({ type: 'plinko:clear' });
+    await sleep(80);
+    send({ type: 'plinko:add', names: ['Alice', 'Bob', 'Carol'] });
+    await sleep(80);
+    send({ type: 'plinko:remove', name: 'Bob' });
+    await sleep(80);
+    send({ type: 'plinko:names' });
+    const resp = await waitForMessage(2000);
+    assert(!resp.names.includes('Bob'), 'Bob should be removed');
+    assert(resp.names.includes('Alice'), 'Alice should remain');
+    assert(resp.names.includes('Carol'), 'Carol should remain');
+  });
+
+  // ── Test 4: plinko:clear ─────────────────────────────────────────────────
+  await test('plinko:clear empties the list', async () => {
+    send({ type: 'plinko:add', names: ['X', 'Y', 'Z'] });
+    await sleep(80);
+    send({ type: 'plinko:clear' });
+    await sleep(80);
+    send({ type: 'plinko:names' });
+    const resp = await waitForMessage(2000);
+    assert(Array.isArray(resp.names), 'names should be array');
+    assert(resp.names.length === 0, `Expected 0 names, got ${resp.names.length}`);
+  });
+
+  // ── Test 5: plinko:winner announced on drop ───────────────────────────────
+  await test('plinko:winner emitted after drop', async () => {
+    send({ type: 'plinko:clear' });
+    await sleep(80);
+    send({ type: 'plinko:add', names: ['Alice', 'Bob', 'Carol', 'Dave', 'Eve'] });
+    await sleep(200);
+    send({ type: 'plinko:drop' });
+    // Wait up to 12s for the disc to land (physics takes a few seconds)
+    const resp = await waitForMessage(12000);
+    assert(resp.type === 'plinko:winner', `Expected plinko:winner, got ${resp.type}`);
+    assert(typeof resp.winner === 'string', 'winner should be a string');
+    assert(resp.winner.length > 0, 'winner should not be empty');
+    const validNames = ['Alice', 'Bob', 'Carol', 'Dave', 'Eve'];
+    assert(validNames.includes(resp.winner), `Winner "${resp.winner}" should be one of the players`);
+  });
+
+  // ── Test 6: drop at specific position ────────────────────────────────────
+  await test('plinko:drop with position 0-1 accepted', async () => {
+    send({ type: 'plinko:clear' });
+    await sleep(80);
+    send({ type: 'plinko:add', names: ['Left', 'Mid', 'Right'] });
+    await sleep(200);
+    send({ type: 'plinko:drop', position: 0.5 });
+    // Just check that a winner comes out (position hint, physics still random)
+    const resp = await waitForMessage(12000);
+    assert(resp.type === 'plinko:winner', `Expected plinko:winner, got ${resp.type}`);
+    assert(typeof resp.winner === 'string' && resp.winner.length > 0, 'winner should be a non-empty string');
+  });
+
+  // ── Test 7: plinko:names query returns current state ──────────────────────
+  await test('plinko:names query returns current list', async () => {
+    send({ type: 'plinko:clear' });
+    await sleep(80);
+    const testNames = ['Tester1', 'Tester2', 'Tester3'];
+    send({ type: 'plinko:add', names: testNames });
+    await sleep(80);
+    send({ type: 'plinko:names' });
+    const resp = await waitForMessage(2000);
+    assert(resp.type === 'plinko:names', 'Expected plinko:names');
+    testNames.forEach(n => {
+      assert(resp.names.includes(n), `Expected ${n} in names`);
+    });
+  });
+
+  // ── Test 8: URL ?names= preloads names ───────────────────────────────────
+  await test('URL ?names= preloads players', async () => {
+    iframe.src = 'index.html?names=Player1,Player2,Player3';
+    await sleep(800);
+    send({ type: 'plinko:names' });
+    const resp = await waitForMessage(2000);
+    assert(resp.type === 'plinko:names', 'Expected plinko:names');
+    assert(resp.names.includes('Player1'), 'Player1 should be preloaded');
+    assert(resp.names.includes('Player2'), 'Player2 should be preloaded');
+    assert(resp.names.includes('Player3'), 'Player3 should be preloaded');
+    iframe.src = 'index.html';
+    await sleep(400);
+  });
+
+  // ── Summary ───────────────────────────────────────────────────────────────
+  const total   = passed + failed;
+  const summary = `${passed}/${total} tests passed`;
+  logLine(`═══ ${summary} ═══`, failed === 0 ? 'pass' : 'fail');
+
+  const res = document.getElementById('test-results');
+  res.style.display = '';
+  res.style.color   = failed === 0 ? '#44ff88' : '#ff4466';
+  res.textContent   = `${failed === 0 ? '✓' : '✗'} ${summary}`;
+}
+
+logLine('Plinko test harness ready — click "Run All Tests" or use the buttons above', 'info');
+</script>
+</body>
+</html>

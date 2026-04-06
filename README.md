@@ -21,6 +21,7 @@ A free, open-source collection of interactive games designed for live streamers.
 | [Number Guess](number-guess/) | Higher/lower guessing — closest to secret number wins, heat meter | ✅ Ready |
 | [Elimination](elimination/) | Random elimination with spotlight and shatter effects — last one standing wins | ✅ Ready |
 | [Dice Roll](dice-roll/) | CSS 3D dice — viewers roll 1-3 dice, highest total wins | ✅ Ready |
+| [Plinko](plinko/) | Classic Plinko board — drop a disc, bounce off pegs, land in a viewer's slot | ✅ Ready |
 
 ## Quick Start
 
