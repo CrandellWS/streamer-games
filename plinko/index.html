@@ -500,7 +500,7 @@ select {
   <div id="admin-panel">
     <div class="panel-header">
       <h2>🎯 Plinko</h2>
-      <p>Drop disc, bounce pegs, pick a winner!</p>
+      <p>Pinball chaos awaits every drop!</p>
     </div>
 
     <div class="panel-scroll">
@@ -560,6 +560,14 @@ select {
             <button class="btn btn-sm rows-btn" data-rows="12">Large</button>
           </div>
         </div>
+        <div class="setting-row" style="margin-top:4px">
+          <label>Chaos</label>
+          <div class="btn-group">
+            <button class="btn btn-sm chaos-btn" data-chaos="mild">🌿 Mild</button>
+            <button class="btn btn-sm chaos-btn active" data-chaos="wild">🔥 Wild</button>
+            <button class="btn btn-sm chaos-btn" data-chaos="insane">💀 Insane</button>
+          </div>
+        </div>
       </div>
 
       <!-- APPEARANCE -->
@@ -611,9 +619,12 @@ const COLORS = [
   '#d63031','#0984e3','#e84393','#f9ca24','#6ab04c'
 ];
 
-const GRAVITY    = 0.38;
+const GRAVITY     = 0.38;
 const RESTITUTION = 0.48;
 const WALL_REST   = 0.65;
+const BUMPER_REST = 1.3;
+const RAIL_REST   = 0.82;
+const FLIPPER_REST= 0.72;
 const MAX_VEL     = 18;
 const TRAIL_LEN   = 16;
 const MIN_SLOTS   = 3;
@@ -621,34 +632,204 @@ const MAX_SLOTS   = 20;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const state = {
-  names:      [],    // ordered list of player names (= slot order)
-  colorMap:   {},    // name → color string
+  names:      [],
+  colorMap:   {},
   boardRows:  10,
-  dropMode:   'random',  // 'random' | 'click'
+  dropMode:   'random',
   numDrops:   1,
   soundOn:    true,
   adminVisible: true,
+  chaosLevel: 'wild',
 
-  // Game state
   dropping:      false,
   dropsLeft:     0,
-  awaitingClick: false,   // in click mode, waiting for next drop click
-  clickDropX:    null,    // normalized 0-1 x for pending click drop
+  awaitingClick: false,
+  clickDropX:    null,
 
-  // Drop results
-  results:    [],    // [{slot, name, color}]
-  winCounts:  {},    // name → integer
+  results:    [],
+  winCounts:  {},
 
-  // Animation state
   winner:       null,
   winnerSlot:   -1,
   celebTicks:   0,
   confetti:     [],
 };
 
-// ── Board geometry (recomputed on resize / name change) ───────────────────────
+// ── Board geometry ────────────────────────────────────────────────────────────
 const board = {};
 
+// ── Obstacle helpers ──────────────────────────────────────────────────────────
+function addBumper(x, y, r) {
+  board.bumpers.push({ x, y, r, flashTimer: 0, flashMax: 10 });
+}
+
+function addSpinner(x, y, length, speed) {
+  board.spinners.push({ x, y, length, speed, angle: Math.random() * Math.PI * 2, flashTimer: 0 });
+}
+
+function addFlipper(cx, cy, length, angle) {
+  const cos = Math.cos(angle), sin = Math.sin(angle);
+  board.flippers.push({
+    cx, cy, length, angle,
+    x1: cx - cos * length / 2, y1: cy - sin * length / 2,
+    x2: cx + cos * length / 2, y2: cy + sin * length / 2,
+    flashTimer: 0
+  });
+}
+
+function addFunnelTrap(tipX, tipY, halfW, depth) {
+  const gap = board.discR * 1.8;
+  board.funnelWalls.push(
+    { x1: tipX - halfW, y1: tipY - depth, x2: tipX - gap, y2: tipY, flashTimer: 0 },
+    { x1: tipX + halfW, y1: tipY - depth, x2: tipX + gap, y2: tipY, flashTimer: 0 }
+  );
+}
+
+function addRicochetRails(count, yMin, yMax) {
+  const W = board.width;
+  const defs = [
+    { rx: 0.12, ry: 0.10, ang:  0.40 },
+    { rx: 0.82, ry: 0.35, ang: -0.50 },
+    { rx: 0.15, ry: 0.72, ang:  0.55 },
+    { rx: 0.78, ry: 0.60, ang: -0.40 },
+    { rx: 0.30, ry: 0.15, ang:  0.30 },
+    { rx: 0.62, ry: 0.80, ang: -0.60 },
+    { rx: 0.10, ry: 0.45, ang:  0.45 },
+    { rx: 0.85, ry: 0.05, ang: -0.35 },
+  ];
+  for (let i = 0; i < count && i < defs.length; i++) {
+    const p = defs[i];
+    const cx2 = board.left + W * p.rx;
+    const cy2 = yMin + (yMax - yMin) * p.ry;
+    const len = W * 0.10;
+    const cos = Math.cos(p.ang), sin = Math.sin(p.ang);
+    board.ricochetRails.push({
+      x1: cx2 - cos * len / 2, y1: cy2 - sin * len / 2,
+      x2: cx2 + cos * len / 2, y2: cy2 + sin * len / 2,
+      flashTimer: 0
+    });
+  }
+}
+
+function addTeleporterPair(x1, y1, x2, y2, r) {
+  board.teleporterPairs.push({
+    a: { x: x1, y: y1, r, flashTimer: 0 },
+    b: { x: x2, y: y2, r, flashTimer: 0 }
+  });
+}
+
+function addSpeedRail(x1, y1, x2, y2) {
+  board.speedRails.push({ x1, y1, x2, y2, flashTimer: 0 });
+}
+
+function addPegCluster(cx, cy) {
+  const spacing = board.pegR * 3.0;
+  const pts = [[0,0],[-1,1],[1,1],[-2,2],[0,2],[2,2]];
+  for (const [px, py] of pts) {
+    board.pegs.push({ x: cx + px * spacing, y: cy + py * spacing * 0.85, flash: 0 });
+  }
+}
+
+// ── Obstacle generation by zone + chaos level ─────────────────────────────────
+function generateObstacles() {
+  const W  = board.width;
+  const H  = board.height;
+  const cx = board.left + W / 2;
+  const ch = state.chaosLevel;
+
+  const bR   = Math.min(24, Math.max(14, W * 0.038));
+  const sLen = Math.min(110, Math.max(55, W * 0.18));
+
+  board.bumpers        = [];
+  board.spinners       = [];
+  board.flippers       = [];
+  board.ricochetRails  = [];
+  board.funnelWalls    = [];
+  board.teleporterPairs= [];
+  board.speedRails     = [];
+  board.gravFlipZones  = [];
+
+  // ── ZONE 1: Entry (top 20%) ──────────────────────────────────
+  addSpinner(cx, board.top + H * 0.11, sLen, ch === 'insane' ? 0.052 : 0.030);
+
+  // ── ZONE 2: Chaos (20–50%) ───────────────────────────────────
+  // Core bumper triangle
+  addBumper(cx,            board.top + H * 0.30, bR);
+  addBumper(cx - W * 0.19, board.top + H * 0.40, bR);
+  addBumper(cx + W * 0.19, board.top + H * 0.40, bR);
+
+  if (ch !== 'mild') {
+    addBumper(cx, board.top + H * 0.47, bR * 0.88);
+    addSpinner(board.left + W * 0.20, board.top + H * 0.36, sLen * 0.65, -0.042);
+    addSpinner(board.right - W * 0.20, board.top + H * 0.44, sLen * 0.65,  0.048);
+  }
+  if (ch === 'insane') {
+    addBumper(cx - W * 0.32, board.top + H * 0.26, bR * 0.78);
+    addBumper(cx + W * 0.32, board.top + H * 0.26, bR * 0.78);
+    addSpinner(cx, board.top + H * 0.49, sLen * 0.75, 0.065);
+  }
+
+  // Peg clusters in zone 2
+  addPegCluster(board.left + W * 0.15, board.top + H * 0.35);
+  addPegCluster(board.right - W * 0.15, board.top + H * 0.43);
+  if (ch === 'insane') addPegCluster(cx, board.top + H * 0.24);
+
+  // Ricochet rails
+  const railCount = ch === 'mild' ? 2 : ch === 'wild' ? 5 : 8;
+  addRicochetRails(railCount, board.top + H * 0.20, board.top + H * 0.50);
+
+  // Teleporters
+  if (ch !== 'mild') {
+    addTeleporterPair(
+      board.left + W * 0.13, board.top + H * 0.33,
+      board.right - W * 0.13, board.top + H * 0.43,
+      16
+    );
+  }
+  if (ch === 'insane') {
+    addTeleporterPair(
+      cx - W * 0.08, board.top + H * 0.49,
+      cx + W * 0.08, board.top + H * 0.23,
+      14
+    );
+  }
+
+  // ── ZONE 3: Channels (50–75%) ────────────────────────────────
+  const flipLen = W * 0.18;
+  addFlipper(cx - W * 0.14, board.top + H * 0.56, flipLen,  Math.PI * 0.17);
+  addFlipper(cx + W * 0.14, board.top + H * 0.56, flipLen, -Math.PI * 0.17);
+
+  if (ch !== 'mild') {
+    addFlipper(cx - W * 0.28, board.top + H * 0.67, flipLen * 0.78,  Math.PI * 0.22);
+    addFlipper(cx + W * 0.28, board.top + H * 0.67, flipLen * 0.78, -Math.PI * 0.22);
+  }
+
+  // Funnel traps
+  const fHW = W * 0.11, fD = H * 0.05;
+  addFunnelTrap(board.left + W * 0.26, board.top + H * 0.62, fHW, fD);
+  if (ch !== 'mild') {
+    addFunnelTrap(board.right - W * 0.26, board.top + H * 0.68, fHW, fD);
+  }
+
+  // Speed rail
+  addSpeedRail(cx - W * 0.12, board.top + H * 0.73, cx + W * 0.12, board.top + H * 0.74);
+
+  // Gravity flip zone (insane only)
+  if (ch === 'insane') {
+    board.gravFlipZones.push({
+      x: cx - W * 0.16,
+      y: board.top + H * 0.58,
+      w: W * 0.32,
+      h: H * 0.055
+    });
+  }
+
+  // ── ZONE 4: Landing (75–100%) ────────────────────────────────
+  // Final bumper
+  addBumper(cx, board.top + H * 0.86, bR * 0.82);
+}
+
+// ── Board compute ─────────────────────────────────────────────────────────────
 function computeBoard() {
   const W = canvas.clientWidth;
   const H = canvas.clientHeight;
@@ -671,56 +852,130 @@ function computeBoard() {
   board.slotH     = slotH;
   board.numRows   = state.boardRows;
 
-  board.pegR  = Math.max(4, Math.min(8, board.slotWidth * 0.18));
+  board.pegR  = Math.max(4, Math.min(8,  board.slotWidth * 0.18));
   board.discR = Math.max(8, Math.min(14, board.slotWidth * 0.28));
 
-  const rows = board.numRows;
-  const pegSpY = board.height / (rows + 1);
-  board.pegSpacingY = pegSpY;
+  const BW = board.width;
+  const BH = board.height;
 
-  // Build peg list
+  // ── Peg generation ────────────────────────────────────────────
   board.pegs = [];
-  for (let r = 0; r < rows; r++) {
-    const y = board.top + (r + 1) * pegSpY;
+
+  // Zone 1: 2 sparse rows
+  for (let r = 0; r < 2; r++) {
+    const y = board.top + BH * (0.07 + r * 0.08);
     if (r % 2 === 0) {
-      // Wide row: numSlots pegs at slot centers
-      for (let k = 0; k < numSlots; k++) {
+      for (let k = 0; k < numSlots; k++)
         board.pegs.push({ x: board.left + (k + 0.5) * board.slotWidth, y, flash: 0 });
-      }
     } else {
-      // Narrow row: numSlots-1 pegs at slot boundaries
-      for (let k = 1; k < numSlots; k++) {
+      for (let k = 1; k < numSlots; k++)
         board.pegs.push({ x: board.left + k * board.slotWidth, y, flash: 0 });
-      }
     }
   }
+
+  // Zone 4: dense rows (75–100%)
+  const z4Start = board.top + BH * 0.76;
+  const z4End   = board.bottom - BH * 0.02;
+  const z4H     = z4End - z4Start;
+  const z4Rows  = state.boardRows;
+  for (let r = 0; r < z4Rows; r++) {
+    const y = z4Start + (r + 1) * z4H / (z4Rows + 1);
+    if (r % 2 === 0) {
+      for (let k = 0; k < numSlots; k++)
+        board.pegs.push({ x: board.left + (k + 0.5) * board.slotWidth, y, flash: 0 });
+    } else {
+      for (let k = 1; k < numSlots; k++)
+        board.pegs.push({ x: board.left + k * board.slotWidth, y, flash: 0 });
+    }
+  }
+
+  // Generate all pinball obstacles (also pushes peg clusters)
+  generateObstacles();
 }
 
 // ── Disc ──────────────────────────────────────────────────────────────────────
 let disc = null;
-let lastPegSoundMs = 0;
+let lastPegSoundMs     = 0;
+let lastBumperSoundMs  = 0;
+let lastSpinnerSoundMs = 0;
+let lastFlipperSoundMs = 0;
+let lastSpeedRailSndMs = 0;
 
 function dropDisc(xFrac) {
   xFrac = Math.max(0.02, Math.min(0.98, xFrac));
   const x = board.left + xFrac * board.width;
   disc = {
-    x,
-    y: board.top - board.discR - 4,
+    x, y: board.top - board.discR - 4,
     vx: (Math.random() - 0.5) * 0.8,
     vy: 1.5,
     trail: [],
     active: true,
+    teleporting: false,
+    teleportTimer: 0,
+    teleportTx: 0,
+    teleportTy: 0,
+    gravFlipTimer: 0,
+    wasInGravFlip: false,
   };
   state.dropping = true;
   state.awaitingClick = false;
   updateDropBtn();
 }
 
+// ── Segment collision ─────────────────────────────────────────────────────────
+// Returns null or {cx,cy,vx,vy,nx,ny,force}
+function collideSegment(px, py, pvx, pvy, x1, y1, x2, y2, rest) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len2 = dx * dx + dy * dy;
+  if (len2 < 0.001) return null;
+  let t = ((px - x1) * dx + (py - y1) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const cx = x1 + t * dx, cy = y1 + t * dy;
+  const ex = px - cx, ey = py - cy;
+  const d2 = ex * ex + ey * ey;
+  const minD = board.discR;
+  if (d2 >= minD * minD || d2 < 0.001) return null;
+  const d  = Math.sqrt(d2);
+  const nx = ex / d, ny = ey / d;
+  const vn = pvx * nx + pvy * ny;
+  if (vn >= 0) return null;
+  return {
+    cx: cx + nx * (minD + 1),
+    cy: cy + ny * (minD + 1),
+    vx: pvx - (1 + rest) * vn * nx,
+    vy: pvy - (1 + rest) * vn * ny,
+    nx, ny,
+    force: Math.abs(vn)
+  };
+}
+
+// ── Disc physics ──────────────────────────────────────────────────────────────
 function updateDisc() {
   if (!disc || !disc.active) return;
 
-  // Gravity
-  disc.vy += GRAVITY;
+  // Gravity (respect gravity flip)
+  if (disc.gravFlipTimer > 0) {
+    disc.vy -= GRAVITY * 1.3;
+    disc.gravFlipTimer--;
+  } else {
+    disc.vy += GRAVITY;
+  }
+
+  // Check gravity flip zone entry
+  if (board.gravFlipZones && disc.gravFlipTimer <= 0) {
+    for (const z of board.gravFlipZones) {
+      if (disc.x >= z.x && disc.x <= z.x + z.w &&
+          disc.y >= z.y && disc.y <= z.y + z.h) {
+        if (!disc.wasInGravFlip) {
+          disc.gravFlipTimer = 35;
+          sndGravFlip();
+        }
+        disc.wasInGravFlip = true;
+        break;
+      }
+    }
+    if (disc.gravFlipTimer <= 0) disc.wasInGravFlip = false;
+  }
 
   // Clamp speed
   const spd = Math.hypot(disc.vx, disc.vy);
@@ -733,56 +988,147 @@ function updateDisc() {
   disc.trail.push({ x: disc.x, y: disc.y });
   if (disc.trail.length > TRAIL_LEN) disc.trail.shift();
 
-  // Sub-step
+  // Speed rail check (once per frame)
+  checkSpeedRails();
+
+  // Sub-step collision
   const STEPS = 4;
   for (let s = 0; s < STEPS; s++) {
     disc.x += disc.vx / STEPS;
     disc.y += disc.vy / STEPS;
 
-    // Wall left
+    const nowMs = Date.now();
+
+    // Top wall safety (for gravity flip)
+    if (disc.y - board.discR < board.top) {
+      disc.y = board.top + board.discR;
+      if (disc.vy < 0) disc.vy = Math.abs(disc.vy) * 0.5;
+    }
+    // Left wall
     if (disc.x - board.discR < board.left) {
       disc.x = board.left + board.discR;
-      if (disc.vx < 0) {
-        disc.vx = Math.abs(disc.vx) * WALL_REST;
-        sndWall();
-      }
+      if (disc.vx < 0) { disc.vx = Math.abs(disc.vx) * WALL_REST; sndWall(); }
     }
-    // Wall right
+    // Right wall
     if (disc.x + board.discR > board.right) {
       disc.x = board.right - board.discR;
-      if (disc.vx > 0) {
-        disc.vx = -Math.abs(disc.vx) * WALL_REST;
-        sndWall();
-      }
+      if (disc.vx > 0) { disc.vx = -Math.abs(disc.vx) * WALL_REST; sndWall(); }
     }
 
     // Peg collisions
-    const now = Date.now();
     for (const peg of board.pegs) {
-      const dx = disc.x - peg.x;
-      const dy = disc.y - peg.y;
-      const dist2 = dx * dx + dy * dy;
+      const dx = disc.x - peg.x, dy = disc.y - peg.y;
+      const d2 = dx * dx + dy * dy;
       const minD = board.discR + board.pegR;
-      if (dist2 < minD * minD && dist2 > 0.001) {
-        const dist = Math.sqrt(dist2);
-        const nx = dx / dist;
-        const ny = dy / dist;
-        // Push out
+      if (d2 < minD * minD && d2 > 0.001) {
+        const d  = Math.sqrt(d2);
+        const nx = dx / d, ny = dy / d;
         disc.x = peg.x + nx * (minD + 0.5);
         disc.y = peg.y + ny * (minD + 0.5);
-        // Reflect velocity if moving into peg
         const vn = disc.vx * nx + disc.vy * ny;
         if (vn < 0) {
           disc.vx -= (1 + RESTITUTION) * vn * nx;
           disc.vy -= (1 + RESTITUTION) * vn * ny;
-          // Slight random horizontal nudge so disc doesn't sit on top of peg forever
           disc.vx += (Math.random() - 0.5) * 0.4;
-          if (now - lastPegSoundMs > 40) {
+          if (nowMs - lastPegSoundMs > 40) {
             sndPeg(Math.abs(vn));
-            lastPegSoundMs = now;
+            lastPegSoundMs = nowMs;
           }
           peg.flash = 6;
         }
+      }
+    }
+
+    // Bumper collisions
+    for (const b of board.bumpers) {
+      const dx = disc.x - b.x, dy = disc.y - b.y;
+      const d2 = dx * dx + dy * dy;
+      const minD = board.discR + b.r;
+      if (d2 < minD * minD && d2 > 0.001) {
+        const d  = Math.sqrt(d2);
+        const nx = dx / d, ny = dy / d;
+        disc.x = b.x + nx * (minD + 1);
+        disc.y = b.y + ny * (minD + 1);
+        const vn = disc.vx * nx + disc.vy * ny;
+        if (vn < 0) {
+          disc.vx -= (1 + BUMPER_REST) * vn * nx;
+          disc.vy -= (1 + BUMPER_REST) * vn * ny;
+          disc.vx += (Math.random() - 0.5) * 2.0;
+          b.flashTimer = b.flashMax;
+          if (nowMs - lastBumperSoundMs > 80) {
+            sndBumper();
+            lastBumperSoundMs = nowMs;
+          }
+        }
+      }
+    }
+
+    // Spinner collisions
+    for (const sp of board.spinners) {
+      const cos = Math.cos(sp.angle), sin = Math.sin(sp.angle);
+      const hL  = sp.length / 2;
+      const hit = collideSegment(
+        disc.x, disc.y, disc.vx, disc.vy,
+        sp.x - cos * hL, sp.y - sin * hL,
+        sp.x + cos * hL, sp.y + sin * hL,
+        RAIL_REST
+      );
+      if (hit) {
+        disc.x = hit.cx; disc.y = hit.cy;
+        disc.vx = hit.vx; disc.vy = hit.vy;
+        disc.vx += sp.speed * hL * 0.35 * (Math.random() > 0.5 ? 1 : -1);
+        sp.flashTimer = 8;
+        if (nowMs - lastSpinnerSoundMs > 80) {
+          sndSpinner();
+          lastSpinnerSoundMs = nowMs;
+        }
+      }
+    }
+
+    // Flipper collisions
+    for (const f of board.flippers) {
+      const hit = collideSegment(
+        disc.x, disc.y, disc.vx, disc.vy,
+        f.x1, f.y1, f.x2, f.y2, FLIPPER_REST
+      );
+      if (hit) {
+        disc.x = hit.cx; disc.y = hit.cy;
+        disc.vx = hit.vx; disc.vy = hit.vy;
+        f.flashTimer = 8;
+        if (nowMs - lastFlipperSoundMs > 80) {
+          sndFlipper();
+          lastFlipperSoundMs = nowMs;
+        }
+      }
+    }
+
+    // Ricochet rail collisions
+    for (const r of board.ricochetRails) {
+      const hit = collideSegment(
+        disc.x, disc.y, disc.vx, disc.vy,
+        r.x1, r.y1, r.x2, r.y2, RAIL_REST
+      );
+      if (hit) {
+        disc.x = hit.cx; disc.y = hit.cy;
+        disc.vx = hit.vx; disc.vy = hit.vy;
+        r.flashTimer = 6;
+        if (nowMs - lastPegSoundMs > 40) {
+          sndPeg(hit.force);
+          lastPegSoundMs = nowMs;
+        }
+      }
+    }
+
+    // Funnel wall collisions
+    for (const w of board.funnelWalls) {
+      const hit = collideSegment(
+        disc.x, disc.y, disc.vx, disc.vy,
+        w.x1, w.y1, w.x2, w.y2, WALL_REST
+      );
+      if (hit) {
+        disc.x = hit.cx; disc.y = hit.cy;
+        disc.vx = hit.vx; disc.vy = hit.vy;
+        w.flashTimer = 5;
       }
     }
 
@@ -790,27 +1136,94 @@ function updateDisc() {
     if (disc.y + board.discR >= board.bottom) {
       disc.y = board.bottom - board.discR;
       disc.active = false;
-      const raw = (disc.x - board.left) / board.slotWidth;
+      const raw  = (disc.x - board.left) / board.slotWidth;
       const slot = Math.max(0, Math.min(board.numSlots - 1, Math.floor(raw)));
       onLanded(slot);
       break;
     }
   }
 
-  // Tick peg flash timers
-  for (const peg of board.pegs) {
-    if (peg.flash > 0) peg.flash--;
+  // Peg flash tick
+  for (const peg of board.pegs) { if (peg.flash > 0) peg.flash--; }
+
+  // Teleporter check
+  checkTeleporters();
+}
+
+function checkSpeedRails() {
+  if (!disc || !disc.active) return;
+  for (const rail of board.speedRails) {
+    const dx = rail.x2 - rail.x1, dy = rail.y2 - rail.y1;
+    const len2 = dx * dx + dy * dy;
+    if (len2 < 0.001) continue;
+    const t  = Math.max(0, Math.min(1, ((disc.x - rail.x1) * dx + (disc.y - rail.y1) * dy) / len2));
+    const cx = rail.x1 + t * dx, cy = rail.y1 + t * dy;
+    const d  = Math.hypot(disc.x - cx, disc.y - cy);
+    if (d < board.discR + 10) {
+      const len = Math.sqrt(len2);
+      disc.vx += dx / len * 0.8;
+      disc.vy += dy / len * 0.8;
+      rail.flashTimer = 4;
+      const nowMs = Date.now();
+      if (nowMs - lastSpeedRailSndMs > 200) {
+        sndSpeedRail();
+        lastSpeedRailSndMs = nowMs;
+      }
+    }
   }
 }
 
+function checkTeleporters() {
+  if (!disc || !disc.active) return;
+  for (const pair of board.teleporterPairs) {
+    const portals = [pair.a, pair.b];
+    for (let i = 0; i < 2; i++) {
+      const entry = portals[i];
+      const exit  = portals[1 - i];
+      const dx = disc.x - entry.x, dy = disc.y - entry.y;
+      if (dx * dx + dy * dy < entry.r * entry.r) {
+        disc.vx = 0; disc.vy = 0;
+        disc.active = false;
+        disc.teleporting = true;
+        disc.teleportTimer = 12;
+        disc.teleportTx = exit.x;
+        disc.teleportTy = exit.y;
+        entry.flashTimer = 28;
+        exit.flashTimer  = 28;
+        sndTeleportIn();
+        return;
+      }
+    }
+  }
+}
+
+function executeTeleport() {
+  disc.x = disc.teleportTx;
+  disc.y = disc.teleportTy;
+  const angle = Math.PI * (0.3 + Math.random() * 0.4);
+  const speed = 7 + Math.random() * 5;
+  disc.vx = Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1);
+  disc.vy = Math.abs(Math.sin(angle) * speed) + 2;
+  disc.trail = [];
+  disc.active = true;
+  disc.teleporting = false;
+  disc.wasInGravFlip = false;
+  sndTeleportOut();
+  if (disc.y + board.discR >= board.bottom) {
+    disc.active = false;
+    const raw  = (disc.x - board.left) / board.slotWidth;
+    const slot = Math.max(0, Math.min(board.numSlots - 1, Math.floor(raw)));
+    onLanded(slot);
+  }
+}
+
+// ── Landing ───────────────────────────────────────────────────────────────────
 function onLanded(slot) {
   const name  = state.names[slot] || null;
   const color = name ? (state.colorMap[name] || '#888888') : '#888888';
 
   state.results.push({ slot, name, color });
-  if (name) {
-    state.winCounts[name] = (state.winCounts[name] || 0) + 1;
-  }
+  if (name) state.winCounts[name] = (state.winCounts[name] || 0) + 1;
 
   state.winner     = name;
   state.winnerSlot = slot;
@@ -827,13 +1240,10 @@ function onLanded(slot) {
   state.dropsLeft--;
   if (state.dropsLeft > 0) {
     if (state.dropMode === 'random') {
-      setTimeout(() => {
-        if (state.dropping) doNextDrop();
-      }, 2800);
+      setTimeout(() => { if (state.dropping) doNextDrop(); }, 2800);
     } else {
-      // click mode: wait for next click/button press
       state.awaitingClick = true;
-      state.dropping = true; // still in session
+      state.dropping = true;
       updateDropBtn();
     }
   } else {
@@ -874,15 +1284,12 @@ function spawnConfetti(slot, color) {
   for (let i = 0; i < 48; i++) {
     const c = COLORS[Math.floor(Math.random() * COLORS.length)];
     state.confetti.push({
-      x:    cx + (Math.random() - 0.5) * 50,
-      y:    cy,
-      vx:   (Math.random() - 0.5) * 7,
-      vy:   -(Math.random() * 10 + 3),
-      col:  c,
-      rot:  Math.random() * Math.PI * 2,
+      x: cx + (Math.random() - 0.5) * 50, y: cy,
+      vx: (Math.random() - 0.5) * 7,
+      vy: -(Math.random() * 10 + 3),
+      col: c, rot: Math.random() * Math.PI * 2,
       vrot: (Math.random() - 0.5) * 0.25,
-      sz:   Math.random() * 7 + 4,
-      life: 1.0,
+      sz: Math.random() * 7 + 4, life: 1.0,
     });
   }
 }
@@ -890,13 +1297,25 @@ function spawnConfetti(slot, color) {
 function tickConfetti() {
   for (let i = state.confetti.length - 1; i >= 0; i--) {
     const c = state.confetti[i];
-    c.x  += c.vx;  c.y += c.vy;
-    c.vy += 0.22;  c.vx *= 0.98;
+    c.x += c.vx; c.y += c.vy;
+    c.vy += 0.22; c.vx *= 0.98;
     c.rot += c.vrot;
     c.life -= 0.012;
-    if (c.life <= 0 || c.y > canvas.clientHeight + 20) {
-      state.confetti.splice(i, 1);
-    }
+    if (c.life <= 0 || c.y > canvas.clientHeight + 20) state.confetti.splice(i, 1);
+  }
+}
+
+// ── Obstacle tick ─────────────────────────────────────────────────────────────
+function tickObstacles() {
+  for (const b  of board.bumpers)       { if (b.flashTimer  > 0) b.flashTimer--;  }
+  for (const sp of board.spinners)      { sp.angle += sp.speed / 60; if (sp.flashTimer > 0) sp.flashTimer--; }
+  for (const f  of board.flippers)      { if (f.flashTimer  > 0) f.flashTimer--;  }
+  for (const r  of board.ricochetRails) { if (r.flashTimer  > 0) r.flashTimer--;  }
+  for (const w  of board.funnelWalls)   { if (w.flashTimer  > 0) w.flashTimer--;  }
+  for (const sr of board.speedRails)    { if (sr.flashTimer > 0) sr.flashTimer--; }
+  for (const pair of board.teleporterPairs) {
+    if (pair.a.flashTimer > 0) pair.a.flashTimer--;
+    if (pair.b.flashTimer > 0) pair.b.flashTimer--;
   }
 }
 
@@ -904,9 +1323,7 @@ function tickConfetti() {
 let audioCtx = null;
 
 function ensureAudio() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
   return audioCtx;
 }
@@ -932,20 +1349,44 @@ function sndPeg(force) {
   const f = 280 + Math.min(force, 12) * 30;
   tone(f, 'triangle', 0.12 + Math.min(force, 8) * 0.012, 0.08, f * 0.4);
 }
-
-function sndWall() {
-  tone(140, 'sine', 0.08, 0.14, 80);
-}
-
+function sndWall() { tone(140, 'sine', 0.08, 0.14, 80); }
 function sndLanding() {
   tone(180, 'sine', 0.25, 0.28, 90);
   tone(90,  'sine', 0.15, 0.3,  60, 0.04);
 }
-
 function sndWinner() {
   const notes = [523.25, 659.25, 783.99, 1046.5];
   notes.forEach((f, i) => tone(f, 'triangle', 0.18, 0.35, f * 0.9, i * 0.11));
 }
+function sndBumper() {
+  tone(80,  'sine', 0.38, 0.25, 40);
+  tone(160, 'sine', 0.14, 0.12, 80, 0.02);
+}
+function sndSpinner() { tone(820, 'sine', 0.11, 0.09, 380); }
+function sndFlipper() {
+  if (!state.soundOn) return;
+  try {
+    const ac = ensureAudio();
+    const t  = ac.currentTime;
+    const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.07), ac.sampleRate);
+    const d   = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 1.8);
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const gn = ac.createGain();
+    gn.gain.setValueAtTime(0.22, t);
+    gn.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+    src.connect(gn); gn.connect(ac.destination);
+    src.start(t);
+  } catch(e) {}
+}
+function sndTeleportIn()  { tone(200,  'sine', 0.20, 0.18, 2200); }
+function sndTeleportOut() { tone(2200, 'sine', 0.20, 0.18, 180); }
+function sndGravFlip() {
+  tone(320, 'sine', 0.14, 0.30, 140);
+  tone(140, 'sine', 0.10, 0.30, 320, 0.15);
+}
+function sndSpeedRail() { tone(460, 'sine', 0.08, 0.07, 920); }
 
 // ── Drawing ───────────────────────────────────────────────────────────────────
 const canvas = document.getElementById('board-canvas');
@@ -955,12 +1396,9 @@ let dpr = 1;
 function resizeCanvas() {
   dpr = window.devicePixelRatio || 1;
   const area = document.getElementById('board-area');
-  const W = area.clientWidth;
-  const H = area.clientHeight;
-  canvas.width  = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
+  const W = area.clientWidth, H = area.clientHeight;
+  canvas.width  = W * dpr; canvas.height = H * dpr;
+  canvas.style.width  = W + 'px'; canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
   computeBoard();
 }
@@ -985,7 +1423,6 @@ function hexRgba(hex, a) {
 }
 
 function drawBoard() {
-  // Board bg
   ctx.save();
   ctx.shadowColor = 'rgba(124,92,252,0.12)';
   ctx.shadowBlur  = 40;
@@ -997,17 +1434,32 @@ function drawBoard() {
   ctx.fill();
   ctx.restore();
 
-  // Board border
   ctx.strokeStyle = 'rgba(124,92,252,0.22)';
   ctx.lineWidth = 1;
   rrect(board.left, board.top, board.width, board.bottom - board.top, 10);
   ctx.stroke();
 
-  // Subtle scanlines
   ctx.fillStyle = 'rgba(0,0,0,0.025)';
   for (let y = board.top + 2; y < board.bottom; y += 4) {
     ctx.fillRect(board.left + 1, y, board.width - 2, 1);
   }
+
+  // Zone labels (subtle)
+  ctx.save();
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  const zoneLabels = [
+    { y: board.top + board.height * 0.01, text: 'ENTRY', col: 'rgba(124,92,252,0.25)' },
+    { y: board.top + board.height * 0.21, text: 'CHAOS', col: 'rgba(255,80,50,0.25)' },
+    { y: board.top + board.height * 0.51, text: 'CHANNEL', col: 'rgba(80,180,255,0.22)' },
+    { y: board.top + board.height * 0.76, text: 'LANDING', col: 'rgba(80,255,150,0.22)' },
+  ];
+  for (const lbl of zoneLabels) {
+    ctx.fillStyle = lbl.col;
+    ctx.fillText(lbl.text, board.right - 4, lbl.y);
+  }
+  ctx.restore();
 }
 
 function drawPegs() {
@@ -1021,9 +1473,7 @@ function drawPegs() {
       ctx.shadowColor = 'rgba(0,0,0,0.4)';
       ctx.shadowBlur  = 4;
     }
-
-    const hx = peg.x - r * 0.32;
-    const hy = peg.y - r * 0.32;
+    const hx = peg.x - r * 0.32, hy = peg.y - r * 0.32;
     const grad = ctx.createRadialGradient(hx, hy, r * 0.05, peg.x, peg.y, r);
     if (peg.flash > 0) {
       const t = peg.flash / 6;
@@ -1035,29 +1485,223 @@ function drawPegs() {
       grad.addColorStop(0.45, '#8888b8');
       grad.addColorStop(1, '#404068');
     }
-
     ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(peg.x, peg.y, r, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Highlight
+    ctx.beginPath(); ctx.arc(peg.x, peg.y, r, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
     ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.beginPath(); ctx.arc(peg.x - r * 0.28, peg.y - r * 0.28, r * 0.38, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawBumpers() {
+  for (const b of board.bumpers) {
+    const fl = b.flashTimer > 0;
+    ctx.save();
+    ctx.shadowColor = fl ? '#ffffff' : 'rgba(255,100,50,0.7)';
+    ctx.shadowBlur  = fl ? 38 : 14;
+
+    const grad = ctx.createRadialGradient(b.x - b.r * 0.3, b.y - b.r * 0.3, 0, b.x, b.y, b.r);
+    if (fl) {
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.3, '#ffaa44');
+      grad.addColorStop(1,   '#cc2200');
+    } else {
+      grad.addColorStop(0, '#ff8855');
+      grad.addColorStop(0.6, '#cc3300');
+      grad.addColorStop(1,   '#881100');
+    }
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = grad; ctx.fill();
+
+    ctx.strokeStyle = fl ? 'rgba(255,220,120,0.95)' : 'rgba(255,130,70,0.65)';
+    ctx.lineWidth   = 2;
+    ctx.stroke();
+
+    ctx.shadowBlur  = 0;
+    ctx.fillStyle   = fl ? '#ffffff' : 'rgba(255,210,190,0.75)';
+    ctx.font        = `bold ${Math.max(10, b.r * 0.52)}px system-ui`;
+    ctx.textAlign   = 'center';
+    ctx.textBaseline= 'middle';
+    ctx.fillText('+', b.x, b.y);
+    ctx.restore();
+  }
+}
+
+function drawSpinners() {
+  for (const sp of board.spinners) {
+    const fl = sp.flashTimer > 0;
+    ctx.save();
+    ctx.translate(sp.x, sp.y);
+    ctx.rotate(sp.angle);
+    ctx.shadowColor = fl ? '#ffffff' : 'rgba(100,180,255,0.55)';
+    ctx.shadowBlur  = fl ? 22 : 9;
+
+    const grad = ctx.createLinearGradient(-sp.length/2, 0, sp.length/2, 0);
+    grad.addColorStop(0,   'rgba(50,110,210,0.55)');
+    grad.addColorStop(0.5, fl ? 'rgba(255,255,255,0.95)' : 'rgba(130,210,255,0.92)');
+    grad.addColorStop(1,   'rgba(50,110,210,0.55)');
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(peg.x - r * 0.28, peg.y - r * 0.28, r * 0.38, 0, Math.PI * 2);
+    ctx.rect(-sp.length/2, -4, sp.length, 8);
     ctx.fill();
 
+    ctx.shadowBlur = 0;
+    ctx.fillStyle  = fl ? '#ffffff' : '#80c8ff';
+    ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawFlippers() {
+  for (const f of board.flippers) {
+    const fl = f.flashTimer > 0;
+    ctx.save();
+    ctx.shadowColor = fl ? '#ffffff' : 'rgba(200,160,255,0.45)';
+    ctx.shadowBlur  = fl ? 18 : 7;
+    ctx.lineCap     = 'round';
+    ctx.lineWidth   = 10;
+    ctx.strokeStyle = fl ? '#ffffff' : '#a060e8';
+    ctx.beginPath(); ctx.moveTo(f.x1, f.y1); ctx.lineTo(f.x2, f.y2); ctx.stroke();
+    ctx.shadowBlur  = 0;
+    ctx.lineWidth   = 4;
+    ctx.strokeStyle = fl ? 'rgba(255,255,255,0.7)' : 'rgba(220,190,255,0.6)';
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawRicochetRails() {
+  for (const r of board.ricochetRails) {
+    const fl = r.flashTimer > 0;
+    ctx.save();
+    ctx.shadowColor = fl ? '#ffffff' : 'rgba(255,200,50,0.45)';
+    ctx.shadowBlur  = fl ? 16 : 6;
+    ctx.lineCap     = 'round';
+    ctx.lineWidth   = 7;
+    ctx.strokeStyle = fl ? '#ffee80' : 'rgba(255,185,35,0.78)';
+    ctx.beginPath(); ctx.moveTo(r.x1, r.y1); ctx.lineTo(r.x2, r.y2); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawFunnelWalls() {
+  for (const w of board.funnelWalls) {
+    const fl = w.flashTimer > 0;
+    ctx.save();
+    ctx.shadowColor = fl ? '#ffffff' : 'rgba(50,220,160,0.45)';
+    ctx.shadowBlur  = fl ? 16 : 6;
+    ctx.lineCap     = 'round';
+    ctx.lineWidth   = 7;
+    ctx.strokeStyle = fl ? '#88ffcc' : 'rgba(50,210,140,0.78)';
+    ctx.beginPath(); ctx.moveTo(w.x1, w.y1); ctx.lineTo(w.x2, w.y2); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawTeleporters() {
+  const t = Date.now() * 0.003;
+  for (const pair of board.teleporterPairs) {
+    // Connection line
+    ctx.save();
+    ctx.strokeStyle = 'rgba(200,80,255,0.18)';
+    ctx.lineWidth   = 1;
+    ctx.setLineDash([5, 10]);
+    ctx.beginPath(); ctx.moveTo(pair.a.x, pair.a.y); ctx.lineTo(pair.b.x, pair.b.y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    for (const portal of [pair.a, pair.b]) {
+      const fl    = portal.flashTimer > 0;
+      const pulse = (Math.sin(t * 2.5) + 1) / 2;
+      ctx.save();
+      ctx.shadowColor = '#ff44ff';
+      ctx.shadowBlur  = fl ? 45 : 12 + pulse * 10;
+
+      ctx.strokeStyle = fl ? '#ffffff' : `rgba(255,80,255,${0.62 + pulse * 0.28})`;
+      ctx.lineWidth   = fl ? 3.5 : 2.5;
+      ctx.beginPath(); ctx.arc(portal.x, portal.y, portal.r, 0, Math.PI * 2); ctx.stroke();
+
+      ctx.shadowBlur  = 0;
+      ctx.strokeStyle = `rgba(200,100,255,${0.38 + pulse * 0.2})`;
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath(); ctx.arc(portal.x, portal.y, portal.r * 0.58, 0, Math.PI * 2); ctx.stroke();
+
+      ctx.fillStyle = fl ? '#ffffff' : '#cc66ff';
+      ctx.beginPath(); ctx.arc(portal.x, portal.y, portal.r * 0.22, 0, Math.PI * 2); ctx.fill();
+
+      // Orbiting particles
+      for (let i = 0; i < 4; i++) {
+        const a  = t * 3.5 + i * Math.PI * 0.5;
+        const px = portal.x + Math.cos(a) * portal.r * 0.82;
+        const py = portal.y + Math.sin(a) * portal.r * 0.82;
+        ctx.fillStyle = `rgba(210,120,255,${0.6 + pulse * 0.3})`;
+        ctx.beginPath(); ctx.arc(px, py, 2.2, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+}
+
+function drawSpeedRails() {
+  const t = Date.now() * 0.005;
+  for (const r of board.speedRails) {
+    const fl    = r.flashTimer > 0;
+    const pulse = (Math.sin(t * 4) + 1) / 2;
+    ctx.save();
+    ctx.shadowColor = '#44ffaa';
+    ctx.shadowBlur  = fl ? 28 : 9 + pulse * 7;
+    ctx.lineCap     = 'round';
+    ctx.lineWidth   = 8;
+    ctx.strokeStyle = fl ? '#ffffff' : `rgba(50,255,155,${0.68 + pulse * 0.22})`;
+    ctx.beginPath(); ctx.moveTo(r.x1, r.y1); ctx.lineTo(r.x2, r.y2); ctx.stroke();
+
+    // Arrow
+    ctx.shadowBlur  = 0;
+    const dx = r.x2 - r.x1, dy = r.y2 - r.y1;
+    const ln = Math.hypot(dx, dy) || 1;
+    const nx = dx/ln, ny = dy/ln;
+    const mx = (r.x1+r.x2)/2, my = (r.y1+r.y2)/2;
+    ctx.strokeStyle = 'rgba(200,255,230,0.75)';
+    ctx.lineWidth   = 2;
+    const al = 8;
+    ctx.beginPath();
+    ctx.moveTo(mx - nx*al, my - ny*al);
+    ctx.lineTo(mx + nx*al, my + ny*al);
+    ctx.lineTo(mx + nx*al - ny*6, my + ny*al + nx*6);
+    ctx.moveTo(mx + nx*al, my + ny*al);
+    ctx.lineTo(mx + nx*al + ny*6, my + ny*al - nx*6);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawGravFlipZones() {
+  if (!board.gravFlipZones || !board.gravFlipZones.length) return;
+  const t = Date.now() * 0.003;
+  for (const z of board.gravFlipZones) {
+    const active = disc && disc.gravFlipTimer > 0;
+    const pulse  = (Math.sin(t * (active ? 7 : 2)) + 1) / 2;
+    ctx.save();
+    ctx.fillStyle   = `rgba(255,${active?170:50},${active?80:50},${active ? 0.12+pulse*0.09 : 0.04+pulse*0.03})`;
+    ctx.strokeStyle = `rgba(255,${active?190:80},${active?90:80},${active ? 0.75+pulse*0.25 : 0.28+pulse*0.14})`;
+    ctx.lineWidth   = active ? 2.2 : 1.5;
+    ctx.setLineDash(active ? [] : [4, 6]);
+    ctx.beginPath(); ctx.rect(z.x, z.y, z.w, z.h);
+    ctx.fill(); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle   = `rgba(255,${active?210:130},${active?130:130},${active ? 0.9 : 0.38+pulse*0.18})`;
+    ctx.font        = `${active ? 'bold ' : ''}10px system-ui`;
+    ctx.textAlign   = 'center';
+    ctx.textBaseline= 'middle';
+    ctx.fillText('↑ GRAVITY FLIP ↑', z.x + z.w/2, z.y + z.h/2);
     ctx.restore();
   }
 }
 
 function drawSlots() {
-  const sw  = board.slotWidth;
-  const st  = board.slotTop;
-  const sh  = board.slotH;
-  const ns  = board.numSlots;
-  const ct  = state.celebTicks;
+  const sw = board.slotWidth, st = board.slotTop, sh = board.slotH;
+  const ns = board.numSlots, ct = state.celebTicks;
 
   for (let i = 0; i < ns; i++) {
     const x    = board.left + i * sw;
@@ -1067,12 +1711,9 @@ function drawSlots() {
     const pulse= win ? (Math.sin(ct * 0.18) * 0.5 + 0.5) : 0;
 
     ctx.save();
-
-    // Background
     ctx.fillStyle = hexRgba(col, win ? 0.42 + pulse * 0.2 : 0.12);
     ctx.fillRect(x + 1, st, sw - 2, sh);
 
-    // Glow on winner
     if (win) {
       ctx.shadowColor = col;
       ctx.shadowBlur  = 18 + pulse * 18;
@@ -1082,58 +1723,44 @@ function drawSlots() {
       ctx.shadowBlur  = 0;
     }
 
-    // Dividers
     ctx.strokeStyle = hexRgba(col, win ? 0.6 : 0.25);
     ctx.lineWidth   = 1;
-    ctx.beginPath();
-    ctx.moveTo(x, st); ctx.lineTo(x, st + sh);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, st); ctx.lineTo(x, st + sh); ctx.stroke();
     if (i === ns - 1) {
-      ctx.beginPath();
-      ctx.moveTo(x + sw, st); ctx.lineTo(x + sw, st + sh);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + sw, st); ctx.lineTo(x + sw, st + sh); ctx.stroke();
     }
 
-    // Name text
     if (name) {
       const fs = Math.max(8, Math.min(14, sw * 0.22, sh * 0.32));
       ctx.font = `700 ${fs}px 'Segoe UI', system-ui, sans-serif`;
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
-
-      ctx.beginPath();
-      ctx.rect(x + 2, st + 1, sw - 4, sh - 2);
-      ctx.clip();
-
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur  = 4;
+      ctx.beginPath(); ctx.rect(x + 2, st + 1, sw - 4, sh - 2); ctx.clip();
+      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 4;
       ctx.fillStyle   = win ? '#ffffff' : col;
       ctx.fillText(name, x + sw / 2, st + sh / 2);
     }
-
     ctx.restore();
   }
 }
 
 function drawTrail() {
-  if (!disc || disc.trail.length < 2) return;
+  if (!disc || disc.teleporting || disc.trail.length < 2) return;
   for (let i = 0; i < disc.trail.length; i++) {
     const t = i / disc.trail.length;
     const p = disc.trail[i];
     const r = board.discR * t * 0.75;
     if (r < 1) continue;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(124,92,252,${t * 0.28})`;
     ctx.fill();
   }
 }
 
 function drawDisc() {
-  if (!disc) return;
+  if (!disc || disc.teleporting) return;
   const r  = board.discR;
-  const hx = disc.x - r * 0.28;
-  const hy = disc.y - r * 0.32;
+  const hx = disc.x - r * 0.28, hy = disc.y - r * 0.32;
 
   ctx.save();
   ctx.shadowColor = 'rgba(124,92,252,0.85)';
@@ -1143,27 +1770,21 @@ function drawDisc() {
   grad.addColorStop(0, '#bca8ff');
   grad.addColorStop(0.45, '#7c5cfc');
   grad.addColorStop(1, '#4a36cc');
-
   ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(disc.x, disc.y, r, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(disc.x, disc.y, r, 0, Math.PI * 2); ctx.fill();
 
   ctx.shadowBlur = 0;
   ctx.fillStyle  = 'rgba(255,255,255,0.38)';
-  ctx.beginPath();
-  ctx.arc(disc.x - r * 0.24, disc.y - r * 0.28, r * 0.4, 0, Math.PI * 2);
-  ctx.fill();
-
+  ctx.beginPath(); ctx.arc(disc.x - r * 0.24, disc.y - r * 0.28, r * 0.4, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
 function drawWinnerBanner() {
   if (state.celebTicks <= 0 || !state.winner) return;
-  const W = canvas.clientWidth;
-  const fadeIn  = Math.min(1, (220 - state.celebTicks) / 18);
-  const fadeOut = state.celebTicks < 45 ? state.celebTicks / 45 : 1;
-  const alpha   = fadeIn * fadeOut;
+  const W      = canvas.clientWidth;
+  const fadeIn = Math.min(1, (220 - state.celebTicks) / 18);
+  const fadeOut= state.celebTicks < 45 ? state.celebTicks / 45 : 1;
+  const alpha  = fadeIn * fadeOut;
   if (alpha <= 0) return;
 
   const bw = Math.min(480, W * 0.75);
@@ -1173,35 +1794,24 @@ function drawWinnerBanner() {
 
   ctx.save();
   ctx.globalAlpha = alpha;
+  ctx.fillStyle   = 'rgba(5,5,15,0.88)';
+  rrect(bx, by, bw, bh, 14); ctx.fill();
 
-  // Shadow fill
-  ctx.fillStyle = 'rgba(5,5,15,0.88)';
-  rrect(bx, by, bw, bh, 14);
-  ctx.fill();
+  ctx.shadowColor = '#ffd700'; ctx.shadowBlur  = 22;
+  ctx.strokeStyle = 'rgba(255,215,0,0.85)'; ctx.lineWidth = 2;
+  rrect(bx, by, bw, bh, 14); ctx.stroke();
+  ctx.shadowBlur  = 0;
 
-  // Gold border glow
-  ctx.shadowColor = '#ffd700';
-  ctx.shadowBlur  = 22;
-  ctx.strokeStyle = 'rgba(255,215,0,0.85)';
-  ctx.lineWidth   = 2;
-  rrect(bx, by, bw, bh, 14);
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // "WINNER" label
   ctx.fillStyle    = '#ffd700';
   ctx.font         = '700 12px "Segoe UI", system-ui, sans-serif';
   ctx.textAlign    = 'center';
   ctx.textBaseline = 'middle';
-  ctx.letterSpacing = '2px';
   ctx.fillText('🏆 WINNER', bx + bw / 2, by + bh * 0.28);
 
-  // Name
   ctx.fillStyle = '#ffffff';
   const fs = Math.min(30, bw * 0.07);
   ctx.font = `700 ${fs}px "Segoe UI", system-ui, sans-serif`;
   ctx.fillText(state.winner, bx + bw / 2, by + bh * 0.68);
-
   ctx.restore();
 }
 
@@ -1209,18 +1819,16 @@ function drawConfetti() {
   for (const c of state.confetti) {
     ctx.save();
     ctx.globalAlpha = c.life;
-    ctx.translate(c.x, c.y);
-    ctx.rotate(c.rot);
+    ctx.translate(c.x, c.y); ctx.rotate(c.rot);
     ctx.fillStyle = c.col;
-    ctx.fillRect(-c.sz / 2, -c.sz / 4, c.sz, c.sz / 2);
+    ctx.fillRect(-c.sz/2, -c.sz/4, c.sz, c.sz/2);
     ctx.restore();
   }
 }
 
 function drawIdleHint() {
   if (state.names.length === 0) {
-    const W = canvas.clientWidth;
-    const H = canvas.clientHeight;
+    const W = canvas.clientWidth, H = canvas.clientHeight;
     ctx.save();
     ctx.fillStyle    = 'rgba(136,136,170,0.55)';
     ctx.font         = '400 14px "Segoe UI", system-ui, sans-serif';
@@ -1230,66 +1838,43 @@ function drawIdleHint() {
     ctx.restore();
     return;
   }
-
   if (!state.dropping && !disc) {
-    const W = canvas.clientWidth;
+    const W     = canvas.clientWidth;
     const pulse = (Math.sin(Date.now() * 0.0028) + 1) / 2;
     ctx.save();
     ctx.fillStyle    = `rgba(124,92,252,${0.35 + pulse * 0.25})`;
     ctx.font         = '600 12px "Segoe UI", system-ui, sans-serif';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(
-      state.dropMode === 'click' ? 'Press Space or click Drop Disc' : 'Press Space or click Drop Disc',
-      W / 2, board.top - 8
-    );
+    ctx.fillText('Press Space or click Drop Disc', W / 2, board.top - 8);
     ctx.restore();
   }
-
-  // Awaiting next click in click mode
   if (state.awaitingClick && !disc?.active) {
-    const W = canvas.clientWidth;
+    const W     = canvas.clientWidth;
     const pulse = (Math.sin(Date.now() * 0.005) + 1) / 2;
     ctx.save();
     ctx.fillStyle    = `rgba(124,92,252,${0.5 + pulse * 0.3})`;
     ctx.font         = '700 13px "Segoe UI", system-ui, sans-serif';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(
-      `Drop ${state.dropsLeft} more — click top of board or press Space`,
-      W / 2, board.top - 8
-    );
+    ctx.fillText(`Drop ${state.dropsLeft} more — click top of board or press Space`, W / 2, board.top - 8);
     ctx.restore();
   }
 }
 
 function drawDropCursor(xNorm) {
-  if (!state.awaitingClick || disc?.active) return;
-  if (xNorm === null) return;
-  const x = board.left + xNorm * board.width;
+  if (!state.awaitingClick || disc?.active || xNorm === null) return;
+  const x     = board.left + xNorm * board.width;
   const pulse = (Math.sin(Date.now() * 0.006) + 1) / 2;
 
   ctx.save();
-  ctx.shadowColor = '#7c5cfc';
-  ctx.shadowBlur  = 6 + pulse * 8;
+  ctx.shadowColor = '#7c5cfc'; ctx.shadowBlur = 6 + pulse * 8;
   ctx.strokeStyle = `rgba(124,92,252,${0.55 + pulse * 0.3})`;
-  ctx.lineWidth   = 2;
-  ctx.setLineDash([5, 5]);
-  ctx.beginPath();
-  ctx.moveTo(x, board.top);
-  ctx.lineTo(x, board.top + board.height * 0.18);
-  ctx.stroke();
+  ctx.lineWidth   = 2; ctx.setLineDash([5, 5]);
+  ctx.beginPath(); ctx.moveTo(x, board.top); ctx.lineTo(x, board.top + board.height * 0.18); ctx.stroke();
   ctx.setLineDash([]);
-
-  // Drop arrow
-  ctx.fillStyle = '#7c5cfc';
-  ctx.shadowBlur = 10;
-  ctx.beginPath();
-  ctx.moveTo(x - 7, board.top - 2);
-  ctx.lineTo(x + 7, board.top - 2);
-  ctx.lineTo(x, board.top + 12);
-  ctx.closePath();
-  ctx.fill();
+  ctx.fillStyle  = '#7c5cfc'; ctx.shadowBlur = 10;
+  ctx.beginPath(); ctx.moveTo(x - 7, board.top - 2); ctx.lineTo(x + 7, board.top - 2); ctx.lineTo(x, board.top + 12); ctx.closePath(); ctx.fill();
   ctx.restore();
 }
 
@@ -1297,28 +1882,40 @@ function drawDropCursor(xNorm) {
 let hoverXNorm = null;
 
 function frame() {
-  const W = canvas.clientWidth;
-  const H = canvas.clientHeight;
+  const W = canvas.clientWidth, H = canvas.clientHeight;
   ctx.clearRect(0, 0, W, H);
 
-  drawBoard();
-  drawPegs();
-  drawSlots();
+  tickObstacles();
 
+  // Disc update / teleport countdown
   if (disc?.active) {
     updateDisc();
+  } else if (disc?.teleporting) {
+    if (disc.teleportTimer > 0) {
+      disc.teleportTimer--;
+    } else {
+      executeTeleport();
+    }
   }
 
+  // Draw order: bg → obstacles → pegs → disc → fx
+  drawBoard();
+  drawGravFlipZones();
+  drawSpeedRails();
+  drawTeleporters();
+  drawFunnelWalls();
+  drawRicochetRails();
+  drawFlippers();
+  drawSpinners();
+  drawBumpers();
+  drawPegs();
+  drawSlots();
   drawTrail();
-  if (disc) drawDisc();
-
+  drawDisc();
   tickConfetti();
   drawConfetti();
 
-  if (state.celebTicks > 0) {
-    drawWinnerBanner();
-    state.celebTicks--;
-  }
+  if (state.celebTicks > 0) { drawWinnerBanner(); state.celebTicks--; }
 
   drawIdleHint();
   if (state.awaitingClick) drawDropCursor(hoverXNorm);
@@ -1330,27 +1927,20 @@ function frame() {
 canvas.addEventListener('mousemove', (e) => {
   if (!state.awaitingClick) { hoverXNorm = null; return; }
   const rect = canvas.getBoundingClientRect();
-  const x    = e.clientX - rect.left;
-  const y    = e.clientY - rect.top;
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
   if (y < board.top + 30) {
     hoverXNorm = Math.max(0, Math.min(1, (x - board.left) / board.width));
     canvas.style.cursor = 'crosshair';
-  } else {
-    hoverXNorm = null;
-    canvas.style.cursor = 'default';
-  }
+  } else { hoverXNorm = null; canvas.style.cursor = 'default'; }
 });
 
 canvas.addEventListener('mouseleave', () => { hoverXNorm = null; });
 
 canvas.addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect();
-  const x    = e.clientX - rect.left;
-  const y    = e.clientY - rect.top;
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
   if (y > board.top + 30) return;
   const xFrac = Math.max(0, Math.min(1, (x - board.left) / board.width));
-  if (xFrac < 0 || xFrac > 1) return;
-
   if (state.awaitingClick && !disc?.active) {
     doNextDrop(xFrac);
   } else if (!state.dropping && state.names.length > 0 && state.dropMode === 'click') {
@@ -1359,9 +1949,7 @@ canvas.addEventListener('click', (e) => {
 });
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
-function setStatus(msg) {
-  document.getElementById('status-bar').textContent = msg;
-}
+function setStatus(msg) { document.getElementById('status-bar').textContent = msg; }
 
 function updateDropBtn() {
   const btn = document.getElementById('drop-btn');
@@ -1379,11 +1967,7 @@ function updateDropBtn() {
 
 function updateDropHint() {
   const hint = document.getElementById('drop-hint');
-  if (state.awaitingClick && !disc?.active) {
-    hint.textContent = 'Click near the top of the board to drop';
-  } else {
-    hint.textContent = '';
-  }
+  hint.textContent = (state.awaitingClick && !disc?.active) ? 'Click near the top of the board to drop' : '';
 }
 
 function renderNameList() {
@@ -1393,7 +1977,7 @@ function renderNameList() {
   ul.innerHTML = '';
   state.names.forEach((name, i) => {
     const color = state.colorMap[name] || COLORS[i % COLORS.length];
-    const li    = document.createElement('li');
+    const li = document.createElement('li');
     li.className = 'name-item';
     li.innerHTML = `
       <span class="color-dot" style="background:${color}"></span>
@@ -1414,13 +1998,8 @@ function renderResults() {
   const sec  = document.getElementById('results-section');
   const list = document.getElementById('results-list');
   const tal  = document.getElementById('tally-list');
-
-  if (state.results.length === 0) {
-    sec.style.display = 'none';
-    return;
-  }
+  if (state.results.length === 0) { sec.style.display = 'none'; return; }
   sec.style.display = '';
-
   list.innerHTML = '';
   state.results.forEach((r, i) => {
     const d = document.createElement('div');
@@ -1432,7 +2011,6 @@ function renderResults() {
       <span class="result-slot">slot ${r.slot + 1}</span>`;
     list.appendChild(d);
   });
-
   if (state.numDrops > 1) {
     tal.innerHTML = '';
     const sorted = Object.entries(state.winCounts).sort((a, b) => b[1] - a[1]);
@@ -1450,17 +2028,13 @@ function renderResults() {
 }
 
 function escHtml(s) {
-  return String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function addName(raw) {
   const name = raw.trim().slice(0, 30);
   if (!name || state.names.includes(name)) return;
-  if (!state.colorMap[name]) {
-    state.colorMap[name] = COLORS[state.names.length % COLORS.length];
-  }
+  if (!state.colorMap[name]) state.colorMap[name] = COLORS[state.names.length % COLORS.length];
   state.names.push(name);
   savePersist();
   renderNameList();
@@ -1487,28 +2061,20 @@ window.addEventListener('message', (e) => {
       if (d.name) removeName(d.name);
       break;
     case 'plinko:clear':
-      state.names = [];
-      state.colorMap = {};
-      savePersist();
-      renderNameList();
+      state.names = []; state.colorMap = {};
+      savePersist(); renderNameList();
       break;
     case 'plinko:drop': {
       if (state.dropping && !state.awaitingClick) break;
       if (state.names.length === 0) break;
       if (state.awaitingClick) {
-        const xFrac = (d.position !== undefined) ? d.position : Math.random();
-        doNextDrop(xFrac);
+        doNextDrop(d.position !== undefined ? d.position : Math.random());
       } else {
-        if (d.position !== undefined) {
-          state.dropMode = 'click';
-          state.awaitingClick = false;
-        }
+        if (d.position !== undefined) { state.dropMode = 'click'; state.awaitingClick = false; }
         state.dropsLeft = state.numDrops;
-        state.results   = [];
-        state.winCounts = {};
+        state.results = []; state.winCounts = {};
         renderResults();
-        const xFrac = (d.position !== undefined) ? d.position : Math.random();
-        dropDisc(xFrac);
+        dropDisc(d.position !== undefined ? d.position : Math.random());
       }
       break;
     }
@@ -1525,7 +2091,6 @@ function savePersist() {
     localStorage.setItem('plinko_colorMap', JSON.stringify(state.colorMap));
   } catch(e) {}
 }
-
 function loadPersist() {
   try {
     const n = localStorage.getItem('plinko_names');
@@ -1538,24 +2103,15 @@ function loadPersist() {
 // ── URL parameters ────────────────────────────────────────────────────────────
 function applyUrlParams() {
   const p = new URLSearchParams(location.search);
-
-  if (p.get('bg') === 'transparent') {
-    document.body.classList.add('transparent-bg');
-  }
-
-  const theme = p.get('theme') || 'dark';
-  applyTheme(theme);
-
+  if (p.get('bg') === 'transparent') document.body.classList.add('transparent-bg');
+  applyTheme(p.get('theme') || 'dark');
   if (p.get('admin') === 'false') {
     state.adminVisible = false;
     document.getElementById('admin-panel').classList.add('hidden');
     document.getElementById('admin-toggle').style.display = 'none';
   }
-
   const names = p.get('names');
-  if (names) {
-    names.split(',').forEach(n => n.trim() && addName(n.trim()));
-  }
+  if (names) names.split(',').forEach(n => n.trim() && addName(n.trim()));
 }
 
 function applyTheme(t) {
@@ -1566,23 +2122,20 @@ function applyTheme(t) {
 
 // ── Event wiring ──────────────────────────────────────────────────────────────
 function wireUI() {
-  // Admin toggle
   document.getElementById('admin-toggle').addEventListener('click', () => {
     state.adminVisible = !state.adminVisible;
     document.getElementById('admin-panel').classList.toggle('hidden', !state.adminVisible);
   });
 
-  // Drop button
   document.getElementById('drop-btn').addEventListener('click', () => {
     ensureAudio();
     if (state.awaitingClick && !disc?.active) {
-      doNextDrop(state.dropMode === 'click' ? Math.random() : Math.random());
+      doNextDrop(Math.random());
     } else if (!state.dropping) {
       startSession();
     }
   });
 
-  // Drop mode buttons
   document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       state.dropMode = btn.dataset.mode;
@@ -1590,7 +2143,6 @@ function wireUI() {
     });
   });
 
-  // Drops count buttons
   document.querySelectorAll('.drops-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       state.numDrops = parseInt(btn.dataset.drops, 10);
@@ -1598,7 +2150,6 @@ function wireUI() {
     });
   });
 
-  // Row count buttons
   document.querySelectorAll('.rows-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       state.boardRows = parseInt(btn.dataset.rows, 10);
@@ -1607,34 +2158,32 @@ function wireUI() {
     });
   });
 
-  // Add name
-  const nameInput = document.getElementById('name-input');
-  document.getElementById('add-btn').addEventListener('click', () => {
-    ensureAudio();
-    addName(nameInput.value);
-    nameInput.value = '';
-    nameInput.focus();
-  });
-  nameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      addName(nameInput.value);
-      nameInput.value = '';
-    }
+  document.querySelectorAll('.chaos-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.chaosLevel = btn.dataset.chaos;
+      document.querySelectorAll('.chaos-btn').forEach(b => b.classList.toggle('active', b === btn));
+      computeBoard();
+      const labels = { mild: 'Mild chaos', wild: 'Wild chaos', insane: 'INSANE chaos' };
+      setStatus(labels[state.chaosLevel] + ' — board regenerated');
+    });
   });
 
-  // Bulk add
+  const nameInput = document.getElementById('name-input');
+  document.getElementById('add-btn').addEventListener('click', () => {
+    ensureAudio(); addName(nameInput.value); nameInput.value = ''; nameInput.focus();
+  });
+  nameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { addName(nameInput.value); nameInput.value = ''; }
+  });
+
   document.getElementById('bulk-add-btn').addEventListener('click', () => {
     const ta = document.getElementById('bulk-input');
     ta.value.split('\n').forEach(n => addName(n));
     ta.value = '';
   });
 
-  // Theme
-  document.getElementById('theme-select').addEventListener('change', (e) => {
-    applyTheme(e.target.value);
-  });
+  document.getElementById('theme-select').addEventListener('change', (e) => applyTheme(e.target.value));
 
-  // Sound
   const sndBtn = document.getElementById('sound-btn');
   sndBtn.addEventListener('click', () => {
     state.soundOn = !state.soundOn;
@@ -1642,35 +2191,22 @@ function wireUI() {
     if (state.soundOn) ensureAudio();
   });
 
-  // Reset results
   document.getElementById('reset-results-btn').addEventListener('click', () => {
-    state.results   = [];
-    state.winCounts = {};
-    state.dropping  = false;
-    state.dropsLeft = 0;
+    state.results = []; state.winCounts = {};
+    state.dropping = false; state.dropsLeft = 0;
     disc = null;
-    renderResults();
-    updateDropBtn();
-    setStatus('Results cleared');
+    renderResults(); updateDropBtn(); setStatus('Results cleared');
   });
 
-  // Clear all
   document.getElementById('clear-btn').addEventListener('click', () => {
     if (state.names.length === 0) return;
-    state.names     = [];
-    state.colorMap  = {};
-    state.results   = [];
-    state.winCounts = {};
-    state.dropping  = false;
-    disc = null;
-    savePersist();
-    renderNameList();
-    renderResults();
-    updateDropBtn();
+    state.names = []; state.colorMap = {};
+    state.results = []; state.winCounts = {};
+    state.dropping = false; disc = null;
+    savePersist(); renderNameList(); renderResults(); updateDropBtn();
     setStatus('Ready · Add players to begin');
   });
 
-  // Spacebar to drop
   window.addEventListener('keydown', (e) => {
     if (e.code === 'Space' && e.target === document.body) {
       e.preventDefault();
@@ -1683,10 +2219,7 @@ function wireUI() {
     }
   });
 
-  // Resize
-  window.addEventListener('resize', () => {
-    resizeCanvas();
-  });
+  window.addEventListener('resize', resizeCanvas);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
