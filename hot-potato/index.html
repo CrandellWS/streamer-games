@@ -1826,5 +1826,9 @@ setTimeout(() => { const inp = document.getElementById('name-input'); if (inp) i
 
 })();
 </script>
+<a id="feedback-link" href="https://github.com/CrandellWS/streamer-games/issues" target="_blank" rel="noopener"
+   style="position:fixed;bottom:8px;right:8px;font-size:11px;color:var(--text-dim);opacity:0.6;text-decoration:none;z-index:100;font-family:var(--font);"
+   onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">&#x1F4AC; Feedback</a>
+<script>if(new URLSearchParams(location.search).get('admin')==='false')document.getElementById('feedback-link').style.display='none';</script>
 </body>
 </html>

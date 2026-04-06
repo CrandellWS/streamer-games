@@ -276,6 +276,19 @@ footer a {
 
 footer a:hover { text-decoration: underline; }
 
+footer .request-link {
+  font-weight: 700;
+  padding: 8px 18px;
+  border: 1px solid var(--accent);
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+footer .request-link:hover {
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+}
+
 footer .footer-links {
   display: flex;
   gap: 24px;
@@ -492,7 +505,7 @@ footer .footer-links {
 <footer>
   <div class="footer-links">
     <a href="https://github.com/CrandellWS/streamer-games">GitHub</a>
-    <a href="https://github.com/CrandellWS/streamer-games/issues">Request a Game</a>
+    <a href="https://github.com/CrandellWS/streamer-games/issues" class="request-link">💬 Request a Game / Report a Bug</a>
   </div>
   <p>Home Office Studios &mdash; Made for streamers, by streamers. MIT License.</p>
 </footer>
