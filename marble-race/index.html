@@ -771,8 +771,14 @@ h1, .game-title, .panel-title, .app-title {
       <!-- Track -->
       <div class="panel-section">
         <h3>Track</h3>
-        <div class="btn-group">
+        <div class="btn-group" style="margin-bottom:10px;">
           <button class="btn btn-block" id="gen-track-btn">🎲 Generate New Track</button>
+        </div>
+        <h3>Track Length</h3>
+        <div class="speed-btns">
+          <button class="speed-btn" data-length="short">Short</button>
+          <button class="speed-btn active" data-length="medium">Medium</button>
+          <button class="speed-btn" data-length="long">Long</button>
         </div>
       </div>
 
@@ -855,6 +861,7 @@ const RESTITUTION_MARBLE = 0.45;
 const FRICTION = 0.985;
 const MARBLE_RADIUS = 12;
 const PEG_RADIUS = 7;
+const TERMINAL_VELOCITY = 500; // px/s max downward speed
 
 /* ═══════════════════════════════════════════════
    URL PARAMS
@@ -871,8 +878,9 @@ const initNames = params.get('names') ? params.get('names').split(',').map(n => 
 let players = [];         // {name, color, colorIndex}
 let marbles = [];         // Marble instances
 let pegs = [];            // {x,y,r}
-let ramps = [];           // {x1,y1,x2,y2}
+let ramps = [];           // {x1,y1,x2,y2,isRamp?,isFunnel?}
 let finishY = 0;
+let trackLength = 'medium'; // 'short','medium','long'
 let raceRunning = false;
 let raceFinished = false;
 let raceStart = 0;
@@ -1019,7 +1027,7 @@ function seededRand(seed) {
 }
 
 /* ═══════════════════════════════════════════════
-   TRACK GENERATION
+   TRACK GENERATION — switchback ramp style
    ═══════════════════════════════════════════════ */
 function generateTrack() {
   pegs = [];
@@ -1027,45 +1035,55 @@ function generateTrack() {
   const rng = seededRand(trackGenSeed * 1e9 | 0);
   const W = canvas.width;
   const H = canvas.height;
-  finishY = H - 40;
 
-  // Staggered peg grid — 8 rows x 5 cols + jitter
-  const rows = 8;
-  const cols = 5;
-  const topY = 90;
-  const botY = finishY - 100;
-  const rowH = (botY - topY) / rows;
+  const numSwitchbacks = trackLength === 'short' ? 3 : trackLength === 'long' ? 8 : 5;
+  const margin = W * 0.08;
+  const startY = 60;
+  const endY = H - 60;
+  const totalHeight = endY - startY;
+  const switchbackH = totalHeight / numSwitchbacks;
+  const rampH = switchbackH * 0.68;
+  const turnH = switchbackH * 0.32;
+  const funnelW = Math.min(44, W * 0.07);
 
-  for (let row = 0; row < rows; row++) {
-    const offset = (row % 2 === 0) ? 0 : W / (cols * 2 + 2);
-    for (let col = 0; col < cols; col++) {
-      const bx = (W / (cols + 1)) * (col + 1) + offset;
-      const by = topY + row * rowH;
-      const jx = (rng() - 0.5) * 28;
-      const jy = (rng() - 0.5) * 16;
-      const r = 5 + rng() * 4;
-      const px = Math.max(r + 8, Math.min(W - r - 8, bx + jx));
-      const py = Math.max(topY, Math.min(botY, by + jy));
-      pegs.push({ x: px, y: py, r });
+  let y = startY;
+
+  for (let i = 0; i < numSwitchbacks; i++) {
+    const goingRight = (i % 2 === 0);
+    const startX = goingRight ? margin : W - margin;
+    const endX   = goingRight ? W - margin : margin;
+    const rampEndY = y + rampH;
+
+    // Main ramp segment
+    ramps.push({ x1: startX, y1: y, x2: endX, y2: rampEndY, isRamp: true });
+
+    // Bumper pegs slightly above ramp surface
+    const pegCount = 2 + Math.floor(rng() * 2);
+    for (let p = 0; p < pegCount; p++) {
+      const t = 0.2 + rng() * 0.6;
+      const px = startX + (endX - startX) * t;
+      const py = y + (rampEndY - y) * t - 10 - rng() * 8;
+      pegs.push({ x: px, y: py, r: 4 + rng() * 2 });
     }
+
+    // Funnel / turn — V-guide connecting ramp to next ramp
+    const funnelTopY = rampEndY;
+    const funnelBotY = rampEndY + turnH;
+
+    if (goingRight) {
+      // Right-side turn
+      ramps.push({ x1: W - margin, y1: funnelTopY, x2: W - margin, y2: funnelBotY, isFunnel: true });
+      ramps.push({ x1: W - margin - funnelW, y1: funnelTopY + 4, x2: W - margin - 8, y2: funnelBotY, isFunnel: true });
+    } else {
+      // Left-side turn
+      ramps.push({ x1: margin, y1: funnelTopY, x2: margin, y2: funnelBotY, isFunnel: true });
+      ramps.push({ x1: margin + funnelW, y1: funnelTopY + 4, x2: margin + 8, y2: funnelBotY, isFunnel: true });
+    }
+
+    y = funnelBotY;
   }
 
-  // Diagonal ramps — 3 per track
-  const rampCount = 3;
-  for (let i = 0; i < rampCount; i++) {
-    const yBase = 120 + i * ((finishY - 200) / rampCount);
-    const cy = yBase + (rng() - 0.5) * 60;
-    const cx = W * 0.15 + rng() * W * 0.7;
-    const len = 90 + rng() * 80;
-    const angle = (rng() - 0.5) * 0.9;
-    const cos = Math.cos(angle), sin = Math.sin(angle);
-    ramps.push({
-      x1: cx - cos * len / 2,
-      y1: cy - sin * len / 2,
-      x2: cx + cos * len / 2,
-      y2: cy + sin * len / 2
-    });
-  }
+  finishY = y + 30;
 }
 
 /* ═══════════════════════════════════════════════
@@ -1084,17 +1102,31 @@ class Marble {
     this.finishTime = 0;
     this.trail = [];
     this.lastClink = 0;
+    this.lastProgressY = y;
+    this.lastProgressCheck = performance.now();
   }
 
   update(dt) {
     if (this.finished) return;
     this.vy += GRAVITY * dt;
+    // Terminal velocity cap
+    if (this.vy > TERMINAL_VELOCITY) this.vy = TERMINAL_VELOCITY;
     this.vx *= FRICTION;
-    // store trail
+    // Trail
     this.trail.push({ x: this.x, y: this.y });
     if (this.trail.length > 6) this.trail.shift();
     this.x += this.vx * dt;
     this.y += this.vy * dt;
+    // Stuck detection — nudge if no vertical progress in 3s
+    const now = performance.now();
+    if (now - this.lastProgressCheck > 3000) {
+      if (this.y - this.lastProgressY < 30) {
+        this.vy += 200;
+        this.vx += (Math.random() - 0.5) * 150;
+      }
+      this.lastProgressY = this.y;
+      this.lastProgressCheck = now;
+    }
   }
 }
 
@@ -1313,7 +1345,55 @@ function render() {
   ctx.moveTo(W - 10, 10); ctx.lineTo(W - 10, H - 10);
   ctx.stroke();
 
-  // Pegs
+  // Ramps and funnels — thick metallic surfaces with rail highlights
+  for (const ramp of ramps) {
+    ctx.save();
+    ctx.lineCap = 'round';
+    const dx = ramp.x2 - ramp.x1, dy = ramp.y2 - ramp.y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+
+    if (ramp.isFunnel) {
+      // Turn guides — slightly different color
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = 'rgba(110, 90, 170, 0.75)';
+      ctx.beginPath();
+      ctx.moveTo(ramp.x1, ramp.y1);
+      ctx.lineTo(ramp.x2, ramp.y2);
+      ctx.stroke();
+      // Highlight
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(180, 150, 255, 0.45)';
+      ctx.stroke();
+    } else {
+      // Main ramp surface
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = 'rgba(90, 110, 155, 0.85)';
+      ctx.beginPath();
+      ctx.moveTo(ramp.x1, ramp.y1);
+      ctx.lineTo(ramp.x2, ramp.y2);
+      ctx.stroke();
+      // Center gloss stripe
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = 'rgba(130, 155, 210, 0.6)';
+      ctx.stroke();
+      // Top rail — 3px above surface (upward normal)
+      if (len > 0.001) {
+        // Normal pointing "up" in screen space (negative y)
+        let nx = dy / len, ny = -dx / len;
+        if (ny > 0) { nx = -nx; ny = -ny; }
+        const off = 5;
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(180, 205, 255, 0.55)';
+        ctx.beginPath();
+        ctx.moveTo(ramp.x1 + nx * off, ramp.y1 + ny * off);
+        ctx.lineTo(ramp.x2 + nx * off, ramp.y2 + ny * off);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  // Bumper pegs
   for (const peg of pegs) {
     const gradient = ctx.createRadialGradient(
       peg.x - peg.r * 0.3, peg.y - peg.r * 0.3, 1,
@@ -1326,26 +1406,9 @@ function render() {
     ctx.beginPath();
     ctx.arc(peg.x, peg.y, peg.r, 0, Math.PI * 2);
     ctx.fill();
-    // Highlight
     ctx.strokeStyle = 'rgba(200,200,255,0.3)';
     ctx.lineWidth = 1;
     ctx.stroke();
-  }
-
-  // Ramps
-  for (const ramp of ramps) {
-    ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = getThemeColor('--surface2');
-    ctx.beginPath();
-    ctx.moveTo(ramp.x1, ramp.y1);
-    ctx.lineTo(ramp.x2, ramp.y2);
-    ctx.stroke();
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = 'rgba(150,140,200,0.6)';
-    ctx.stroke();
-    ctx.restore();
   }
 
   // Finish line
@@ -1684,6 +1747,17 @@ window.addEventListener('message', (e) => {
     case 'marble:names':
       if (e.source) e.source.postMessage({ type: 'marble:names', names: players.map(p => p.name) }, '*');
       break;
+    case 'marble:length':
+      if (data.length && ['short','medium','long'].includes(data.length)) {
+        trackLength = data.length;
+        document.querySelectorAll('.speed-btn[data-length]').forEach(b => {
+          b.classList.toggle('active', b.dataset.length === trackLength);
+        });
+        trackGenSeed = Math.random();
+        generateTrack();
+        if (!raceRunning) render();
+      }
+      break;
   }
 });
 
@@ -1746,11 +1820,23 @@ adminToggle.addEventListener('click', () => {
 });
 
 // Speed buttons
-document.querySelectorAll('.speed-btn').forEach(btn => {
+document.querySelectorAll('.speed-btn[data-speed]').forEach(btn => {
   btn.addEventListener('click', () => {
     speedMult = parseFloat(btn.dataset.speed);
-    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.speed-btn[data-speed]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+  });
+});
+
+// Track length buttons
+document.querySelectorAll('.speed-btn[data-length]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    trackLength = btn.dataset.length;
+    document.querySelectorAll('.speed-btn[data-length]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    trackGenSeed = Math.random();
+    generateTrack();
+    if (!raceRunning) render();
   });
 });
 
