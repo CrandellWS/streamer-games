@@ -1820,11 +1820,10 @@ h1, .game-title, .panel-title, .app-title {
       <div class="panel-section">
         <h3>Speed</h3>
         <div class="btn-group" style="margin-bottom:8px">
-          <button class="speed-btn active" data-speed="manual">Manual</button>
-          <button class="speed-btn" data-speed="auto">Auto 3s</button>
-          <button class="speed-btn" data-speed="turbo">Turbo 1s</button>
+          <button class="btn" id="auto-toggle">Auto</button>
+          <button class="btn" id="turbo-toggle">Turbo</button>
         </div>
-        <button class="btn btn-sm btn-danger btn-block" id="speed-stop" style="display:none">⏹ Stop Auto</button>
+        <button class="btn btn-sm btn-danger btn-block" id="speed-stop" style="display:none">⏹ Stop</button>
         <button class="btn btn-block" id="pull-btn" style="margin-top:4px">
           🎰 Pull Lever <span style="opacity:0.5;font-size:11px">(Space)</span>
         </button>
@@ -1901,7 +1900,8 @@ const STATE = {
   winFloor: 50,             // 0-100 slider value
   pullsSinceLastWin: 0,
   sessionWinners: [],       // [{name, spin}]
-  speed: 'manual',         // 'manual' | 'auto' | 'turbo'
+  auto: false,             // continuous spin: next spin fires when previous finishes
+  turbo: false,            // fast animation: shorter spin/stagger durations
   autoInterval: null,
   gameOver: false,
   autoWinPause: false,
@@ -2249,7 +2249,7 @@ function spin() {
   if (STATE.mode === 'creditstack') {
     if (STATE.credits <= 0) {
       setStatus('No credits! Add credits to continue.', false);
-      if (STATE.speed !== 'manual') stopAutoSpin();
+      if (STATE.auto) stopAutoSpin();
       return;
     }
     STATE.credits--;
@@ -2273,11 +2273,12 @@ function spin() {
 
   // Staggered stop times — reel 1 stops first, then 2, then 3
   // Near-miss: third reel gets dramatic slow stop
+  // Turbo: shorter spin duration and stagger
   let stopTimes;
   if (outcome.nearMiss) {
-    stopTimes = [1500, 2100, 2700];
+    stopTimes = STATE.turbo ? [600, 900, 1200] : [1500, 2100, 2700];
   } else {
-    stopTimes = [1500, 2100, 2700];
+    stopTimes = STATE.turbo ? [600, 900, 1200] : [1500, 2100, 2700];
   }
 
   for (let r = 0; r < REEL_COUNT; r++) {
@@ -2379,8 +2380,8 @@ function findBestLandingIndex(items, targetName, currentY) {
 function finalizeSpin(outcome) {
   STATE.spinning = false;
 
-  // Re-add lever ready pulse
-  if (!STATE.gameOver && STATE.speed === 'manual') {
+  // Re-add lever ready pulse when auto is off
+  if (!STATE.gameOver && !STATE.auto) {
     setTimeout(() => document.getElementById('lever-ball').classList.add('ready-pulse'), 500);
   }
 
@@ -2406,10 +2407,13 @@ function finalizeSpin(outcome) {
         stopAutoSpin();
         showGameOver();
       }, 6000);
-    } else if (STATE.speed !== 'manual') {
-      // In auto/turbo: pause 2s after win so celebration can play
+    } else if (STATE.auto) {
+      // In auto mode: pause 2s after win so celebration can play, then continue
       STATE.autoWinPause = true;
-      setTimeout(() => { STATE.autoWinPause = false; }, 2200);
+      setTimeout(() => {
+        STATE.autoWinPause = false;
+        if (STATE.auto && !STATE.gameOver) setTimeout(() => spin(), 0);
+      }, 2200);
     }
 
     // Credit Stack: game over if credits ran out on this pull
@@ -2439,6 +2443,8 @@ function finalizeSpin(outcome) {
       setTimeout(() => {
         if (!STATE.gameOver) { stopAutoSpin(); showGameOver(); }
       }, 1200);
+    } else if (STATE.auto && !STATE.gameOver) {
+      setTimeout(() => spin(), 0);
     }
   } else {
     STATE.pullsSinceLastWin++;
@@ -2450,6 +2456,8 @@ function finalizeSpin(outcome) {
       setTimeout(() => {
         if (!STATE.gameOver) { stopAutoSpin(); showGameOver(); }
       }, 1200);
+    } else if (STATE.auto && !STATE.gameOver) {
+      setTimeout(() => spin(), 0);
     }
   }
 }
@@ -2531,6 +2539,14 @@ function showGameOver() {
   if (STATE.gameOver) return;
   STATE.gameOver = true;
   stopAutoSpin();
+  // Turn off auto UI (don't call setAuto since gameOver flag handles loop stoppage)
+  STATE.auto = false;
+  const autoBtn = document.getElementById('auto-toggle');
+  if (autoBtn) autoBtn.classList.remove('active');
+  const stopBtn = document.getElementById('speed-stop');
+  if (stopBtn) stopBtn.style.display = 'none';
+  const pullBtn = document.getElementById('pull-btn');
+  if (pullBtn) pullBtn.style.display = '';
   clearWinState();
   playSound('gameover');
 
@@ -2592,49 +2608,56 @@ function playAgain() {
   updateMainDisplay();
   setStatus('Ready — pull the lever!', false);
 
-  // Restart auto if still in auto/turbo mode
-  if (STATE.speed !== 'manual') {
-    // Wait a beat before resuming
-    setTimeout(() => { if (!STATE.gameOver) startAutoSpin(); }, 1000);
+  // Restart auto if still in auto mode
+  if (STATE.auto) {
+    setTimeout(() => {
+      if (!STATE.gameOver && STATE.auto) {
+        animateLeverAuto();
+        setTimeout(() => { if (!STATE.gameOver && STATE.auto) spin(); }, 280);
+      }
+    }, 1000);
   }
 }
 
 /* ═══════════════════════════════════════════════
-   AUTO / TURBO SPEED
+   AUTO / TURBO TOGGLES
    ═══════════════════════════════════════════════ */
-function setSpeed(speed) {
-  STATE.speed = speed;
-  document.querySelectorAll('.speed-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.speed === speed);
-  });
+function setAuto(on) {
+  STATE.auto = on;
+  const autoBtn  = document.getElementById('auto-toggle');
   const stopBtn  = document.getElementById('speed-stop');
   const pullBtn  = document.getElementById('pull-btn');
-  if (speed === 'manual') {
-    stopAutoSpin();
-    stopBtn.style.display = 'none';
-    pullBtn.style.display = '';
-    // Add lever ready pulse when in manual mode
-    setTimeout(() => document.getElementById('lever-ball').classList.add('ready-pulse'), 200);
-  } else {
+  autoBtn.classList.toggle('active', on);
+  if (on) {
     stopBtn.style.display = '';
     pullBtn.style.display = 'none';
     document.getElementById('lever-ball').classList.remove('ready-pulse');
-    startAutoSpin();
+    // Kick off first spin if not already spinning
+    if (!STATE.spinning && !STATE.gameOver) {
+      animateLeverAuto();
+      setTimeout(() => { if (STATE.auto && !STATE.gameOver) spin(); }, 280);
+    }
+  } else {
+    stopAutoSpin();
+    stopBtn.style.display = 'none';
+    pullBtn.style.display = '';
+    if (!STATE.spinning) {
+      setTimeout(() => document.getElementById('lever-ball').classList.add('ready-pulse'), 200);
+    }
   }
-  try { localStorage.setItem('slots_speed', speed); } catch(e) {}
+  try { localStorage.setItem('slots_auto', on ? '1' : '0'); } catch(e) {}
+}
+
+function setTurbo(on) {
+  STATE.turbo = on;
+  const turboBtn = document.getElementById('turbo-toggle');
+  turboBtn.classList.toggle('active', on);
+  try { localStorage.setItem('slots_turbo', on ? '1' : '0'); } catch(e) {}
 }
 
 function startAutoSpin() {
-  stopAutoSpin();
-  if (STATE.gameOver) return;
-  const ms = STATE.speed === 'turbo' ? 1000 : 3000;
-  STATE.autoInterval = setInterval(() => {
-    if (STATE.spinning || STATE.autoWinPause || STATE.gameOver) return;
-    if (STATE.mode === 'creditstack' && STATE.credits <= 0) { stopAutoSpin(); return; }
-    animateLeverAuto();
-    // Small delay so the lever animation is visible before spin begins
-    setTimeout(() => spin(), 280);
-  }, ms);
+  // No-op: auto spin is driven by finalizeSpin chaining, not a timer interval.
+  // This stub is kept for calls from credit/mode reset code paths.
 }
 
 function stopAutoSpin() {
@@ -2668,9 +2691,10 @@ function addCredits(amount) {
     setStatus(`Credits updated: ${STATE.credits}`, false);
   }
   emitMessage('slots:credits', { credits: STATE.credits });
-  // If in auto/turbo with no interval (stopped due to 0 credits), restart
-  if (STATE.speed !== 'manual' && !STATE.autoInterval && !STATE.gameOver) {
-    startAutoSpin();
+  // If in auto mode and not currently spinning (stopped due to 0 credits), restart
+  if (STATE.auto && !STATE.spinning && !STATE.gameOver) {
+    animateLeverAuto();
+    setTimeout(() => { if (STATE.auto && !STATE.gameOver) spin(); }, 280);
   }
 }
 
@@ -2685,8 +2709,9 @@ function setBudget(amount) {
   updateMainDisplay();
   setStatus(`Budget set to ${STATE.credits}`, false);
   emitMessage('slots:credits', { credits: STATE.credits });
-  if (STATE.speed !== 'manual' && !STATE.autoInterval && !STATE.gameOver && STATE.credits > 0) {
-    startAutoSpin();
+  if (STATE.auto && !STATE.spinning && !STATE.gameOver && STATE.credits > 0) {
+    animateLeverAuto();
+    setTimeout(() => { if (STATE.auto && !STATE.gameOver) spin(); }, 280);
   }
 }
 
@@ -2781,9 +2806,9 @@ function updateMainDisplay() {
 function setMode(mode) {
   STATE.mode = mode;
   stopAutoSpin();
-  // Reset speed to manual on mode switch
-  STATE.speed = 'manual';
-  document.querySelectorAll('.speed-btn').forEach(b => b.classList.toggle('active', b.dataset.speed === 'manual'));
+  // Reset auto on mode switch (keep turbo setting)
+  STATE.auto = false;
+  document.getElementById('auto-toggle').classList.remove('active');
   document.getElementById('speed-stop').style.display = 'none';
   document.getElementById('pull-btn').style.display = '';
 
@@ -3062,19 +3087,19 @@ window.addEventListener('message', function(e) {
       break;
     // Inbound: game control
     case 'slots:pull':
-      if (STATE.speed === 'manual') spin();
+      if (!STATE.auto) spin();
       break;
     case 'slots:start':
       spin();
       break;
     case 'slots:auto':
-      setSpeed('auto');
+      setAuto(true);
       break;
     case 'slots:turbo':
-      setSpeed('turbo');
+      setTurbo(!STATE.turbo);
       break;
     case 'slots:stop':
-      setSpeed('manual');
+      setAuto(false);
       break;
     // Inbound: credits
     case 'slots:addcredits':
@@ -3166,9 +3191,9 @@ function bindEvents() {
     if (STATE.names.length === 0 || confirm('Clear all names?')) clearNames();
   });
 
-  // Pull lever button (manual mode only)
+  // Pull lever button (when auto is off)
   document.getElementById('pull-btn').addEventListener('click', () => {
-    if (STATE.speed === 'manual') spin();
+    if (!STATE.spinning && !STATE.auto) spin();
   });
 
   // Mode buttons
@@ -3176,13 +3201,14 @@ function bindEvents() {
     btn.addEventListener('click', () => setMode(btn.dataset.mode));
   });
 
-  // Speed buttons
-  document.querySelectorAll('.speed-btn').forEach(btn => {
-    btn.addEventListener('click', () => setSpeed(btn.dataset.speed));
-  });
+  // Auto toggle
+  document.getElementById('auto-toggle').addEventListener('click', () => setAuto(!STATE.auto));
+
+  // Turbo toggle
+  document.getElementById('turbo-toggle').addEventListener('click', () => setTurbo(!STATE.turbo));
 
   // Stop auto
-  document.getElementById('speed-stop').addEventListener('click', () => setSpeed('manual'));
+  document.getElementById('speed-stop').addEventListener('click', () => setAuto(false));
 
   // Winners needed
   document.getElementById('winners-needed').addEventListener('input', function() {
@@ -3333,7 +3359,7 @@ function bindEvents() {
     }
 
     function onStart(e) {
-      if (STATE.spinning || STATE.speed !== 'manual') return;
+      if (STATE.spinning || STATE.auto) return;
       e.preventDefault();
       isDragging = true;
       clunkPlayed = false;
@@ -3373,11 +3399,11 @@ function bindEvents() {
 
     assembly.addEventListener('click', (e) => {
       if (e.target === ball) return;
-      if (!STATE.spinning && STATE.speed === 'manual') spin();
+      if (!STATE.spinning && !STATE.auto) spin();
     });
 
     assembly.addEventListener('keydown', e => {
-      if ((e.key === 'Enter' || e.key === ' ') && !STATE.spinning && STATE.speed === 'manual') {
+      if ((e.key === 'Enter' || e.key === ' ') && !STATE.spinning && !STATE.auto) {
         e.preventDefault();
         autoComplete();
       }
@@ -3388,7 +3414,7 @@ function bindEvents() {
   document.addEventListener('keydown', e => {
     if (e.code === 'Space' && !e.target.matches('input, textarea, button')) {
       e.preventDefault();
-      if (STATE.speed === 'manual') {
+      if (!STATE.auto) {
         const assembly = document.getElementById('lever-assembly');
         assembly.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       }
@@ -3473,9 +3499,9 @@ function init() {
   updateLedIdle();
   setStatus('Ready — pull the lever!', false);
 
-  // Add lever ready pulse in manual mode
+  // Add lever ready pulse when auto is off
   setTimeout(() => {
-    if (STATE.speed === 'manual') {
+    if (!STATE.auto) {
       document.getElementById('lever-ball').classList.add('ready-pulse');
     }
   }, 500);
