@@ -155,7 +155,7 @@ body.transparent-bg { background: transparent !important; }
 .panel-header p { font-size: 12px; color: var(--text-dim); }
 
 .panel-section {
-  padding: 16px 20px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--border);
 }
 .panel-section h3 {
@@ -164,7 +164,7 @@ body.transparent-bg { background: transparent !important; }
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--text-dim);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .panel-scroll {
@@ -197,6 +197,24 @@ textarea {
   min-height: 80px;
   font-size: 12px;
   line-height: 1.6;
+}
+
+input[type="number"] {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  text-align: center;
+  width: 80px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="number"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .btn {
@@ -236,47 +254,16 @@ textarea {
   box-shadow: 0 4px 16px var(--gold-glow);
 }
 .btn-gold:hover { filter: brightness(1.1); box-shadow: 0 6px 24px var(--gold-glow); transform: translateY(-2px); }
-.btn-sm { padding: 6px 12px; min-height: 36px; font-size: 12px; border-radius: 8px; }
+.btn-sm { padding: 6px 12px; min-height: 32px; font-size: 12px; border-radius: 8px; }
 .btn-block { width: 100%; }
 .btn-group { display: flex; gap: 8px; }
-
-/* PULL LEVER BUTTON */
-#pull-btn {
-  padding: 16px 24px;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #cc2200, #ff4422, #cc2200);
-  border: 2px solid #ff6644;
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 6px 30px rgba(255,68,34,0.5);
-  width: 100%;
-  position: relative;
-  overflow: hidden;
-}
-#pull-btn::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
-}
-#pull-btn:hover::before { left: 100%; }
-#pull-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-#pull-btn:active { transform: scale(0.98) translateY(0); }
-#pull-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 /* Names list */
 .name-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 200px;
+  max-height: 180px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
@@ -346,6 +333,243 @@ textarea {
 #status-text { flex: 1; }
 
 /* ═══════════════════════════════════════════════
+   MODE / SPEED BUTTONS
+   ═══════════════════════════════════════════════ */
+.mode-btn, .speed-btn {
+  flex: 1;
+  padding: 8px 6px;
+  min-height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mode-btn:hover, .speed-btn:hover { border-color: var(--accent); color: var(--text); }
+.mode-btn.active, .speed-btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ═══════════════════════════════════════════════
+   WIN FLOOR SLIDER
+   ═══════════════════════════════════════════════ */
+.slider-wrap { display: flex; flex-direction: column; gap: 6px; }
+input[type="range"] {
+  width: 100%;
+  height: 6px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--surface2);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  border: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+  cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+  cursor: pointer;
+  border: none;
+}
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════
+   TOGGLE / CHECKBOX
+   ═══════════════════════════════════════════════ */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-dim);
+  transition: color 0.15s;
+}
+.toggle-row:hover { color: var(--text); }
+.toggle-row input[type="checkbox"] { display: none; }
+.toggle-box {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  position: relative;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+.toggle-box::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: left 0.2s, background 0.2s;
+}
+.toggle-row input:checked + .toggle-box {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.toggle-row input:checked + .toggle-box::after {
+  left: 19px;
+  background: #fff;
+}
+
+/* ═══════════════════════════════════════════════
+   CREDIT BUTTONS
+   ═══════════════════════════════════════════════ */
+.credit-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.btn-credit {
+  padding: 5px 12px;
+  min-height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--gold);
+  background: rgba(255,215,0,0.08);
+  color: var(--gold);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-credit:hover { background: rgba(255,215,0,0.2); }
+.btn-credit:active { transform: scale(0.95); }
+.credits-balance {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.credits-balance .bal-val {
+  color: var(--gold);
+  font-size: 20px;
+  font-weight: 900;
+  text-shadow: 0 0 8px var(--gold-glow);
+  font-family: 'Georgia', monospace;
+}
+
+/* ═══════════════════════════════════════════════
+   PULL LEVER BUTTON
+   ═══════════════════════════════════════════════ */
+#pull-btn {
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #cc2200, #ff4422, #cc2200);
+  border: 2px solid #ff6644;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(255,68,34,0.5);
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  min-height: 44px;
+}
+#pull-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+#pull-btn:hover::before { left: 100%; }
+#pull-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+#pull-btn:active { transform: scale(0.98) translateY(0); }
+#pull-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ═══════════════════════════════════════════════
+   SOUND TOGGLE
+   ═══════════════════════════════════════════════ */
+#sound-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-size: 13px;
+  transition: all 0.2s;
+  width: 100%;
+}
+#sound-toggle:hover { border-color: var(--accent); color: var(--text); }
+#sound-icon { font-size: 16px; }
+
+/* ═══════════════════════════════════════════════
+   THEME SELECTOR
+   ═══════════════════════════════════════════════ */
+.theme-buttons { display: flex; gap: 6px; }
+.theme-btn {
+  flex: 1;
+  padding: 8px;
+  min-height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.theme-btn:hover { border-color: var(--accent); color: var(--text); }
+.theme-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+
+/* ═══════════════════════════════════════════════
    SLOT MACHINE CABINET
    ═══════════════════════════════════════════════ */
 #slot-machine {
@@ -358,7 +582,6 @@ textarea {
   transition: transform 0.1s;
 }
 
-/* Cabinet body */
 #cabinet {
   width: 100%;
   background: var(--chrome);
@@ -372,7 +595,6 @@ textarea {
     0 8px 32px rgba(0,0,0,0.5);
 }
 
-/* Cabinet legs */
 #cabinet::after {
   content: '';
   position: absolute;
@@ -494,7 +716,6 @@ textarea {
   position: relative;
 }
 
-/* Payline overlay */
 #reels-container::after {
   content: '';
   position: absolute;
@@ -511,7 +732,6 @@ textarea {
     0 1px 8px var(--gold-glow);
 }
 
-/* Payline left/right triangles */
 #payline-left, #payline-right {
   position: absolute;
   top: 50%;
@@ -532,7 +752,6 @@ textarea {
   filter: drop-shadow(0 0 4px var(--gold-glow));
 }
 
-/* Individual reel window */
 .reel-window {
   flex: 1;
   height: 240px;
@@ -546,7 +765,6 @@ textarea {
     inset 0 2px 4px rgba(0,0,0,0.9);
 }
 
-/* Top and bottom fade masks */
 .reel-window::before, .reel-window::after {
   content: '';
   position: absolute;
@@ -564,7 +782,6 @@ textarea {
   background: linear-gradient(to top, rgba(5,5,16,0.95), transparent);
 }
 
-/* The scrolling strip */
 .reel-strip {
   position: absolute;
   width: 100%;
@@ -597,18 +814,10 @@ textarea {
   transition: none;
 }
 
-/* Motion blur during spin */
-.reel-window.spinning .reel-strip {
-  filter: blur(3px);
-}
-.reel-window.slowing .reel-strip {
-  filter: blur(1px);
-}
-.reel-window.stopped .reel-strip {
-  filter: none;
-}
+.reel-window.spinning .reel-strip { filter: blur(3px); }
+.reel-window.slowing .reel-strip  { filter: blur(1px); }
+.reel-window.stopped .reel-strip  { filter: none; }
 
-/* Win highlight on center item */
 .reel-window.win-highlight {
   border-color: var(--gold);
   box-shadow:
@@ -633,9 +842,7 @@ textarea {
   -webkit-user-select: none;
 }
 
-#lever-assembly:active {
-  cursor: grabbing;
-}
+#lever-assembly:active { cursor: grabbing; }
 
 #lever-shaft {
   width: 14px;
@@ -677,8 +884,30 @@ textarea {
   box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
+/* Auto-pull CSS animation for auto/turbo mode */
+@keyframes autoPullBall {
+  0%   { top: 0px; }
+  35%  { top: 130px; }
+  65%  { top: 140px; }
+  100% { top: 0px; }
+}
+@keyframes autoPullShaft {
+  0%   { height: 160px; top: 20px; }
+  35%  { height: 20px; top: 150px; }
+  65%  { height: 15px; top: 155px; }
+  100% { height: 160px; top: 20px; }
+}
+#lever-assembly.auto-pulling #lever-ball {
+  animation: autoPullBall 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: none !important;
+}
+#lever-assembly.auto-pulling #lever-shaft {
+  animation: autoPullShaft 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: none !important;
+}
+
 /* ═══════════════════════════════════════════════
-   BOTTOM PANEL (credits, buttons)
+   BOTTOM PANEL (credits, stats)
    ═══════════════════════════════════════════════ */
 #bottom-panel {
   width: calc(100% - 50px);
@@ -714,7 +943,7 @@ textarea {
   text-shadow: 0 0 10px var(--gold-glow);
   font-family: 'Georgia', monospace;
   letter-spacing: 2px;
-  min-width: 60px;
+  min-width: 56px;
   text-align: center;
 }
 
@@ -765,6 +994,106 @@ textarea {
 }
 
 /* ═══════════════════════════════════════════════
+   GAME OVER OVERLAY
+   ═══════════════════════════════════════════════ */
+#gameover-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.88);
+  z-index: 60;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
+  border-radius: 32px 32px 24px 24px;
+}
+#gameover-overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+#gameover-box {
+  text-align: center;
+  padding: 24px 32px;
+  max-width: 380px;
+  width: 100%;
+}
+#gameover-title {
+  font-size: 42px;
+  font-weight: 900;
+  font-family: 'Georgia', serif;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #ff9999, #ff4466, #cc0044);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 4px 20px rgba(255,68,102,0.8));
+  animation: gameoverPulse 1.2s ease infinite alternate;
+  margin-bottom: 6px;
+}
+@keyframes gameoverPulse {
+  from { filter: drop-shadow(0 4px 20px rgba(255,68,102,0.5)); }
+  to   { filter: drop-shadow(0 4px 40px rgba(255,68,102,1)); }
+}
+#gameover-stats {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+  letter-spacing: 0.5px;
+}
+#gameover-podium {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.podium-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  animation: podiumSlideIn 0.4s ease both;
+  text-align: left;
+}
+@keyframes podiumSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.podium-rank {
+  font-size: 18px;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.podium-name {
+  flex: 1;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.podium-spin {
+  font-size: 11px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+#gameover-no-winners {
+  font-size: 14px;
+  color: var(--text-dim);
+  padding: 12px;
+}
+
+/* ═══════════════════════════════════════════════
    COIN PARTICLE CANVAS
    ═══════════════════════════════════════════════ */
 #coin-canvas {
@@ -775,7 +1104,7 @@ textarea {
 }
 
 /* ═══════════════════════════════════════════════
-   LED FLASH ANIMATION
+   LED FLASH ANIMATIONS
    ═══════════════════════════════════════════════ */
 @keyframes ledFlash1 {
   0%,100% { background:#ffd700; box-shadow:0 0 8px var(--gold-glow),0 0 16px var(--gold-glow); }
@@ -789,54 +1118,9 @@ textarea {
   0%,100% { background:var(--accent); box-shadow:0 0 8px var(--accent-glow); }
   50%      { background:#110022; box-shadow:none; }
 }
-
 .led.flashing-1 { animation: ledFlash1 0.25s infinite; }
 .led.flashing-2 { animation: ledFlash2 0.25s 0.08s infinite; }
 .led.flashing-3 { animation: ledFlash3 0.25s 0.16s infinite; }
-
-/* ═══════════════════════════════════════════════
-   THEME SELECTOR
-   ═══════════════════════════════════════════════ */
-.theme-buttons { display: flex; gap: 6px; }
-.theme-btn {
-  flex: 1;
-  padding: 8px;
-  min-height: 36px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.theme-btn:hover { border-color: var(--accent); color: var(--text); }
-.theme-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
-
-/* ═══════════════════════════════════════════════
-   SOUND TOGGLE
-   ═══════════════════════════════════════════════ */
-#sound-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 8px 12px;
-  min-height: 44px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-dim);
-  font-size: 13px;
-  transition: all 0.2s;
-}
-#sound-toggle:hover { border-color: var(--accent); color: var(--text); }
-#sound-icon { font-size: 16px; }
 
 /* ═══════════════════════════════════════════════
    EMPTY STATE
@@ -920,22 +1204,22 @@ textarea {
           </div>
         </div>
 
-        <!-- Bottom panel with credits -->
+        <!-- Bottom panel with stats -->
         <div id="bottom-panel">
           <div class="credits-display">
-            <div class="credits-label">Credits</div>
-            <div class="credits-value" id="credits-display">99</div>
+            <div class="credits-label" id="credits-label">CREDITS</div>
+            <div class="credits-value" id="credits-display">0</div>
           </div>
           <div class="credits-display">
-            <div class="credits-label">Names</div>
+            <div class="credits-label">NAMES</div>
             <div class="credits-value" id="names-count-display">0</div>
           </div>
           <div class="credits-display">
-            <div class="credits-label">Spins</div>
+            <div class="credits-label">SPINS</div>
             <div class="credits-value" id="spins-display">0</div>
           </div>
           <div class="credits-display">
-            <div class="credits-label">Wins</div>
+            <div class="credits-label">WINS</div>
             <div class="credits-value" id="wins-display">0</div>
           </div>
         </div>
@@ -950,6 +1234,18 @@ textarea {
         </div>
       </div>
 
+      <!-- Game Over overlay -->
+      <div id="gameover-overlay">
+        <div id="gameover-box">
+          <div id="gameover-title">GAME OVER</div>
+          <div id="gameover-stats"></div>
+          <div id="gameover-podium"></div>
+          <button class="btn btn-gold btn-block" id="gameover-play-again" style="font-size:15px;min-height:48px">
+            ▶ Play Again
+          </button>
+        </div>
+      </div>
+
     </div><!-- /slot-machine -->
 
   </div><!-- /game-area -->
@@ -958,12 +1254,48 @@ textarea {
   <div id="admin-panel">
     <div class="panel-header">
       <h2>🎰 Slot Machine</h2>
-      <p>Add viewer names — 3 of a kind wins!</p>
+      <p>Streamer-controlled prize wheel</p>
     </div>
 
     <div class="panel-scroll">
 
-      <!-- Names Section -->
+      <!-- MODE -->
+      <div class="panel-section">
+        <h3>Mode</h3>
+        <div class="btn-group">
+          <button class="mode-btn active" data-mode="spintillx">Spin Till X Winners</button>
+          <button class="mode-btn" data-mode="creditstack">Credit Stack</button>
+        </div>
+      </div>
+
+      <!-- SPIN TILL X: target -->
+      <div class="panel-section" id="section-spintillx">
+        <h3>Goal</h3>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label style="font-size:13px;color:var(--text-dim);white-space:nowrap">Winners needed:</label>
+          <input type="number" id="winners-needed" value="1" min="1" max="999" style="flex:1">
+        </div>
+      </div>
+
+      <!-- CREDIT STACK: credits -->
+      <div class="panel-section" id="section-creditstack" style="display:none">
+        <h3>Credits</h3>
+        <div class="credit-btns">
+          <button class="btn-credit" id="credit-btn-1">+1</button>
+          <button class="btn-credit" id="credit-btn-5">+5</button>
+          <button class="btn-credit" id="credit-btn-10">+10</button>
+          <button class="btn-credit" id="credit-btn-25">+25</button>
+        </div>
+        <div class="input-group">
+          <input type="number" id="custom-credits" placeholder="Custom..." min="1" style="width:100%;text-align:left">
+          <button class="btn btn-sm btn-primary" id="add-custom-credits">Add</button>
+        </div>
+        <div class="credits-balance">
+          Balance: <span class="bal-val" id="credits-admin-display">0</span>
+        </div>
+      </div>
+
+      <!-- NAMES -->
       <div class="panel-section">
         <h3>Names on Reels <span class="count-badge" id="name-count">0</span></h3>
         <div class="input-group">
@@ -973,7 +1305,7 @@ textarea {
         <div id="name-list" class="name-list"></div>
       </div>
 
-      <!-- Bulk Paste -->
+      <!-- BULK ADD -->
       <div class="panel-section">
         <h3>Bulk Add</h3>
         <textarea id="bulk-input" placeholder="Paste names, one per line..."></textarea>
@@ -983,18 +1315,47 @@ textarea {
         </div>
       </div>
 
-      <!-- Spin Controls -->
+      <!-- WIN FLOOR -->
       <div class="panel-section">
-        <h3>Controls</h3>
-        <button class="btn btn-block" id="pull-btn" style="margin-bottom:8px">
-          🎰 Pull Lever <span style="opacity:0.6;font-size:11px">(Space)</span>
-        </button>
-        <button class="btn btn-gold btn-block" id="force-win-btn">
-          ⭐ Force Win (Demo)
+        <h3>Win Floor</h3>
+        <div class="slider-wrap">
+          <input type="range" id="win-floor-slider" min="0" max="100" value="50">
+          <div class="slider-labels">
+            <span>Patient (rare wins)</span>
+            <span>Generous</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPEED -->
+      <div class="panel-section">
+        <h3>Speed</h3>
+        <div class="btn-group" style="margin-bottom:8px">
+          <button class="speed-btn active" data-speed="manual">Manual</button>
+          <button class="speed-btn" data-speed="auto">Auto 3s</button>
+          <button class="speed-btn" data-speed="turbo">Turbo 1s</button>
+        </div>
+        <button class="btn btn-sm btn-danger btn-block" id="speed-stop" style="display:none">⏹ Stop Auto</button>
+        <button class="btn btn-block" id="pull-btn" style="margin-top:4px">
+          🎰 Pull Lever <span style="opacity:0.5;font-size:11px">(Space)</span>
         </button>
       </div>
 
-      <!-- Theme -->
+      <!-- OPTIONS -->
+      <div class="panel-section">
+        <h3>Options</h3>
+        <label class="toggle-row">
+          <input type="checkbox" id="remove-winners-toggle" checked>
+          <div class="toggle-box"></div>
+          <span>Remove winners from reels</span>
+        </label>
+        <button id="sound-toggle" style="margin-top:8px">
+          <span id="sound-icon">🔊</span>
+          <span id="sound-label">Sound On</span>
+        </button>
+      </div>
+
+      <!-- THEME -->
       <div class="panel-section">
         <h3>Theme</h3>
         <div class="theme-buttons">
@@ -1002,15 +1363,6 @@ textarea {
           <button class="theme-btn" data-theme="light">Light</button>
           <button class="theme-btn" data-theme="neon">Neon</button>
         </div>
-      </div>
-
-      <!-- Sound -->
-      <div class="panel-section">
-        <h3>Audio</h3>
-        <button id="sound-toggle">
-          <span id="sound-icon">🔊</span>
-          <span id="sound-label">Sound On</span>
-        </button>
       </div>
 
     </div><!-- /panel-scroll -->
@@ -1041,21 +1393,32 @@ const STATE = {
   totalSpins: 0,
   totalWins: 0,
   adminVisible: true,
-  lastResult: null,
   audioCtx: null,
-  ledInterval: null,
   coinAnimId: null,
   coins: [],
   spinTimeouts: [],
+  // Game mode
+  mode: 'spintillx',       // 'spintillx' | 'creditstack'
+  winnersNeeded: 1,
+  credits: 0,
+  removeWinners: true,
+  winFloor: 50,             // 0-100 slider value
+  pullsSinceLastWin: 0,
+  sessionWinners: [],       // [{name, spin}]
+  speed: 'manual',         // 'manual' | 'auto' | 'turbo'
+  autoInterval: null,
+  gameOver: false,
+  autoWinPause: false,
 };
 
 const REEL_COUNT = 3;
-const ITEM_HEIGHT = 64;   // px per reel item
-const VISIBLE_ITEMS = 3;  // items visible in window (window height = 200px ≈ 3.1 items)
+const ITEM_HEIGHT = 64;
 const REEL_WINDOW_HEIGHT = 200;
-const PAYLINE_CENTER = REEL_WINDOW_HEIGHT / 2; // 100px
+const PAYLINE_CENTER = REEL_WINDOW_HEIGHT / 2;
 
-// Reel badge color palettes
+/* ═══════════════════════════════════════════════
+   COLOR PALETTES
+   ═══════════════════════════════════════════════ */
 const BADGE_COLORS = [
   { bg: 'rgba(124,92,252,0.25)', border: 'rgba(124,92,252,0.6)', text: '#c8b0ff' },
   { bg: 'rgba(255,100,50,0.25)', border: 'rgba(255,100,50,0.6)', text: '#ffb090' },
@@ -1066,11 +1429,8 @@ const BADGE_COLORS = [
   { bg: 'rgba(160,255,80,0.25)', border: 'rgba(160,255,80,0.6)', text: '#c8ffb0' },
   { bg: 'rgba(255,180,0,0.25)',  border: 'rgba(255,180,0,0.6)',  text: '#ffdf80' },
 ];
-
-// Per-name stable color assignment
 const nameColorMap = new Map();
 let colorIdx = 0;
-
 function getNameColor(name) {
   if (!nameColorMap.has(name)) {
     nameColorMap.set(name, BADGE_COLORS[colorIdx % BADGE_COLORS.length]);
@@ -1097,7 +1457,6 @@ function playSound(type) {
     const now = ctx.currentTime;
 
     if (type === 'lever') {
-      // Creaky lever pull — low oscillating noise burst
       const buf = ctx.createBuffer(1, ctx.sampleRate * 0.35, ctx.sampleRate);
       const data = buf.getChannelData(0);
       for (let i = 0; i < data.length; i++) {
@@ -1116,7 +1475,6 @@ function playSound(type) {
     }
 
     if (type === 'spin') {
-      // Mechanical hum — sawtooth wave slowly fading
       const osc = ctx.createOscillator();
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(160, now);
@@ -1129,7 +1487,6 @@ function playSound(type) {
     }
 
     if (type === 'click') {
-      // Sharp mechanical click — short noise burst + thump
       const osc = ctx.createOscillator();
       osc.type = 'square';
       osc.frequency.setValueAtTime(220, now);
@@ -1142,7 +1499,6 @@ function playSound(type) {
     }
 
     if (type === 'jackpot') {
-      // Ascending arpeggio + siren wail
       const notes = [523, 659, 784, 1047, 1319];
       notes.forEach((freq, i) => {
         const osc = ctx.createOscillator();
@@ -1156,8 +1512,6 @@ function playSound(type) {
         osc.connect(g); g.connect(ctx.destination);
         osc.start(t); osc.stop(t + 0.4);
       });
-
-      // Siren
       const siren = ctx.createOscillator();
       siren.type = 'sawtooth';
       siren.frequency.setValueAtTime(400, now + 0.7);
@@ -1172,7 +1526,6 @@ function playSound(type) {
     }
 
     if (type === 'coin') {
-      // High ping for coins
       const osc = ctx.createOscillator();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(1200 + Math.random() * 400, now);
@@ -1183,6 +1536,23 @@ function playSound(type) {
       osc.connect(g); g.connect(ctx.destination);
       osc.start(now); osc.stop(now + 0.2);
     }
+
+    if (type === 'gameover') {
+      // Descending arpeggio — sad trombone vibes
+      const notes = [392, 349, 330, 261];
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.value = freq;
+        const g = ctx.createGain();
+        const t = now + i * 0.25;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.18, t + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(t); osc.stop(t + 0.5);
+      });
+    }
   } catch(e) { /* audio errors are non-fatal */ }
 }
 
@@ -1190,7 +1560,6 @@ function playSound(type) {
    REEL CONSTRUCTION
    ═══════════════════════════════════════════════ */
 function buildStrip(names) {
-  // Repeat names ~25x to make a long scrollable strip
   const strip = [];
   const repeats = Math.max(25, Math.ceil(500 / Math.max(names.length, 1)));
   for (let r = 0; r < repeats; r++) {
@@ -1214,24 +1583,33 @@ function createReelItem(name) {
   return div;
 }
 
+function getActiveNames() {
+  // Names eligible to appear on the reels (not-yet-won, if removeWinners is on)
+  if (!STATE.removeWinners) return STATE.names.slice();
+  const won = new Set(STATE.sessionWinners.map(w => w.name));
+  const active = STATE.names.filter(n => !won.has(n));
+  return active.length > 0 ? active : STATE.names.slice();
+}
+
+function getEligibleWinners() {
+  // Names that can win next spin
+  if (!STATE.removeWinners) return STATE.names.slice();
+  const won = new Set(STATE.sessionWinners.map(w => w.name));
+  const eligible = STATE.names.filter(n => !won.has(n));
+  return eligible.length > 0 ? eligible : STATE.names.slice();
+}
+
 function populateReels() {
-  const names = STATE.names;
+  const names = getActiveNames();
   const isEmpty = names.length === 0;
   document.getElementById('empty-state').classList.toggle('visible', isEmpty);
 
   for (let r = 0; r < REEL_COUNT; r++) {
     const strip = document.getElementById(`strip-${r}`);
     strip.innerHTML = '';
-
     if (isEmpty) continue;
-
     const items = buildStrip(names);
-    items.forEach(name => {
-      strip.appendChild(createReelItem(name));
-    });
-
-    // Position strip so center item is on payline
-    // We want item at index (items.length/2 approx) centered
+    items.forEach(name => strip.appendChild(createReelItem(name)));
     const startIndex = Math.floor(items.length / 2);
     positionStripAtIndex(strip, startIndex);
     strip._items = items;
@@ -1240,158 +1618,219 @@ function populateReels() {
 }
 
 function positionStripAtIndex(strip, idx) {
-  // Center the item at idx on the payline (center of reel window)
-  // top = -(idx * ITEM_HEIGHT) + (REEL_WINDOW_HEIGHT/2 - ITEM_HEIGHT/2)
   const offsetY = -(idx * ITEM_HEIGHT) + (PAYLINE_CENTER - ITEM_HEIGHT / 2);
   strip.style.transform = `translateY(${offsetY}px)`;
   strip._currentIndex = idx;
 }
 
 /* ═══════════════════════════════════════════════
+   WIN DETERMINATION
+   ═══════════════════════════════════════════════ */
+function getMaxDrought(sliderValue) {
+  // slider 0 → 50 max pulls, slider 100 → 1 (guaranteed every time)
+  return Math.max(1, Math.round(50 - (sliderValue / 100) * 49));
+}
+
+function determineOutcome() {
+  const allNames = STATE.names;
+  if (allNames.length === 0) return { win: false, results: ['?', '?', '?'] };
+
+  const eligible = getEligibleWinners();
+  const maxDrought = getMaxDrought(STATE.winFloor);
+  const naturalWin = Math.random() < (1 / allNames.length);
+  const forcedWin  = STATE.pullsSinceLastWin >= maxDrought;
+  const isWin      = naturalWin || forcedWin;
+
+  if (isWin) {
+    const winner = eligible[Math.floor(Math.random() * eligible.length)];
+    return { win: true, results: [winner, winner, winner], winner };
+  }
+
+  // ~20% chance of near-miss (2 of 3 matching)
+  const nearMiss = Math.random() < 0.2 && allNames.length >= 2;
+  let results;
+  if (nearMiss) {
+    const matchName = allNames[Math.floor(Math.random() * allNames.length)];
+    const others = allNames.filter(n => n !== matchName);
+    const diffName = others.length > 0
+      ? others[Math.floor(Math.random() * others.length)]
+      : allNames[(allNames.indexOf(matchName) + 1) % allNames.length];
+    const mismatchPos = Math.floor(Math.random() * 3);
+    results = [matchName, matchName, matchName];
+    results[mismatchPos] = diffName;
+  } else {
+    // Ensure no accidental 3-of-a-kind
+    let attempts = 0;
+    do {
+      results = Array.from({length: 3}, () =>
+        allNames[Math.floor(Math.random() * allNames.length)]
+      );
+      attempts++;
+    } while (results[0] === results[1] && results[1] === results[2] && attempts < 10);
+  }
+  return { win: false, results };
+}
+
+/* ═══════════════════════════════════════════════
    SPIN LOGIC
    ═══════════════════════════════════════════════ */
-function spin(forceWin) {
-  if (STATE.spinning) return;
-  if (STATE.names.length < 1) {
-    setStatus('Add names first!', false);
-    return;
+function spin() {
+  if (STATE.spinning || STATE.gameOver) return;
+  if (STATE.names.length < 1) { setStatus('Add names first!', false); return; }
+
+  // Credit check for Credit Stack mode
+  if (STATE.mode === 'creditstack') {
+    if (STATE.credits <= 0) {
+      setStatus('No credits! Add credits to continue.', false);
+      if (STATE.speed !== 'manual') stopAutoSpin();
+      return;
+    }
+    STATE.credits--;
+    updateMainDisplay();
   }
 
   STATE.spinning = true;
   STATE.totalSpins++;
   updateStats();
-  document.getElementById('pull-btn').disabled = true;
-  document.getElementById('force-win-btn').disabled = true;
+  setStatus('Spinning...', true);
   clearWinState();
 
   playSound('lever');
   setTimeout(() => playSound('spin'), 150);
 
-  // Determine outcome BEFORE animating
-  let results;
-  if (forceWin) {
-    // Pick a random name and put it in all 3 reels center
-    const winner = STATE.names[Math.floor(Math.random() * STATE.names.length)];
-    results = [winner, winner, winner];
-  } else {
-    results = Array.from({length: REEL_COUNT}, () =>
-      STATE.names[Math.floor(Math.random() * STATE.names.length)]
-    );
-  }
-
-  const isWin = results[0] === results[1] && results[1] === results[2];
-
-  // Stop times per reel (ms after spin starts)
+  const outcome = determineOutcome();
   const stopTimes = [1500, 2100, 2700];
 
-  // Start spinning each reel
   for (let r = 0; r < REEL_COUNT; r++) {
-    startReelSpin(r, results[r], stopTimes[r], r === REEL_COUNT - 1, isWin, results);
+    startReelSpin(r, outcome.results[r], stopTimes[r], r === REEL_COUNT - 1, outcome);
   }
-
-  setStatus('Spinning...', true);
 }
 
-function startReelSpin(reelIdx, targetName, stopMs, isLast, isWin, allResults) {
-  const window_ = document.getElementById(`reel-${reelIdx}`);
+function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome) {
+  const win_ = document.getElementById(`reel-${reelIdx}`);
   const strip = document.getElementById(`strip-${reelIdx}`);
-  if (!strip._items || strip._items.length === 0) return;
+  if (!strip._items || strip._items.length === 0) {
+    if (isLast) finalizeSpin(outcome);
+    return;
+  }
 
-  window_.classList.remove('stopped', 'slowing');
-  window_.classList.add('spinning');
+  win_.classList.remove('stopped', 'slowing');
+  win_.classList.add('spinning');
 
-  // Animate strip scrolling rapidly using requestAnimationFrame
   const startTime = performance.now();
-  const spinDuration = stopMs - 300; // slow down 300ms before stop
+  const spinDuration = stopMs - 300;
   const slowDuration = 300;
   let startY = parseInt(strip.style.transform.replace(/[^-\d.]/g, '')) || 0;
-
-  // Speed: pixels per ms during fast spin
-  const fastSpeed = 1.4; // px per ms (roughly 2 items per ~90ms)
+  const fastSpeed = 1.4;
 
   let animId;
   let slowStartY;
   let slowing = false;
+  let currentY = startY;
 
   function animate(now) {
     const elapsed = now - startTime;
 
     if (!slowing && elapsed >= spinDuration) {
       slowing = true;
-      window_.classList.remove('spinning');
-      window_.classList.add('slowing');
+      win_.classList.remove('spinning');
+      win_.classList.add('slowing');
       playSound('spin');
       slowStartY = currentY;
     }
 
     if (!slowing) {
-      // Fast scroll
-      const currentY2 = startY - elapsed * fastSpeed;
-      strip.style.transform = `translateY(${currentY2}px)`;
-      currentY = currentY2;
+      const y = startY - elapsed * fastSpeed;
+      strip.style.transform = `translateY(${y}px)`;
+      currentY = y;
       animId = requestAnimationFrame(animate);
     } else {
-      // Decelerate to target
       const slowElapsed = now - (startTime + spinDuration);
       const progress = Math.min(slowElapsed / slowDuration, 1);
-      const ease = 1 - Math.pow(1 - progress, 3); // cubic ease-out
-
-      // Find where target name is on the strip
+      const ease = 1 - Math.pow(1 - progress, 3);
       const targetIdx = findBestLandingIndex(strip._items, targetName, slowStartY);
       const targetY = -(targetIdx * ITEM_HEIGHT) + (PAYLINE_CENTER - ITEM_HEIGHT / 2);
-
       const y = slowStartY + (targetY - slowStartY) * ease;
       strip.style.transform = `translateY(${y}px)`;
 
       if (progress < 1) {
         animId = requestAnimationFrame(animate);
       } else {
-        // Snapped to position
         strip.style.transform = `translateY(${targetY}px)`;
         strip._currentIndex = targetIdx;
-        window_.classList.remove('slowing');
-        window_.classList.add('stopped');
+        win_.classList.remove('slowing');
+        win_.classList.add('stopped');
         playSound('click');
-
-        if (isLast) {
-          finalizeSpin(isWin, allResults);
-        }
+        if (isLast) finalizeSpin(outcome);
       }
     }
   }
 
-  let currentY = startY;
   animId = requestAnimationFrame(animate);
   STATE.spinTimeouts.push(animId);
 }
 
 function findBestLandingIndex(items, targetName, currentY) {
-  // Find the current approximate center index
   const approxIdx = Math.round((-currentY + PAYLINE_CENTER - ITEM_HEIGHT / 2) / ITEM_HEIGHT);
-
-  // Search forward from approxIdx to find next occurrence of targetName
   for (let offset = 0; offset < items.length; offset++) {
     const idx = (approxIdx + offset) % items.length;
     if (items[idx] === targetName) return idx;
   }
-  // Fallback
   return items.indexOf(targetName) || 0;
 }
 
-function finalizeSpin(isWin, results) {
+function finalizeSpin(outcome) {
   STATE.spinning = false;
-  document.getElementById('pull-btn').disabled = false;
-  document.getElementById('force-win-btn').disabled = false;
-  STATE.lastResult = results;
 
-  if (isWin) {
+  if (outcome.win) {
     STATE.totalWins++;
+    STATE.pullsSinceLastWin = 0;
+    STATE.sessionWinners.push({ name: outcome.winner, spin: STATE.totalSpins });
+
+    if (STATE.removeWinners) {
+      // Rebuild reels without this winner
+      setTimeout(() => populateReels(), 500);
+    }
+
+    triggerWin(outcome.winner, outcome.results);
     updateStats();
-    triggerWin(results[0], results);
+
+    // Check for game over after win
+    if (STATE.mode === 'spintillx' && STATE.sessionWinners.length >= STATE.winnersNeeded) {
+      // Wait for jackpot celebration, then game over
+      STATE.autoWinPause = true;
+      setTimeout(() => {
+        STATE.autoWinPause = false;
+        stopAutoSpin();
+        showGameOver();
+      }, 6000);
+    } else if (STATE.speed !== 'manual') {
+      // In auto/turbo: pause 2s after win so celebration can play
+      STATE.autoWinPause = true;
+      setTimeout(() => { STATE.autoWinPause = false; }, 2200);
+    }
+
+    // Credit Stack: game over if credits ran out on this pull
+    if (STATE.mode === 'creditstack' && STATE.credits <= 0) {
+      const alreadyScheduled = STATE.mode === 'spintillx' &&
+        STATE.sessionWinners.length >= STATE.winnersNeeded;
+      if (!alreadyScheduled) {
+        setTimeout(() => {
+          if (!STATE.gameOver) { stopAutoSpin(); showGameOver(); }
+        }, 6500);
+      }
+    }
   } else {
-    setStatus(`Result: ${results.join(', ')}`, false);
-    // Emit outbound result
-    emitMessage('slots:result', { symbols: results });
+    STATE.pullsSinceLastWin++;
+    setStatus(`${outcome.results.join('  ·  ')}`, false);
+    emitMessage('slots:result', { symbols: outcome.results });
+
+    // Credit Stack: game over when credits hit 0 after a losing spin
+    if (STATE.mode === 'creditstack' && STATE.credits <= 0) {
+      setTimeout(() => {
+        if (!STATE.gameOver) { stopAutoSpin(); showGameOver(); }
+      }, 1200);
+    }
   }
 }
 
@@ -1399,36 +1838,19 @@ function finalizeSpin(isWin, results) {
    WIN STATE
    ═══════════════════════════════════════════════ */
 function triggerWin(winner, symbols) {
-  // Highlight reels
   for (let r = 0; r < REEL_COUNT; r++) {
     document.getElementById(`reel-${r}`).classList.add('win-highlight');
   }
-
-  // Win display in LED panel
   const wd = document.getElementById('win-display');
   wd.textContent = `🎉 ${escapeHtml(winner)} WINS! 🎉`;
   wd.classList.add('visible');
-
-  // Jackpot overlay
   document.getElementById('jackpot-overlay').classList.add('visible');
   document.getElementById('winner-name-display').textContent = winner;
-
-  // LED flash
   startLedFlash();
-
-  // Coins
   startCoinShower();
-
-  // Sound
   playSound('jackpot');
-
-  // Status
   setStatus(`🏆 WINNER: ${winner}!`, false, true);
-
-  // Emit outbound
   emitMessage('slots:winner', { winner, symbols });
-
-  // Auto-clear win state after 6s
   setTimeout(() => clearWinState(), 6000);
 }
 
@@ -1441,6 +1863,178 @@ function clearWinState() {
   stopLedFlash();
   stopCoinShower();
   updateLedIdle();
+}
+
+/* ═══════════════════════════════════════════════
+   GAME OVER
+   ═══════════════════════════════════════════════ */
+function showGameOver() {
+  if (STATE.gameOver) return;
+  STATE.gameOver = true;
+  stopAutoSpin();
+  clearWinState();
+  playSound('gameover');
+
+  const overlay = document.getElementById('gameover-overlay');
+  overlay.classList.add('visible');
+
+  const podium = document.getElementById('gameover-podium');
+  podium.innerHTML = '';
+
+  if (STATE.sessionWinners.length === 0) {
+    const msg = document.createElement('div');
+    msg.id = 'gameover-no-winners';
+    msg.textContent = 'No winners this session.';
+    podium.appendChild(msg);
+  } else {
+    STATE.sessionWinners.forEach((w, i) => {
+      const item = document.createElement('div');
+      item.className = 'podium-item';
+      item.style.animationDelay = `${i * 0.08}s`;
+      const medals = ['🥇','🥈','🥉'];
+      const rank = i < 3 ? medals[i] : `${i + 1}.`;
+      item.innerHTML = `
+        <span class="podium-rank">${rank}</span>
+        <span class="podium-name">${escapeHtml(w.name)}</span>
+        <span class="podium-spin">spin #${w.spin}</span>
+      `;
+      const c = getNameColor(w.name);
+      item.style.borderColor = c.border;
+      podium.appendChild(item);
+    });
+  }
+
+  const wc = STATE.sessionWinners.length;
+  document.getElementById('gameover-stats').textContent =
+    `${wc} winner${wc !== 1 ? 's' : ''} from ${STATE.totalSpins} spin${STATE.totalSpins !== 1 ? 's' : ''}`;
+
+  startCoinShower();
+  emitMessage('slots:gameover', {
+    winners: STATE.sessionWinners.map(w => w.name),
+    totalSpins: STATE.totalSpins,
+  });
+}
+
+function playAgain() {
+  STATE.gameOver = false;
+  STATE.spinning = false;
+  STATE.totalSpins = 0;
+  STATE.totalWins = 0;
+  STATE.pullsSinceLastWin = 0;
+  STATE.sessionWinners = [];
+  STATE.autoWinPause = false;
+  if (STATE.mode === 'creditstack') STATE.credits = 0;
+
+  document.getElementById('gameover-overlay').classList.remove('visible');
+  clearWinState();
+  stopCoinShower();
+  populateReels();
+  updateStats();
+  updateMainDisplay();
+  setStatus('Ready — pull the lever!', false);
+
+  // Restart auto if still in auto/turbo mode
+  if (STATE.speed !== 'manual') {
+    // Wait a beat before resuming
+    setTimeout(() => { if (!STATE.gameOver) startAutoSpin(); }, 1000);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   AUTO / TURBO SPEED
+   ═══════════════════════════════════════════════ */
+function setSpeed(speed) {
+  STATE.speed = speed;
+  document.querySelectorAll('.speed-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.speed === speed);
+  });
+  const stopBtn  = document.getElementById('speed-stop');
+  const pullBtn  = document.getElementById('pull-btn');
+  if (speed === 'manual') {
+    stopAutoSpin();
+    stopBtn.style.display = 'none';
+    pullBtn.style.display = '';
+  } else {
+    stopBtn.style.display = '';
+    pullBtn.style.display = 'none';
+    startAutoSpin();
+  }
+  try { localStorage.setItem('slots_speed', speed); } catch(e) {}
+}
+
+function startAutoSpin() {
+  stopAutoSpin();
+  if (STATE.gameOver) return;
+  const ms = STATE.speed === 'turbo' ? 1000 : 3000;
+  STATE.autoInterval = setInterval(() => {
+    if (STATE.spinning || STATE.autoWinPause || STATE.gameOver) return;
+    if (STATE.mode === 'creditstack' && STATE.credits <= 0) { stopAutoSpin(); return; }
+    animateLeverAuto();
+    // Small delay so the lever animation is visible before spin begins
+    setTimeout(() => spin(), 280);
+  }, ms);
+}
+
+function stopAutoSpin() {
+  if (STATE.autoInterval) { clearInterval(STATE.autoInterval); STATE.autoInterval = null; }
+}
+
+function animateLeverAuto() {
+  const assembly = document.getElementById('lever-assembly');
+  assembly.classList.remove('auto-pulling');
+  void assembly.offsetWidth; // force reflow to restart animation
+  assembly.classList.add('auto-pulling');
+  setTimeout(() => assembly.classList.remove('auto-pulling'), 650);
+  playSound('lever');
+}
+
+/* ═══════════════════════════════════════════════
+   CREDITS
+   ═══════════════════════════════════════════════ */
+function addCredits(amount) {
+  STATE.credits += amount;
+  updateMainDisplay();
+  setStatus(`+${amount} credit${amount !== 1 ? 's' : ''} added!`, false);
+  emitMessage('slots:credits', { credits: STATE.credits });
+  // If in auto/turbo with no interval (stopped due to 0 credits), restart
+  if (STATE.speed !== 'manual' && !STATE.autoInterval && !STATE.gameOver) {
+    startAutoSpin();
+  }
+}
+
+function updateMainDisplay() {
+  const labelEl = document.getElementById('credits-label');
+  const valueEl = document.getElementById('credits-display');
+  const adminEl = document.getElementById('credits-admin-display');
+  if (STATE.mode === 'creditstack') {
+    labelEl.textContent = 'CREDITS';
+    valueEl.textContent = STATE.credits;
+  } else {
+    labelEl.textContent = 'PROGRESS';
+    valueEl.textContent = `${STATE.sessionWinners.length}/${STATE.winnersNeeded}`;
+  }
+  if (adminEl) adminEl.textContent = STATE.credits;
+}
+
+/* ═══════════════════════════════════════════════
+   MODE
+   ═══════════════════════════════════════════════ */
+function setMode(mode) {
+  STATE.mode = mode;
+  stopAutoSpin();
+  // Reset speed to manual on mode switch
+  STATE.speed = 'manual';
+  document.querySelectorAll('.speed-btn').forEach(b => b.classList.toggle('active', b.dataset.speed === 'manual'));
+  document.getElementById('speed-stop').style.display = 'none';
+  document.getElementById('pull-btn').style.display = '';
+
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  document.getElementById('section-spintillx').style.display = mode === 'spintillx' ? '' : 'none';
+  document.getElementById('section-creditstack').style.display = mode === 'creditstack' ? '' : 'none';
+  updateMainDisplay();
+  try { localStorage.setItem('slots_mode', mode); } catch(e) {}
 }
 
 /* ═══════════════════════════════════════════════
@@ -1457,8 +2051,7 @@ function buildLeds() {
 }
 
 function updateLedIdle() {
-  const leds = document.querySelectorAll('.led');
-  leds.forEach((led, i) => {
+  document.querySelectorAll('.led').forEach((led, i) => {
     led.className = 'led';
     const phase = i % 3;
     if (phase === 0) led.classList.add('on-1');
@@ -1468,9 +2061,7 @@ function updateLedIdle() {
 }
 
 function startLedFlash() {
-  stopLedFlash();
-  const leds = document.querySelectorAll('.led');
-  leds.forEach((led, i) => {
+  document.querySelectorAll('.led').forEach((led, i) => {
     led.className = 'led';
     const phase = i % 3;
     if (phase === 0) led.classList.add('flashing-1');
@@ -1479,9 +2070,7 @@ function startLedFlash() {
   });
 }
 
-function stopLedFlash() {
-  updateLedIdle();
-}
+function stopLedFlash() { updateLedIdle(); }
 
 /* ═══════════════════════════════════════════════
    COIN SHOWER
@@ -1512,29 +2101,19 @@ function startCoinShower() {
 
   let spawnInterval = setInterval(spawnCoin, 50);
   setTimeout(() => clearInterval(spawnInterval), 3000);
-  let startTime = performance.now();
 
-  function animate(now) {
+  function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     STATE.coins = STATE.coins.filter(c => c.y < canvas.height + 40 && c.opacity > 0.05);
-
     STATE.coins.forEach(c => {
-      c.x += c.vx;
-      c.y += c.vy;
-      c.vy += c.gravity;
-      c.rot += c.rotSpeed;
+      c.x += c.vx; c.y += c.vy; c.vy += c.gravity; c.rot += c.rotSpeed;
       if (c.y > canvas.height * 0.7) c.opacity -= 0.015;
-
       ctx.save();
       ctx.globalAlpha = c.opacity;
       ctx.translate(c.x, c.y);
       ctx.rotate(c.rot);
-
-      // Draw coin as ellipse (3D perspective)
       const scaleX = Math.abs(Math.cos(c.rot)) * 0.7 + 0.3;
       ctx.scale(scaleX, 1);
-
-      // Coin body
       ctx.beginPath();
       ctx.ellipse(0, 0, c.r, c.r * 0.85, 0, 0, Math.PI * 2);
       const grad = ctx.createRadialGradient(-c.r * 0.3, -c.r * 0.3, 0, 0, 0, c.r);
@@ -1543,37 +2122,26 @@ function startCoinShower() {
       grad.addColorStop(1, '#8b6914');
       ctx.fillStyle = grad;
       ctx.fill();
-
-      // Coin edge highlight
       ctx.strokeStyle = 'rgba(255,255,255,0.4)';
       ctx.lineWidth = 1.5;
       ctx.stroke();
-
-      // Dollar sign or $ symbol
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
       ctx.font = `bold ${Math.floor(c.r * 0.9)}px serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('$', 0, 0);
-
       ctx.restore();
     });
-
     STATE.coinAnimId = requestAnimationFrame(animate);
   }
-
   STATE.coinAnimId = requestAnimationFrame(animate);
 }
 
 function stopCoinShower() {
-  if (STATE.coinAnimId) {
-    cancelAnimationFrame(STATE.coinAnimId);
-    STATE.coinAnimId = null;
-  }
+  if (STATE.coinAnimId) { cancelAnimationFrame(STATE.coinAnimId); STATE.coinAnimId = null; }
   STATE.coins = [];
   const canvas = document.getElementById('coin-canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
 }
 
 /* ═══════════════════════════════════════════════
@@ -1582,7 +2150,6 @@ function stopCoinShower() {
 function addName(name) {
   const trimmed = name.trim();
   if (!trimmed || trimmed.length > 24) return false;
-  // Allow duplicates — more times = higher chance
   STATE.names.push(trimmed);
   saveNames();
   renderNameList();
@@ -1591,8 +2158,8 @@ function addName(name) {
   return true;
 }
 
-function removeName(index) {
-  STATE.names.splice(index, 1);
+function removeName(name) {
+  STATE.names = STATE.names.filter(n => n !== name);
   saveNames();
   renderNameList();
   populateReels();
@@ -1600,10 +2167,8 @@ function removeName(index) {
 }
 
 function clearNames() {
-  if (STATE.spinTimeouts && STATE.spinTimeouts.length) {
-    STATE.spinTimeouts.forEach(id => cancelAnimationFrame(id));
-    STATE.spinTimeouts = [];
-  }
+  STATE.spinTimeouts.forEach(id => cancelAnimationFrame(id));
+  STATE.spinTimeouts = [];
   STATE.names = [];
   saveNames();
   renderNameList();
@@ -1614,19 +2179,14 @@ function clearNames() {
 function renderNameList() {
   const list = document.getElementById('name-list');
   list.innerHTML = '';
-  // Show unique names with counts
   const counts = {};
   STATE.names.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
-  const unique = Object.keys(counts);
-
-  unique.forEach(name => {
+  Object.keys(counts).forEach(name => {
     const item = document.createElement('div');
     item.className = 'name-item';
     const c = getNameColor(name);
-
     const dot = document.createElement('div');
     dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:${c.text};flex-shrink:0`;
-
     const text = document.createElement('div');
     text.className = 'name-item-text';
     text.textContent = name;
@@ -1636,20 +2196,11 @@ function renderNameList() {
       cnt.textContent = `×${counts[name]}`;
       text.appendChild(cnt);
     }
-
     const removeBtn = document.createElement('button');
     removeBtn.className = 'name-remove';
     removeBtn.textContent = '×';
-    removeBtn.title = `Remove all "${name}"`;
-    removeBtn.addEventListener('click', () => {
-      // Remove ALL instances of this name
-      STATE.names = STATE.names.filter(n => n !== name);
-      saveNames();
-      renderNameList();
-      populateReels();
-      updateNameCount();
-    });
-
+    removeBtn.title = `Remove "${name}"`;
+    removeBtn.addEventListener('click', () => removeName(name));
     item.appendChild(dot);
     item.appendChild(text);
     item.appendChild(removeBtn);
@@ -1666,8 +2217,7 @@ function updateNameCount() {
 function updateStats() {
   document.getElementById('spins-display').textContent = STATE.totalSpins;
   document.getElementById('wins-display').textContent = STATE.totalWins;
-  const credits = Math.max(0, 99 - STATE.totalSpins + STATE.totalWins * 10);
-  document.getElementById('credits-display').textContent = credits;
+  updateMainDisplay();
 }
 
 /* ═══════════════════════════════════════════════
@@ -1676,7 +2226,6 @@ function updateStats() {
 function saveNames() {
   try { localStorage.setItem('slots_names', JSON.stringify(STATE.names)); } catch(e) {}
 }
-
 function loadNames() {
   try {
     const saved = localStorage.getItem('slots_names');
@@ -1707,26 +2256,51 @@ function emitMessage(type, data) {
 window.addEventListener('message', function(e) {
   const d = e.data;
   if (!d || typeof d.type !== 'string') return;
-
-  switch(d.type) {
+  switch (d.type) {
+    // Inbound: names
     case 'slots:add':
       if (d.name) addName(String(d.name).substring(0, 24));
       if (Array.isArray(d.names)) d.names.forEach(n => addName(String(n).substring(0, 24)));
       break;
-    case 'slots:pull':
-      spin(false);
-      break;
-    case 'slots:winner':
-      // Force a specific winner
-      if (d.name && STATE.names.includes(d.name)) {
-        spin(true); // simplified — just force win
-      }
+    case 'slots:remove':
+      if (d.name) removeName(String(d.name));
       break;
     case 'slots:clear':
       clearNames();
       break;
     case 'slots:names':
       emitMessage('slots:names', { names: STATE.names.slice() });
+      break;
+    // Inbound: game control
+    case 'slots:pull':
+      if (STATE.speed === 'manual') spin();
+      break;
+    case 'slots:start':
+      spin();
+      break;
+    case 'slots:auto':
+      setSpeed('auto');
+      break;
+    case 'slots:turbo':
+      setSpeed('turbo');
+      break;
+    case 'slots:stop':
+      setSpeed('manual');
+      break;
+    // Inbound: credits
+    case 'slots:addcredits':
+      if (typeof d.amount === 'number' && d.amount > 0) addCredits(d.amount);
+      break;
+    // Inbound: mode / config
+    case 'slots:mode':
+      if (d.mode === 'spintillx' || d.mode === 'creditstack') setMode(d.mode);
+      break;
+    case 'slots:setwins':
+      if (typeof d.count === 'number' && d.count >= 1) {
+        STATE.winnersNeeded = d.count;
+        document.getElementById('winners-needed').value = d.count;
+        updateMainDisplay();
+      }
       break;
   }
 });
@@ -1736,28 +2310,19 @@ window.addEventListener('message', function(e) {
    ═══════════════════════════════════════════════ */
 function applyUrlParams() {
   const p = new URLSearchParams(window.location.search);
-
-  if (p.get('bg') === 'transparent') {
-    document.body.classList.add('transparent-bg');
-  }
-
+  if (p.get('bg') === 'transparent') document.body.classList.add('transparent-bg');
   const theme = p.get('theme');
-  if (theme && ['dark','light','neon'].includes(theme)) {
-    setTheme(theme);
-  }
-
+  if (theme && ['dark','light','neon'].includes(theme)) setTheme(theme);
   const admin = p.get('admin');
   if (admin === 'false') {
     STATE.adminVisible = false;
     document.getElementById('admin-panel').classList.add('hidden');
     document.getElementById('admin-toggle').style.display = 'none';
   }
-
   const names = p.get('names');
   if (names) {
     const rawNames = names.split(',').map(n => n.trim()).filter(n => n);
-    const uniqueNames = [...new Set(rawNames)];
-    uniqueNames.forEach(n => addName(n.substring(0, 24)));
+    [...new Set(rawNames)].forEach(n => addName(n.substring(0, 24)));
   }
 }
 
@@ -1809,16 +2374,62 @@ function bindEvents() {
     if (STATE.names.length === 0 || confirm('Clear all names?')) clearNames();
   });
 
-  // Pull lever button
-  document.getElementById('pull-btn').addEventListener('click', () => spin(false));
-
-  // Force win
-  document.getElementById('force-win-btn').addEventListener('click', () => {
-    if (STATE.names.length > 0) spin(true);
-    else setStatus('Add names first!', false);
+  // Pull lever button (manual mode only)
+  document.getElementById('pull-btn').addEventListener('click', () => {
+    if (STATE.speed === 'manual') spin();
   });
 
-  // Lever drag interaction
+  // Mode buttons
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => setMode(btn.dataset.mode));
+  });
+
+  // Speed buttons
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.addEventListener('click', () => setSpeed(btn.dataset.speed));
+  });
+
+  // Stop auto
+  document.getElementById('speed-stop').addEventListener('click', () => setSpeed('manual'));
+
+  // Winners needed
+  document.getElementById('winners-needed').addEventListener('input', function() {
+    const v = parseInt(this.value);
+    if (v >= 1) { STATE.winnersNeeded = v; updateMainDisplay(); }
+  });
+
+  // Credit buttons
+  [1, 5, 10, 25].forEach(amt => {
+    document.getElementById(`credit-btn-${amt}`).addEventListener('click', () => addCredits(amt));
+  });
+  document.getElementById('add-custom-credits').addEventListener('click', () => {
+    const inp = document.getElementById('custom-credits');
+    const v = parseInt(inp.value);
+    if (v >= 1) { addCredits(v); inp.value = ''; }
+  });
+  document.getElementById('custom-credits').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('add-custom-credits').click();
+  });
+
+  // Remove winners toggle
+  document.getElementById('remove-winners-toggle').addEventListener('change', function() {
+    STATE.removeWinners = this.checked;
+    populateReels();
+    try { localStorage.setItem('slots_removewins', this.checked ? '1' : '0'); } catch(e) {}
+  });
+
+  // Win floor slider
+  document.getElementById('win-floor-slider').addEventListener('input', function() {
+    STATE.winFloor = parseInt(this.value);
+    try { localStorage.setItem('slots_winfloor', this.value); } catch(e) {}
+  });
+
+  // Play again
+  document.getElementById('gameover-play-again').addEventListener('click', playAgain);
+
+  // ─────────────────────────────────────────────
+  // LEVER DRAG INTERACTION (vertical)
+  // ─────────────────────────────────────────────
   (() => {
     const assembly = document.getElementById('lever-assembly');
     const ball = document.getElementById('lever-ball');
@@ -1860,10 +2471,7 @@ function bindEvents() {
       shaft.style.height = SHAFT_HEIGHT + 'px';
       shaft.style.top = SHAFT_TOP + 'px';
       ball.style.boxShadow = '';
-      setTimeout(() => {
-        ball.style.transition = '';
-        shaft.style.transition = '';
-      }, 450);
+      setTimeout(() => { ball.style.transition = ''; shaft.style.transition = ''; }, 450);
       currentPull = 0;
     }
 
@@ -1881,16 +2489,13 @@ function bindEvents() {
         shaft.style.height = SHAFT_HEIGHT + 'px';
         shaft.style.top = SHAFT_TOP + 'px';
         ball.style.boxShadow = '';
-        setTimeout(() => {
-          ball.style.transition = '';
-          shaft.style.transition = '';
-        }, 550);
+        setTimeout(() => { ball.style.transition = ''; shaft.style.transition = ''; }, 550);
       }, 300);
-      spin(false);
+      spin();
     }
 
     function onStart(e) {
-      if (STATE.spinning) return;
+      if (STATE.spinning || STATE.speed !== 'manual') return;
       e.preventDefault();
       isDragging = true;
       startY = (e.touches ? e.touches[0].clientY : e.clientY) - currentPull;
@@ -1926,15 +2531,13 @@ function bindEvents() {
     document.addEventListener('touchmove', onMove, { passive: false });
     document.addEventListener('touchend', onEnd);
 
-    // Click on assembly (not ball) as fallback
     assembly.addEventListener('click', (e) => {
       if (e.target === ball) return;
-      if (!STATE.spinning) spin(false);
+      if (!STATE.spinning && STATE.speed === 'manual') spin();
     });
 
-    // Keyboard: Enter/Space triggers animated pull
     assembly.addEventListener('keydown', e => {
-      if ((e.key === 'Enter' || e.key === ' ') && !STATE.spinning) {
+      if ((e.key === 'Enter' || e.key === ' ') && !STATE.spinning && STATE.speed === 'manual') {
         e.preventDefault();
         autoComplete();
       }
@@ -1945,8 +2548,10 @@ function bindEvents() {
   document.addEventListener('keydown', e => {
     if (e.code === 'Space' && !e.target.matches('input, textarea, button')) {
       e.preventDefault();
-      const assembly = document.getElementById('lever-assembly');
-      assembly.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      if (STATE.speed === 'manual') {
+        const assembly = document.getElementById('lever-assembly');
+        assembly.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      }
     }
   });
 
@@ -1985,38 +2590,47 @@ function init() {
   updateLedIdle();
   loadNames();
 
-  // Load saved theme (URL param takes priority over localStorage)
-  const _urlTheme = new URLSearchParams(location.search).get('theme');
-  if (_urlTheme && ['dark','light','neon'].includes(_urlTheme)) {
-    setTheme(_urlTheme);
-  } else {
-    try {
-      const t = localStorage.getItem('slots_theme');
-      if (t && ['dark','light','neon'].includes(t)) setTheme(t);
-    } catch(e) {}
-  }
-
-  // Load sound pref
+  // Restore saved settings
   try {
+    const savedTheme = localStorage.getItem('slots_theme');
+    if (savedTheme && ['dark','light','neon'].includes(savedTheme)) setTheme(savedTheme);
     const s = localStorage.getItem('slots_sound');
     if (s === '0') {
       STATE.soundEnabled = false;
       document.getElementById('sound-icon').textContent = '🔇';
       document.getElementById('sound-label').textContent = 'Sound Off';
     }
+    const m = localStorage.getItem('slots_mode');
+    if (m === 'creditstack') {
+      // setMode will be called after bindEvents; store for later
+      STATE.mode = 'creditstack';
+    }
+    const wf = localStorage.getItem('slots_winfloor');
+    if (wf !== null) {
+      STATE.winFloor = parseInt(wf);
+      document.getElementById('win-floor-slider').value = STATE.winFloor;
+    }
+    const rw = localStorage.getItem('slots_removewins');
+    if (rw === '0') {
+      STATE.removeWinners = false;
+      document.getElementById('remove-winners-toggle').checked = false;
+    }
   } catch(e) {}
 
   applyUrlParams();
+  bindEvents();
+
+  // Apply restored mode after events are bound
+  if (STATE.mode === 'creditstack') setMode('creditstack');
+
   renderNameList();
   updateNameCount();
   updateStats();
+  updateMainDisplay();
   populateReels();
-  bindEvents();
   setStatus('Ready — pull the lever!', false);
-  // Auto-focus name input for fast entry
   setTimeout(() => { const inp = document.getElementById('name-input'); if (inp) inp.focus(); }, 100);
 
-  // Canvas sizing
   const canvas = document.getElementById('coin-canvas');
   canvas.width = canvas.offsetWidth;
   canvas.height = canvas.offsetHeight;

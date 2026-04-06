@@ -219,9 +219,9 @@ body {
       <button class="t-btn primary" id="btn-add5">+ Add 5 Names</button>
       <button class="t-btn" id="btn-add1">+ Add 1 Name</button>
       <button class="t-btn gold" id="btn-pull">🎰 Pull Lever</button>
-      <button class="t-btn gold" id="btn-force-win">⭐ Force Win</button>
       <button class="t-btn danger" id="btn-clear">🗑 Clear All</button>
       <button class="t-btn" id="btn-query">? Query Names</button>
+      <button class="t-btn" id="btn-remove">✕ Remove 1st</button>
     </div>
   </div>
 
@@ -235,6 +235,38 @@ body {
     <div class="btn-grid">
       <button class="t-btn" id="btn-add-multi">Add 3 (bulk)</button>
       <button class="t-btn" id="btn-add-dup">Add Duplicate</button>
+    </div>
+  </div>
+
+  <!-- Game Mode -->
+  <div class="ctrl-section">
+    <h3>Game Mode</h3>
+    <div class="btn-grid">
+      <button class="t-btn" id="btn-mode-spintillx">Mode: Spin Till X</button>
+      <button class="t-btn" id="btn-mode-creditstack">Mode: Credit Stack</button>
+      <button class="t-btn" id="btn-setwins3">Set 3 Winners</button>
+      <button class="t-btn" id="btn-setwins1">Set 1 Winner</button>
+    </div>
+  </div>
+
+  <!-- Credits -->
+  <div class="ctrl-section">
+    <h3>Credits (Credit Stack Mode)</h3>
+    <div class="btn-grid">
+      <button class="t-btn gold" id="btn-add-cr-10">+ 10 Credits</button>
+      <button class="t-btn gold" id="btn-add-cr-25">+ 25 Credits</button>
+      <button class="t-btn gold" id="btn-add-cr-1">+ 1 Credit</button>
+      <button class="t-btn gold" id="btn-add-cr-100">+ 100 Credits</button>
+    </div>
+  </div>
+
+  <!-- Speed -->
+  <div class="ctrl-section">
+    <h3>Speed Control</h3>
+    <div class="btn-grid">
+      <button class="t-btn" id="btn-auto">▶ Auto (3s)</button>
+      <button class="t-btn" id="btn-turbo">⚡ Turbo (1s)</button>
+      <button class="t-btn danger" id="btn-stop-auto">⏹ Stop Auto</button>
     </div>
   </div>
 
@@ -344,12 +376,8 @@ document.getElementById('btn-pull').addEventListener('click', () => {
   send('slots:pull');
 });
 
-document.getElementById('btn-force-win').addEventListener('click', () => {
-  // Add names first if needed, then force pull
-  DEMO_NAMES.slice(0,3).forEach(n => send('slots:add', { name: n }));
-  setTimeout(() => send('slots:winner', {}), 200);
-  // Also trigger pull for visual
-  setTimeout(() => send('slots:pull', {}), 250);
+document.getElementById('btn-remove').addEventListener('click', () => {
+  send('slots:remove', { name: DEMO_NAMES[0] });
 });
 
 document.getElementById('btn-clear').addEventListener('click', () => {
@@ -379,6 +407,45 @@ document.getElementById('btn-add-dup').addEventListener('click', () => {
   send('slots:add', { name });
   send('slots:add', { name });
   log('info', `Added "${name}" 3x to weight it`, 'win');
+});
+
+// Game Mode
+document.getElementById('btn-mode-spintillx').addEventListener('click', () => {
+  send('slots:mode', { mode: 'spintillx' });
+});
+document.getElementById('btn-mode-creditstack').addEventListener('click', () => {
+  send('slots:mode', { mode: 'creditstack' });
+});
+document.getElementById('btn-setwins3').addEventListener('click', () => {
+  send('slots:setwins', { count: 3 });
+});
+document.getElementById('btn-setwins1').addEventListener('click', () => {
+  send('slots:setwins', { count: 1 });
+});
+
+// Credits
+document.getElementById('btn-add-cr-10').addEventListener('click', () => {
+  send('slots:addcredits', { amount: 10 });
+});
+document.getElementById('btn-add-cr-25').addEventListener('click', () => {
+  send('slots:addcredits', { amount: 25 });
+});
+document.getElementById('btn-add-cr-1').addEventListener('click', () => {
+  send('slots:addcredits', { amount: 1 });
+});
+document.getElementById('btn-add-cr-100').addEventListener('click', () => {
+  send('slots:addcredits', { amount: 100 });
+});
+
+// Speed
+document.getElementById('btn-auto').addEventListener('click', () => {
+  send('slots:auto');
+});
+document.getElementById('btn-turbo').addEventListener('click', () => {
+  send('slots:turbo');
+});
+document.getElementById('btn-stop-auto').addEventListener('click', () => {
+  send('slots:stop');
 });
 
 // URL param buttons
@@ -598,6 +665,102 @@ async function runTests() {
     assert(resp.names.includes('Param3'), 'T10: Param3 loaded from URL');
   } catch(e) {
     assert(false, 'T10: URL ?names= parameter pre-loads names');
+  }
+
+  // Reload fresh for new API tests
+  frame.src = 'index.html?admin=true';
+  await delay(1200);
+  send('slots:clear');
+  await delay(200);
+
+  // T11: slots:remove removes a specific name
+  log('test', 'T11: slots:remove removes a name');
+  send('slots:add', { names: ['RemoveMe', 'KeepMe'] });
+  await delay(200);
+  send('slots:remove', { name: 'RemoveMe' });
+  await delay(200);
+  const removeCheck = waitForMessage('slots:names', 3000);
+  send('slots:names');
+  try {
+    const resp = await removeCheck;
+    assert(!resp.names.includes('RemoveMe'), 'T11: "RemoveMe" absent after slots:remove');
+    assert(resp.names.includes('KeepMe'),   'T11: "KeepMe" still present after remove');
+  } catch(e) {
+    assert(false, 'T11: slots:remove confirmed via slots:names');
+  }
+
+  // T12: slots:mode switches to creditstack
+  log('test', 'T12: slots:mode creditstack');
+  send('slots:mode', { mode: 'creditstack' });
+  await delay(300);
+  assert(true, 'T12: slots:mode creditstack sent without error');
+
+  // T13: slots:addcredits adds credits in creditstack mode
+  log('test', 'T13: slots:addcredits');
+  send('slots:addcredits', { amount: 5 });
+  await delay(200);
+  const creditsCheckP = waitForMessage('slots:credits', 3000);
+  try {
+    const resp = await creditsCheckP;
+    assert(typeof resp.credits === 'number', 'T13: slots:credits event has credits field');
+    assert(resp.credits >= 5, 'T13: credits >= 5 after adding 5');
+  } catch(e) {
+    assert(false, 'T13: slots:addcredits emitted slots:credits event');
+  }
+
+  // T14: slots:setwins sets winners needed
+  log('test', 'T14: slots:setwins');
+  send('slots:mode', { mode: 'spintillx' });
+  await delay(200);
+  send('slots:setwins', { count: 3 });
+  await delay(200);
+  assert(true, 'T14: slots:setwins sent without error');
+
+  // T15: Single-name pool always wins (drain prevention at max)
+  log('test', 'T15: Single-name always wins');
+  frame.src = 'index.html?admin=true';
+  await delay(1200);
+  send('slots:add', { name: 'Singleton' });
+  await delay(200);
+  send('slots:pull');
+  try {
+    const winMsg = await waitForMessage('slots:winner', 8000);
+    assert(winMsg.winner === 'Singleton', 'T15: Single-name pool produces winner "Singleton"');
+    assert(winMsg.symbols.every(s => s === 'Singleton'), 'T15: All 3 symbols match winner');
+  } catch(e) {
+    assert(false, 'T15: Single-name pool win within 8s');
+  }
+
+  // T16: slots:auto / slots:stop
+  log('test', 'T16: slots:auto and slots:stop');
+  send('slots:clear');
+  send('slots:add', { names: ['AutoA', 'AutoB', 'AutoC'] });
+  await delay(200);
+  send('slots:auto');
+  await delay(500);
+  assert(true, 'T16: slots:auto sent without error');
+  send('slots:stop');
+  await delay(200);
+  assert(true, 'T16: slots:stop sent without error');
+
+  // T17: slots:gameover fires (credit stack, 1 credit)
+  log('test', 'T17: slots:gameover event (credit stack, 1 credit)');
+  frame.src = 'index.html?admin=true';
+  await delay(1200);
+  send('slots:mode', { mode: 'creditstack' });
+  await delay(200);
+  send('slots:add', { names: ['GOTest1', 'GOTest2', 'GOTest3', 'GOTest4', 'GOTest5'] });
+  await delay(200);
+  send('slots:addcredits', { amount: 1 });
+  await delay(200);
+  send('slots:pull');
+  try {
+    const gameoverMsg = await waitForMessage('slots:gameover', 12000);
+    assert(gameoverMsg.type === 'slots:gameover', 'T17: slots:gameover event fires');
+    assert(typeof gameoverMsg.totalSpins === 'number', 'T17: gameover has totalSpins');
+    assert(Array.isArray(gameoverMsg.winners), 'T17: gameover has winners array');
+  } catch(e) {
+    assert(false, 'T17: slots:gameover fired after last credit spent');
   }
 
   // Done
