@@ -1048,6 +1048,15 @@ function generateTrack() {
 
   let y = startY;
 
+  // Starting funnel — wide V that collects all marbles onto the first ramp entry
+  const funnelEntryW = W * 0.4;
+  const firstRampX = margin; // first ramp starts left side going right
+  const funnelEntryY = startY;
+  // Left wall of starting funnel — angled from center-left down to left margin
+  ramps.push({ x1: W / 2 - funnelEntryW, y1: funnelEntryY - 30, x2: margin + 10, y2: funnelEntryY + 8, isFunnel: true });
+  // Right wall of starting funnel — angled from center-right down to left margin area
+  ramps.push({ x1: W / 2 + funnelEntryW, y1: funnelEntryY - 30, x2: margin + 50, y2: funnelEntryY + 8, isFunnel: true });
+
   for (let i = 0; i < numSwitchbacks; i++) {
     const goingRight = (i % 2 === 0);
     const startX = goingRight ? margin : W - margin;
@@ -1117,12 +1126,12 @@ class Marble {
     if (this.trail.length > 6) this.trail.shift();
     this.x += this.vx * dt;
     this.y += this.vy * dt;
-    // Stuck detection — nudge if no vertical progress in 3s
+    // Stuck detection — nudge if no vertical progress in 2s
     const now = performance.now();
-    if (now - this.lastProgressCheck > 3000) {
-      if (this.y - this.lastProgressY < 30) {
-        this.vy += 200;
-        this.vx += (Math.random() - 0.5) * 150;
+    if (now - this.lastProgressCheck > 2000) {
+      if (this.y - this.lastProgressY < 20) {
+        this.vy += 300;
+        this.vx += (Math.random() - 0.5) * 200;
       }
       this.lastProgressY = this.y;
       this.lastProgressCheck = now;
