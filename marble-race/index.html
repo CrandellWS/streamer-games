@@ -854,14 +854,15 @@ const MARBLE_COLORS = [
   '#ffff44','#44ff88','#ff8844','#88ffff','#cc44ff'
 ];
 
-const GRAVITY = 650; // px/s²
-const RESTITUTION_PEG = 0.62;
-const RESTITUTION_WALL = 0.55;
-const RESTITUTION_MARBLE = 0.45;
-const FRICTION = 0.985;
-const MARBLE_RADIUS = 12;
+const GRAVITY = 800; // px/s²
+const RESTITUTION_PEG = 0.55;
+const RESTITUTION_WALL = 0.5;
+const RESTITUTION_MARBLE = 0.4;
+const FRICTION = 0.992;
+const MARBLE_RADIUS = 10;
 const PEG_RADIUS = 7;
-const TERMINAL_VELOCITY = 500; // px/s max downward speed
+const TERMINAL_VELOCITY = 600; // px/s max downward speed
+const RAMP_HALF_THICKNESS = 4;
 
 /* ═══════════════════════════════════════════════
    URL PARAMS
@@ -1027,7 +1028,196 @@ function seededRand(seed) {
 }
 
 /* ═══════════════════════════════════════════════
-   TRACK GENERATION — switchback ramp style
+   MODULAR TRACK PIECES
+   Each piece: generate(x, y, w, h, rng)
+   x = left edge, y = top, w = usable width, h = allocated height
+   Returns { ramps: [...], pegs: [...] }
+   ═══════════════════════════════════════════════ */
+const TRACK_PIECES = (function() {
+  const pieces = {};
+
+  // straight-left: ramp going left → right
+  pieces['straight-left'] = {
+    name: 'straight-left',
+    entryX: 'any',
+    exitX: 'right',
+    generate(x, y, w, h, rng) {
+      const ramps = [], pegs = [];
+      const x1 = x, y1 = y + h * 0.15;
+      const x2 = x + w, y2 = y1 + h * 0.38;
+      ramps.push({ x1, y1, x2, y2, isRamp: true });
+      const pegCount = 1 + Math.floor(rng() * 2);
+      for (let i = 0; i < pegCount; i++) {
+        const t = 0.25 + rng() * 0.5;
+        const px = x1 + (x2 - x1) * t;
+        const py = y1 + (y2 - y1) * t - 14 - rng() * 8;
+        pegs.push({ x: px, y: py, r: 4 + rng() * 2 });
+      }
+      return { ramps, pegs };
+    }
+  };
+
+  // straight-right: ramp going right → left
+  pieces['straight-right'] = {
+    name: 'straight-right',
+    entryX: 'any',
+    exitX: 'left',
+    generate(x, y, w, h, rng) {
+      const ramps = [], pegs = [];
+      const x1 = x + w, y1 = y + h * 0.15;
+      const x2 = x, y2 = y1 + h * 0.38;
+      ramps.push({ x1, y1, x2, y2, isRamp: true });
+      const pegCount = 1 + Math.floor(rng() * 2);
+      for (let i = 0; i < pegCount; i++) {
+        const t = 0.25 + rng() * 0.5;
+        const px = x1 + (x2 - x1) * t;
+        const py = y1 + (y2 - y1) * t - 14 - rng() * 8;
+        pegs.push({ x: px, y: py, r: 4 + rng() * 2 });
+      }
+      return { ramps, pegs };
+    }
+  };
+
+  // funnel-drop: V-funnel narrowing to center
+  pieces['funnel-drop'] = {
+    name: 'funnel-drop',
+    entryX: 'any',
+    exitX: 'center',
+    generate(x, y, w, h, rng) {
+      const ramps = [], pegs = [];
+      const cx = x + w / 2;
+      const gap = MARBLE_RADIUS * 1.6;
+      const topY = y + h * 0.1;
+      const botY = y + h * 0.8;
+      ramps.push({ x1: x, y1: topY, x2: cx - gap, y2: botY, isFunnel: true });
+      ramps.push({ x1: x + w, y1: topY, x2: cx + gap, y2: botY, isFunnel: true });
+      return { ramps, pegs };
+    }
+  };
+
+  // zigzag: three alternating short ramps stacked vertically
+  pieces['zigzag'] = {
+    name: 'zigzag',
+    entryX: 'any',
+    exitX: 'any',
+    generate(x, y, w, h, rng) {
+      const ramps = [], pegs = [];
+      const segH = h / 3;
+      const pad = w * 0.06;
+      // Ramp 1: left → right
+      ramps.push({ x1: x + pad, y1: y + segH * 0.1, x2: x + w * 0.78, y2: y + segH * 0.82, isRamp: true });
+      // Right turn guide
+      ramps.push({ x1: x + w, y1: y + segH * 0.72, x2: x + w * 0.78, y2: y + segH * 1.05, isFunnel: true });
+      // Ramp 2: right → left
+      ramps.push({ x1: x + w - pad, y1: y + segH * 1.15, x2: x + w * 0.22, y2: y + segH * 1.82, isRamp: true });
+      // Left turn guide
+      ramps.push({ x1: x, y1: y + segH * 1.72, x2: x + w * 0.22, y2: y + segH * 2.05, isFunnel: true });
+      // Ramp 3: left → right
+      ramps.push({ x1: x + pad, y1: y + segH * 2.15, x2: x + w * 0.78, y2: y + segH * 2.82, isRamp: true });
+      return { ramps, pegs };
+    }
+  };
+
+  // bumper-field: open area with scattered pegs, no ramps
+  pieces['bumper-field'] = {
+    name: 'bumper-field',
+    entryX: 'any',
+    exitX: 'any',
+    generate(x, y, w, h, rng) {
+      const ramps = [], pegs = [];
+      const pegCount = 6 + Math.floor(rng() * 5);
+      const cols = 4;
+      const rows = Math.ceil(pegCount / cols);
+      const colW = w / cols;
+      const rowH = (h * 0.72) / rows;
+      for (let i = 0; i < pegCount; i++) {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const px = x + colW * col + colW * 0.25 + rng() * colW * 0.5;
+        const py = y + h * 0.1 + rowH * row + rng() * rowH * 0.5;
+        pegs.push({ x: px, y: py, r: 5 + rng() * 3 });
+      }
+      return { ramps, pegs };
+    }
+  };
+
+  // wide-lane: full-width gentle slope with side rails
+  pieces['wide-lane'] = {
+    name: 'wide-lane',
+    entryX: 'any',
+    exitX: 'any',
+    generate(x, y, w, h, rng) {
+      const ramps = [], pegs = [];
+      const slopeY = h * 0.2 + rng() * h * 0.15;
+      const rampY1 = y + h * 0.2;
+      const rampY2 = rampY1 + slopeY;
+      ramps.push({ x1: x, y1: rampY1, x2: x + w, y2: rampY2, isRamp: true });
+      // Side rails
+      ramps.push({ x1: x, y1: y + h * 0.1, x2: x, y2: y + h * 0.85, isFunnel: true });
+      ramps.push({ x1: x + w, y1: y + h * 0.1, x2: x + w, y2: y + h * 0.85, isFunnel: true });
+      return { ramps, pegs };
+    }
+  };
+
+  // s-curve: two opposite curves forming an S
+  pieces['s-curve'] = {
+    name: 's-curve',
+    entryX: 'any',
+    exitX: 'any',
+    generate(x, y, w, h, rng) {
+      const ramps = [], pegs = [];
+      const h1 = h * 0.44;
+      const h2 = h * 0.44;
+      // First curve: left → right
+      ramps.push({ x1: x + w * 0.05, y1: y + h * 0.08, x2: x + w * 0.88, y2: y + h1, isRamp: true });
+      // Right turn guide
+      ramps.push({ x1: x + w * 0.88, y1: y + h1 - h * 0.04, x2: x + w, y2: y + h1 + h * 0.08, isFunnel: true });
+      // Second curve: right → left
+      ramps.push({ x1: x + w * 0.95, y1: y + h1 + h * 0.05, x2: x + w * 0.12, y2: y + h1 + h2, isRamp: true });
+      // Left turn guide
+      ramps.push({ x1: x + w * 0.12, y1: y + h1 + h2 - h * 0.04, x2: x, y2: y + h1 + h2 + h * 0.08, isFunnel: true });
+      // Center peg for drama
+      pegs.push({ x: x + w * 0.5 + (rng() - 0.5) * w * 0.2, y: y + h * 0.5, r: 4 + rng() * 2 });
+      return { ramps, pegs };
+    }
+  };
+
+  // drop-chute: narrow vertical channel with interior pegs
+  pieces['drop-chute'] = {
+    name: 'drop-chute',
+    entryX: 'any',
+    exitX: 'any',
+    generate(x, y, w, h, rng) {
+      const ramps = [], pegs = [];
+      const cx = x + w / 2;
+      const chuteHalfW = w * 0.14;
+      // Entry funnel gathering marbles from wide to chute width
+      ramps.push({ x1: x + w * 0.15, y1: y + h * 0.05, x2: cx - chuteHalfW, y2: y + h * 0.22, isFunnel: true });
+      ramps.push({ x1: x + w * 0.85, y1: y + h * 0.05, x2: cx + chuteHalfW, y2: y + h * 0.22, isFunnel: true });
+      // Chute walls
+      ramps.push({ x1: cx - chuteHalfW, y1: y + h * 0.2, x2: cx - chuteHalfW, y2: y + h * 0.88, isFunnel: true });
+      ramps.push({ x1: cx + chuteHalfW, y1: y + h * 0.2, x2: cx + chuteHalfW, y2: y + h * 0.88, isFunnel: true });
+      // Interior pegs
+      const pegCount = 2 + Math.floor(rng() * 2);
+      for (let i = 0; i < pegCount; i++) {
+        const px = cx + (rng() - 0.5) * chuteHalfW * 1.1;
+        const py = y + h * 0.28 + i * (h * 0.45 / pegCount) + rng() * h * 0.06;
+        pegs.push({ x: px, y: py, r: 4 });
+      }
+      return { ramps, pegs };
+    }
+  };
+
+  return pieces;
+})();
+
+function isCompatible(exit, entry) {
+  if (entry === 'any' || exit === 'any') return true;
+  return exit === entry;
+}
+
+/* ═══════════════════════════════════════════════
+   TRACK GENERATION — modular piece system
    ═══════════════════════════════════════════════ */
 function generateTrack() {
   pegs = [];
@@ -1035,64 +1225,43 @@ function generateTrack() {
   const rng = seededRand(trackGenSeed * 1e9 | 0);
   const W = canvas.width;
   const H = canvas.height;
-
-  const numSwitchbacks = trackLength === 'short' ? 3 : trackLength === 'long' ? 8 : 5;
-  const margin = W * 0.08;
-  const startY = 60;
+  const margin = W * 0.05;
+  const usableW = W - margin * 2;
+  const startY = 50;
   const endY = H - 60;
-  const totalHeight = endY - startY;
-  const switchbackH = totalHeight / numSwitchbacks;
-  const rampH = switchbackH * 0.68;
-  const turnH = switchbackH * 0.32;
-  const funnelW = Math.min(44, W * 0.07);
+  const totalH = endY - startY;
 
-  let y = startY;
+  const numPieces = trackLength === 'short' ? 4 : trackLength === 'long' ? 10 : 6;
 
-  // Starting funnel — wide V that collects all marbles onto the first ramp entry
-  const funnelEntryW = W * 0.4;
-  const firstRampX = margin; // first ramp starts left side going right
-  const funnelEntryY = startY;
-  // Left wall of starting funnel — angled from center-left down to left margin
-  ramps.push({ x1: W / 2 - funnelEntryW, y1: funnelEntryY - 30, x2: margin + 10, y2: funnelEntryY + 8, isFunnel: true });
-  // Right wall of starting funnel — angled from center-right down to left margin area
-  ramps.push({ x1: W / 2 + funnelEntryW, y1: funnelEntryY - 30, x2: margin + 50, y2: funnelEntryY + 8, isFunnel: true });
+  // Always start with a funnel-drop to collect spawned marbles
+  const pieceList = [TRACK_PIECES['funnel-drop']];
+  let lastExit = 'center';
 
-  for (let i = 0; i < numSwitchbacks; i++) {
-    const goingRight = (i % 2 === 0);
-    const startX = goingRight ? margin : W - margin;
-    const endX   = goingRight ? W - margin : margin;
-    const rampEndY = y + rampH;
-
-    // Main ramp segment
-    ramps.push({ x1: startX, y1: y, x2: endX, y2: rampEndY, isRamp: true });
-
-    // Bumper pegs slightly above ramp surface
-    const pegCount = 2 + Math.floor(rng() * 2);
-    for (let p = 0; p < pegCount; p++) {
-      const t = 0.2 + rng() * 0.6;
-      const px = startX + (endX - startX) * t;
-      const py = y + (rampEndY - y) * t - 10 - rng() * 8;
-      pegs.push({ x: px, y: py, r: 4 + rng() * 2 });
-    }
-
-    // Funnel / turn — V-guide connecting ramp to next ramp
-    const funnelTopY = rampEndY;
-    const funnelBotY = rampEndY + turnH;
-
-    if (goingRight) {
-      // Right-side turn
-      ramps.push({ x1: W - margin, y1: funnelTopY, x2: W - margin, y2: funnelBotY, isFunnel: true });
-      ramps.push({ x1: W - margin - funnelW, y1: funnelTopY + 4, x2: W - margin - 8, y2: funnelBotY, isFunnel: true });
-    } else {
-      // Left-side turn
-      ramps.push({ x1: margin, y1: funnelTopY, x2: margin, y2: funnelBotY, isFunnel: true });
-      ramps.push({ x1: margin + funnelW, y1: funnelTopY + 4, x2: margin + 8, y2: funnelBotY, isFunnel: true });
-    }
-
-    y = funnelBotY;
+  // Fill middle with random compatible pieces
+  const allPieceNames = Object.keys(TRACK_PIECES);
+  for (let i = 1; i < numPieces - 1; i++) {
+    const compatible = allPieceNames.filter(n => isCompatible(lastExit, TRACK_PIECES[n].entryX));
+    const chosen = TRACK_PIECES[compatible[Math.floor(rng() * compatible.length)]];
+    pieceList.push(chosen);
+    const ex = chosen.exitX;
+    lastExit = ex === 'any' ? ['left', 'right', 'center'][Math.floor(rng() * 3)] : ex;
   }
 
-  finishY = y + 30;
+  // Always end with wide-lane for the finish run
+  pieceList.push(TRACK_PIECES['wide-lane']);
+
+  // Distribute available height evenly across all pieces
+  const pieceH = totalH / numPieces;
+
+  let y = startY;
+  for (const piece of pieceList) {
+    const result = piece.generate(margin, y, usableW, pieceH, rng);
+    ramps.push(...result.ramps);
+    pegs.push(...result.pegs);
+    y += pieceH;
+  }
+
+  finishY = y + 20;
 }
 
 /* ═══════════════════════════════════════════════
@@ -1175,17 +1344,32 @@ function resolveMarbleRamp(m, ramp) {
   const cx = ramp.x1 + t * ax, cy = ramp.y1 + t * ay;
   const dx = m.x - cx, dy = m.y - cy;
   const distSq = dx * dx + dy * dy;
-  const minDist = m.radius + 4; // 4px ramp half-thickness
+  const minDist = m.radius + RAMP_HALF_THICKNESS;
   if (distSq < minDist * minDist && distSq > 0.0001) {
     const dist = Math.sqrt(distSq);
     const nx = dx / dist, ny = dy / dist;
     const overlap = minDist - dist;
     m.x += nx * overlap;
     m.y += ny * overlap;
-    const dot = m.vx * nx + m.vy * ny;
-    if (dot < 0) {
-      m.vx -= (1 + RESTITUTION_PEG) * dot * nx;
-      m.vy -= (1 + RESTITUTION_PEG) * dot * ny;
+    const vDotN = m.vx * nx + m.vy * ny;
+    if (vDotN < 0) {
+      if (Math.abs(vDotN) < 100) {
+        // ROLLING — shallow approach, slide along ramp surface
+        m.vx -= vDotN * nx * 0.95;
+        m.vy -= vDotN * ny * 0.95;
+        // Gravity-assisted roll along ramp direction
+        const rampLen = Math.sqrt(len2);
+        const tx = ax / rampLen, ty = ay / rampLen;
+        const gravAlongRamp = GRAVITY * ty * 0.016;
+        if (gravAlongRamp > 0) {
+          m.vx += tx * gravAlongRamp * 0.3;
+          m.vy += ty * gravAlongRamp * 0.3;
+        }
+      } else {
+        // BOUNCING — steep approach, reflect with restitution
+        m.vx -= (1 + RESTITUTION_PEG) * vDotN * nx;
+        m.vy -= (1 + RESTITUTION_PEG) * vDotN * ny;
+      }
     }
     return true;
   }
@@ -1544,6 +1728,20 @@ function gameLoop(timestamp) {
 
   if (raceRunning) {
     physicsStep(dt);
+
+    // 30-second race timeout — force stragglers to finish position
+    if (performance.now() - raceStart > 30000) {
+      for (const m of marbles) {
+        if (!m.finished) {
+          m.finished = true;
+          m.y = finishY - m.radius;
+          m.vy = 0; m.vx = 0;
+          m.finishTime = (performance.now() - raceStart) / 1000;
+          finishOrder.push({ name: m.name, color: m.color, time: m.finishTime });
+        }
+      }
+    }
+
     // Check if all finished
     if (marbles.length > 0 && marbles.every(m => m.finished)) {
       raceRunning = false;
