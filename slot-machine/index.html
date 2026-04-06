@@ -28,6 +28,7 @@
   --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
   --chrome: linear-gradient(135deg, #c8c8d8 0%, #e8e8f0 30%, #a0a0b8 50%, #d0d0e0 70%, #f0f0f8 100%);
   --chrome-border: #8888aa;
+  --machine-frame: linear-gradient(135deg, #c8c8d8 0%, #e8e8f0 30%, #a0a0b8 50%, #d0d0e0 70%, #f0f0f8 100%);
   --reel-bg: #0a0a16;
 }
 
@@ -41,6 +42,7 @@
   --text-dim: #666680;
   --chrome: linear-gradient(135deg, #d8d8e8 0%, #f0f0f8 30%, #b0b0c8 50%, #e0e0f0 70%, #f8f8ff 100%);
   --chrome-border: #9090b0;
+  --machine-frame: linear-gradient(135deg, #d8d8e8 0%, #f0f0f8 30%, #b0b0c8 50%, #e0e0f0 70%, #f8f8ff 100%);
   --reel-bg: #1a1a2e;
 }
 
@@ -58,7 +60,148 @@
   --gold-glow: rgba(255,0,255,0.5);
   --chrome: linear-gradient(135deg, #1a2a2a 0%, #00ffcc22 30%, #0a1a1a 50%, #003322 70%, #00ffcc11 100%);
   --chrome-border: #00ffcc;
+  --machine-frame: linear-gradient(135deg, #1a2a2a 0%, #00ffcc22 30%, #0a1a1a 50%, #003322 70%, #00ffcc11 100%);
   --reel-bg: #050510;
+}
+
+[data-theme="vegas"] {
+  --bg: #1a1400;
+  --bg2: #2a2000;
+  --surface: #332800;
+  --surface2: #443600;
+  --border: #665200;
+  --text: #ffd700;
+  --text-dim: #b8960b;
+  --accent: #ffd700;
+  --accent-glow: rgba(255,215,0,0.4);
+  --gold: #ffd700;
+  --gold-glow: rgba(255,215,0,0.5);
+  --danger: #ff4444;
+  --success: #44ff88;
+  --machine-frame: linear-gradient(135deg, #b8860b, #ffd700, #daa520, #ffd700, #b8860b);
+  --chrome: linear-gradient(135deg, #b8860b, #ffd700, #daa520, #ffd700, #b8860b);
+  --chrome-border: #ffd700;
+  --reel-bg: #0a0800;
+}
+
+[data-theme="retro"] {
+  --bg: #000000;
+  --bg2: #0a0a0a;
+  --surface: #1a1a2e;
+  --surface2: #222244;
+  --border: #4444aa;
+  --text: #00ff00;
+  --text-dim: #008800;
+  --accent: #ff00ff;
+  --accent-glow: rgba(255,0,255,0.4);
+  --gold: #ffff00;
+  --gold-glow: rgba(255,255,0,0.5);
+  --danger: #ff0000;
+  --success: #00ff00;
+  --machine-frame: linear-gradient(135deg, #333, #666, #333);
+  --chrome: linear-gradient(135deg, #333, #666, #333);
+  --chrome-border: #ff00ff;
+  --reel-bg: #000022;
+}
+
+[data-theme="cherry"] {
+  --bg: #1a0000;
+  --bg2: #2a0505;
+  --surface: #3a0a0a;
+  --surface2: #4a1010;
+  --border: #662222;
+  --text: #ffcccc;
+  --text-dim: #aa6666;
+  --accent: #ff2244;
+  --accent-glow: rgba(255,34,68,0.4);
+  --gold: #ffd700;
+  --gold-glow: rgba(255,215,0,0.5);
+  --danger: #ff0000;
+  --success: #44ff88;
+  --machine-frame: linear-gradient(135deg, #880000, #cc0000, #aa0000, #cc0000, #880000);
+  --chrome: linear-gradient(135deg, #880000, #cc0000, #aa0000, #cc0000, #880000);
+  --chrome-border: #cc0000;
+  --reel-bg: #0a0000;
+}
+
+[data-theme="midnight"] {
+  --bg: #0a0a1a;
+  --bg2: #0f0f2a;
+  --surface: #141430;
+  --surface2: #1a1a3a;
+  --border: #2a2a5a;
+  --text: #c0c0e0;
+  --text-dim: #6666aa;
+  --accent: #4488ff;
+  --accent-glow: rgba(68,136,255,0.4);
+  --gold: #ffd700;
+  --gold-glow: rgba(255,215,0,0.5);
+  --danger: #ff4466;
+  --success: #44ff88;
+  --machine-frame: linear-gradient(135deg, #223, #446, #334, #446, #223);
+  --chrome: linear-gradient(135deg, #223, #446, #334, #446, #223);
+  --chrome-border: #4488ff;
+  --reel-bg: #050510;
+}
+
+[data-theme="emerald"] {
+  --bg: #001a0a;
+  --bg2: #002a10;
+  --surface: #003a18;
+  --surface2: #004a20;
+  --border: #006630;
+  --text: #ccffdd;
+  --text-dim: #66aa77;
+  --accent: #00cc66;
+  --accent-glow: rgba(0,204,102,0.4);
+  --gold: #ffd700;
+  --gold-glow: rgba(255,215,0,0.5);
+  --danger: #ff4444;
+  --success: #00ff66;
+  --machine-frame: linear-gradient(135deg, #1a4a2a, #2a6a3a, #1a5a2a, #2a6a3a, #1a4a2a);
+  --chrome: linear-gradient(135deg, #1a4a2a, #2a6a3a, #1a5a2a, #2a6a3a, #1a4a2a);
+  --chrome-border: #00cc66;
+  --reel-bg: #000a04;
+}
+
+[data-theme="cyber"] {
+  --bg: #0a000a;
+  --bg2: #120012;
+  --surface: #1a0020;
+  --surface2: #220030;
+  --border: #440066;
+  --text: #00ffff;
+  --text-dim: #0088aa;
+  --accent: #ff00aa;
+  --accent-glow: rgba(255,0,170,0.4);
+  --gold: #00ffff;
+  --gold-glow: rgba(0,255,255,0.5);
+  --danger: #ff0066;
+  --success: #00ff88;
+  --machine-frame: linear-gradient(135deg, #220044, #440088, #330066, #440088, #220044);
+  --chrome: linear-gradient(135deg, #220044, #440088, #330066, #440088, #220044);
+  --chrome-border: #ff00aa;
+  --reel-bg: #060010;
+}
+
+[data-theme="royal"] {
+  --bg: #0f0a1a;
+  --bg2: #1a1028;
+  --surface: #241636;
+  --surface2: #2e1c44;
+  --border: #4a2a6a;
+  --text: #e0d0f0;
+  --text-dim: #9977bb;
+  --accent: #aa66ff;
+  --accent-glow: rgba(170,102,255,0.4);
+  --gold: #ffd700;
+  --gold-glow: rgba(255,215,0,0.5);
+  --danger: #ff4466;
+  --success: #44ff88;
+  --machine-frame: linear-gradient(135deg, #2a1040, #4a2070, #3a1858, #4a2070, #2a1040);
+  --chrome: linear-gradient(135deg, #2a1040, #4a2070, #3a1858, #4a2070, #2a1040);
+  --chrome-border: #aa66ff;
+  --reel-bg: #080410;
 }
 
 html, body {
@@ -472,6 +615,21 @@ input[type="range"]::-moz-range-thumb {
 }
 .btn-credit:hover { background: rgba(255,215,0,0.2); }
 .btn-credit:active { transform: scale(0.95); }
+.btn-credit-minus {
+  padding: 5px 12px;
+  min-height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,68,102,0.4);
+  background: rgba(255,68,102,0.08);
+  color: var(--danger);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-credit-minus:hover { background: rgba(255,68,102,0.2); border-color: var(--danger); }
+.btn-credit-minus:active { transform: scale(0.95); }
 .credits-balance {
   margin-top: 8px;
   font-size: 12px;
@@ -485,7 +643,9 @@ input[type="range"]::-moz-range-thumb {
   font-size: 20px;
   font-weight: 900;
   text-shadow: 0 0 8px var(--gold-glow);
-  font-family: 'Georgia', monospace;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.15em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ═══════════════════════════════════════════════
@@ -547,27 +707,94 @@ input[type="range"]::-moz-range-thumb {
 /* ═══════════════════════════════════════════════
    THEME SELECTOR
    ═══════════════════════════════════════════════ */
-.theme-buttons { display: flex; gap: 6px; }
-.theme-btn {
-  flex: 1;
-  padding: 8px;
-  min-height: 34px;
-  border-radius: 8px;
+.theme-select-dropdown {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
-  color: var(--text-dim);
+  color: var(--text);
   font-family: var(--font);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 14px;
+  outline: none;
   cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-  display: inline-flex;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+.theme-select-dropdown:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* ═══════════════════════════════════════════════
+   INSERT COIN BUTTON
+   ═══════════════════════════════════════════════ */
+#insert-coin-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#insert-coin-slot {
+  width: 52px;
+  height: 20px;
+  background: linear-gradient(180deg, #1a1a1a, #333, #1a1a1a);
+  border: 2px solid #555;
+  border-radius: 4px;
+  display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.8),
+    0 1px 3px rgba(0,0,0,0.5),
+    0 0 8px rgba(255,215,0,0.1);
+  transition: box-shadow 0.2s;
 }
-.theme-btn:hover { border-color: var(--accent); color: var(--text); }
-.theme-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+#insert-coin-slot::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 4px;
+  background: #0a0a0a;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+}
+#insert-coin-btn:hover #insert-coin-slot {
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.8),
+    0 1px 3px rgba(0,0,0,0.5),
+    0 0 12px rgba(255,215,0,0.4);
+  border-color: var(--gold);
+}
+#insert-coin-label {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.8;
+  text-shadow: 0 0 6px var(--gold-glow);
+}
+#insert-coin-btn.no-credits #insert-coin-label {
+  animation: insertCoinPulse 1s ease-in-out infinite;
+}
+@keyframes insertCoinPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; text-shadow: 0 0 10px var(--gold-glow); }
+}
 
 /* ═══════════════════════════════════════════════
    SLOT MACHINE CABINET
@@ -584,7 +811,7 @@ input[type="range"]::-moz-range-thumb {
 
 #cabinet {
   width: 100%;
-  background: var(--chrome);
+  background: var(--machine-frame);
   border-radius: 32px 32px 24px 24px;
   padding: 20px 24px 28px;
   position: relative;
@@ -602,7 +829,7 @@ input[type="range"]::-moz-range-thumb {
   left: 60px;
   right: 60px;
   height: 20px;
-  background: var(--chrome);
+  background: var(--machine-frame);
   border-radius: 0 0 16px 16px;
   border: 3px solid var(--chrome-border);
   border-top: none;
@@ -675,6 +902,14 @@ input[type="range"]::-moz-range-thumb {
 .led.on-2 { background: #ff6600; box-shadow: 0 0 8px rgba(255,102,0,0.8); }
 .led.on-3 { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
 
+/* LED marquee chase animation */
+@keyframes ledChase1 {
+  0%, 100% { background: var(--gold); box-shadow: 0 0 8px var(--gold-glow), 0 0 16px var(--gold-glow); }
+  33% { background: #ff6600; box-shadow: 0 0 8px rgba(255,102,0,0.8); }
+  66% { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+}
+.led.chase { animation: ledChase1 1.2s linear infinite; }
+
 #win-display {
   text-align: center;
   font-size: 14px;
@@ -730,6 +965,7 @@ input[type="range"]::-moz-range-thumb {
   box-shadow:
     0 -1px 8px var(--gold-glow),
     0 1px 8px var(--gold-glow);
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 #payline-left, #payline-right {
@@ -750,6 +986,23 @@ input[type="range"]::-moz-range-thumb {
   right: 2px;
   border-left: 14px solid var(--gold);
   filter: drop-shadow(0 0 4px var(--gold-glow));
+}
+
+/* Payline win flash */
+@keyframes paylineFlash {
+  0%, 100% { border-color: rgba(255,215,0,0.8); box-shadow: 0 -1px 8px var(--gold-glow), 0 1px 8px var(--gold-glow); }
+  25%, 75% { border-color: var(--gold); box-shadow: 0 -1px 20px var(--gold-glow), 0 1px 20px var(--gold-glow), 0 0 40px var(--gold-glow); }
+}
+@keyframes paylineAmber {
+  0%, 100% { border-color: rgba(255,165,0,0.4); box-shadow: none; }
+  50% { border-color: rgba(255,165,0,0.9); box-shadow: 0 0 15px rgba(255,165,0,0.5); }
+}
+#reels-container.payline-win-flash::after {
+  animation: paylineFlash 0.33s ease 3;
+}
+#reels-container.payline-near-miss::after {
+  animation: paylineAmber 0.5s ease 4;
+  border-color: rgba(255,165,0,0.6);
 }
 
 .reel-window {
@@ -814,9 +1067,17 @@ input[type="range"]::-moz-range-thumb {
   transition: none;
 }
 
+/* Reel idle wobble on stopped items */
+@keyframes reelWobble {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-1px); }
+  75% { transform: translateY(1px); }
+}
+
 .reel-window.spinning .reel-strip { filter: blur(3px); }
 .reel-window.slowing .reel-strip  { filter: blur(1px); }
 .reel-window.stopped .reel-strip  { filter: none; }
+.reel-window.stopped .reel-badge  { animation: reelWobble 3s ease-in-out infinite; }
 
 .reel-window.win-highlight {
   border-color: var(--gold);
@@ -824,6 +1085,10 @@ input[type="range"]::-moz-range-thumb {
     0 0 20px var(--gold-glow),
     0 0 40px var(--gold-glow),
     inset 0 0 20px rgba(255,215,0,0.1);
+}
+
+.reel-window.near-miss-reel .reel-strip {
+  filter: blur(0.5px);
 }
 
 /* ═══════════════════════════════════════════════
@@ -871,6 +1136,15 @@ input[type="range"]::-moz-range-thumb {
   transition: top 0.1s ease;
   z-index: 3;
   touch-action: none;
+}
+
+/* Lever ball idle glow pulse */
+@keyframes leverBallPulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(200,0,0,0.6), inset 0 -2px 4px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,100,68,0.6); }
+  50% { box-shadow: 0 4px 20px rgba(255,68,34,0.8), 0 0 16px rgba(255,100,50,0.4), inset 0 -2px 4px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,100,68,0.6); }
+}
+#lever-ball.ready-pulse {
+  animation: leverBallPulse 2s ease-in-out infinite;
 }
 
 #lever-base {
@@ -941,11 +1215,34 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 900;
   color: var(--gold);
   text-shadow: 0 0 10px var(--gold-glow);
-  font-family: 'Georgia', monospace;
-  letter-spacing: 2px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.15em;
+  font-variant-numeric: tabular-nums;
   min-width: 56px;
   text-align: center;
+  transition: color 0.2s, text-shadow 0.2s;
 }
+
+/* Credit counter flash animations */
+@keyframes creditFlashUp {
+  0% { color: var(--gold); text-shadow: 0 0 10px var(--gold-glow); }
+  30% { color: var(--success); text-shadow: 0 0 16px rgba(68,255,136,0.8), 0 0 32px rgba(68,255,136,0.4); transform: scale(1.1); }
+  100% { color: var(--gold); text-shadow: 0 0 10px var(--gold-glow); transform: scale(1); }
+}
+@keyframes creditFlashDown {
+  0% { color: var(--gold); text-shadow: 0 0 10px var(--gold-glow); }
+  30% { color: var(--danger); text-shadow: 0 0 16px rgba(255,68,102,0.8), 0 0 32px rgba(255,68,102,0.4); transform: scale(0.95); }
+  100% { color: var(--gold); text-shadow: 0 0 10px var(--gold-glow); transform: scale(1); }
+}
+@keyframes creditRoll {
+  0% { transform: translateY(0); opacity: 1; }
+  40% { transform: translateY(-8px); opacity: 0; }
+  41% { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.credits-value.flash-up { animation: creditFlashUp 0.3s ease forwards; }
+.credits-value.flash-down { animation: creditFlashDown 0.3s ease forwards; }
+.credits-value.roll { animation: creditRoll 0.25s ease forwards; }
 
 /* ═══════════════════════════════════════════════
    JACKPOT OVERLAY
@@ -1101,6 +1398,23 @@ input[type="range"]::-moz-range-thumb {
   inset: 0;
   pointer-events: none;
   z-index: 40;
+}
+
+/* ═══════════════════════════════════════════════
+   COIN SHOWER (CSS-based fallback coins)
+   ═══════════════════════════════════════════════ */
+@keyframes coinFall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+.shower-coin {
+  position: fixed;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffd700, #daa520);
+  pointer-events: none;
+  z-index: 500;
+  animation: coinFall linear forwards;
 }
 
 /* ═══════════════════════════════════════════════
@@ -1371,6 +1685,11 @@ h1, .game-title, .panel-title, .app-title {
             <div class="credits-label" id="credits-label">CREDITS</div>
             <div class="credits-value" id="credits-display">0</div>
           </div>
+          <!-- INSERT COIN button — only visible in creditstack mode -->
+          <div id="insert-coin-btn" style="display:none" title="Insert Coin (+1 credit)">
+            <div id="insert-coin-slot"></div>
+            <div id="insert-coin-label">INSERT COIN</div>
+          </div>
           <div class="credits-display">
             <div class="credits-label">NAMES</div>
             <div class="credits-value" id="names-count-display">0</div>
@@ -1441,15 +1760,24 @@ h1, .game-title, .panel-title, .app-title {
       <!-- CREDIT STACK: credits -->
       <div class="panel-section" id="section-creditstack" style="display:none">
         <h3>Credits</h3>
-        <div class="credit-btns">
+        <div class="credit-btns" id="credit-plus-btns">
           <button class="btn-credit" id="credit-btn-1">+1</button>
           <button class="btn-credit" id="credit-btn-5">+5</button>
           <button class="btn-credit" id="credit-btn-10">+10</button>
           <button class="btn-credit" id="credit-btn-25">+25</button>
         </div>
+        <div class="credit-btns" id="credit-minus-btns">
+          <button class="btn-credit-minus" id="credit-btn-m1">−1</button>
+          <button class="btn-credit-minus" id="credit-btn-m5">−5</button>
+          <button class="btn-credit-minus" id="credit-btn-reset">Reset</button>
+        </div>
         <div class="input-group">
           <input type="number" id="custom-credits" placeholder="Custom..." min="1" style="width:100%;text-align:left">
           <button class="btn btn-sm btn-primary" id="add-custom-credits">Add</button>
+        </div>
+        <div class="input-group" style="margin-bottom:4px">
+          <input type="number" id="budget-credits" placeholder="Set budget..." min="0" style="width:100%;text-align:left">
+          <button class="btn btn-sm" id="set-budget-btn" style="white-space:nowrap">Set</button>
         </div>
         <div class="credits-balance">
           Balance: <span class="bal-val" id="credits-admin-display">0</span>
@@ -1519,11 +1847,18 @@ h1, .game-title, .panel-title, .app-title {
       <!-- THEME -->
       <div class="panel-section">
         <h3>Theme</h3>
-        <div class="theme-buttons">
-          <button class="theme-btn active" data-theme="dark">Dark</button>
-          <button class="theme-btn" data-theme="light">Light</button>
-          <button class="theme-btn" data-theme="neon">Neon</button>
-        </div>
+        <select id="theme-select" class="theme-select-dropdown">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="neon">Neon</option>
+          <option value="vegas">Vegas Gold</option>
+          <option value="retro">Retro Arcade</option>
+          <option value="cherry">Cherry Red</option>
+          <option value="midnight">Midnight Blue</option>
+          <option value="emerald">Emerald</option>
+          <option value="cyber">Cyber</option>
+          <option value="royal">Royal Purple</option>
+        </select>
       </div>
 
     </div><!-- /panel-scroll -->
@@ -1635,6 +1970,26 @@ function playSound(type) {
       src.start(now);
     }
 
+    if (type === 'clunk') {
+      // Metallic low clunk for lever bottom
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.25, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const t = i / ctx.sampleRate;
+        const thud = Math.sin(2 * Math.PI * 60 * t) * 0.8;
+        const metal = Math.sin(2 * Math.PI * 180 * t) * 0.3;
+        const noise = (Math.random() * 2 - 1) * 0.2 * Math.exp(-t * 20);
+        data[i] = (thud + metal + noise) * Math.exp(-t * 12);
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.4, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      src.connect(g); g.connect(ctx.destination);
+      src.start(now);
+    }
+
     if (type === 'spin') {
       const osc = ctx.createOscillator();
       osc.type = 'sawtooth';
@@ -1657,6 +2012,57 @@ function playSound(type) {
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
       osc.connect(g); g.connect(ctx.destination);
       osc.start(now); osc.stop(now + 0.1);
+    }
+
+    if (type === 'clink') {
+      // Short high-pitched clink — coin on metal
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(2400 + Math.random() * 600, now);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.15);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.25, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.18);
+      // Second partial for metallic ring
+      const osc2 = ctx.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(3600 + Math.random() * 400, now);
+      osc2.frequency.exponentialRampToValueAtTime(1800, now + 0.12);
+      const g2 = ctx.createGain();
+      g2.gain.setValueAtTime(0.12, now);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      osc2.connect(g2); g2.connect(ctx.destination);
+      osc2.start(now); osc2.stop(now + 0.14);
+    }
+
+    if (type === 'tension') {
+      // Rising tension tone for near-miss
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.linearRampToValueAtTime(600, now + 1.8);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0, now);
+      g.gain.linearRampToValueAtTime(0.12, now + 0.3);
+      g.gain.linearRampToValueAtTime(0.12, now + 1.5);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(now); osc.stop(now + 2.0);
+    }
+
+    if (type === 'nearMissFail') {
+      // Quick red flash descend
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(150, now + 0.4);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.15, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.4);
     }
 
     if (type === 'jackpot') {
@@ -1794,7 +2200,7 @@ function getMaxDrought(sliderValue) {
 
 function determineOutcome() {
   const allNames = STATE.names;
-  if (allNames.length === 0) return { win: false, results: ['?', '?', '?'] };
+  if (allNames.length === 0) return { win: false, nearMiss: false, results: ['?', '?', '?'] };
 
   const eligible = getEligibleWinners();
   const maxDrought = getMaxDrought(STATE.winFloor);
@@ -1804,13 +2210,13 @@ function determineOutcome() {
 
   if (isWin) {
     const winner = eligible[Math.floor(Math.random() * eligible.length)];
-    return { win: true, results: [winner, winner, winner], winner };
+    return { win: true, nearMiss: false, results: [winner, winner, winner], winner };
   }
 
   // ~20% chance of near-miss (2 of 3 matching)
-  const nearMiss = Math.random() < 0.2 && allNames.length >= 2;
+  const isNearMiss = Math.random() < 0.2 && allNames.length >= 2;
   let results;
-  if (nearMiss) {
+  if (isNearMiss) {
     const matchName = allNames[Math.floor(Math.random() * allNames.length)];
     const others = allNames.filter(n => n !== matchName);
     const diffName = others.length > 0
@@ -1829,7 +2235,7 @@ function determineOutcome() {
       attempts++;
     } while (results[0] === results[1] && results[1] === results[2] && attempts < 10);
   }
-  return { win: false, results };
+  return { win: false, nearMiss: isNearMiss, mismatchPos: isNearMiss ? results.indexOf(results.find((v, i, a) => a.filter(x => x === v).length === 1)) : -1, results };
 }
 
 /* ═══════════════════════════════════════════════
@@ -1847,6 +2253,7 @@ function spin() {
       return;
     }
     STATE.credits--;
+    flashCreditCounter('down');
     updateMainDisplay();
   }
 
@@ -1856,18 +2263,34 @@ function spin() {
   setStatus('Spinning...', true);
   clearWinState();
 
+  // Remove lever ready pulse while spinning
+  document.getElementById('lever-ball').classList.remove('ready-pulse');
+
   playSound('lever');
   setTimeout(() => playSound('spin'), 150);
 
   const outcome = determineOutcome();
-  const stopTimes = [1500, 2100, 2700];
+
+  // Staggered stop times — reel 1 stops first, then 2, then 3
+  // Near-miss: third reel gets dramatic slow stop
+  let stopTimes;
+  if (outcome.nearMiss) {
+    stopTimes = [1500, 2100, 2700];
+  } else {
+    stopTimes = [1500, 2100, 2700];
+  }
 
   for (let r = 0; r < REEL_COUNT; r++) {
-    startReelSpin(r, outcome.results[r], stopTimes[r], r === REEL_COUNT - 1, outcome);
+    // Stagger reel start: reel 0 starts immediately, reel 1 at 100ms, reel 2 at 200ms
+    const startDelay = r * 100;
+    const isNearMissThirdReel = outcome.nearMiss && r === 2;
+    setTimeout(() => {
+      startReelSpin(r, outcome.results[r], stopTimes[r], r === REEL_COUNT - 1, outcome, isNearMissThirdReel);
+    }, startDelay);
   }
 }
 
-function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome) {
+function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome, isNearMissSlowReel) {
   const win_ = document.getElementById(`reel-${reelIdx}`);
   const strip = document.getElementById(`strip-${reelIdx}`);
   if (!strip._items || strip._items.length === 0) {
@@ -1875,12 +2298,13 @@ function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome) {
     return;
   }
 
-  win_.classList.remove('stopped', 'slowing');
+  win_.classList.remove('stopped', 'slowing', 'near-miss-reel');
   win_.classList.add('spinning');
 
   const startTime = performance.now();
-  const spinDuration = stopMs - 300;
-  const slowDuration = 300;
+  // Near-miss slow reel gets longer slow phase
+  const slowDuration = isNearMissSlowReel ? 2000 : 300;
+  const spinDuration = stopMs - slowDuration;
   let startY = parseInt(strip.style.transform.replace(/[^-\d.]/g, '')) || 0;
   const fastSpeed = 1.4;
 
@@ -1888,6 +2312,7 @@ function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome) {
   let slowStartY;
   let slowing = false;
   let currentY = startY;
+  let tensionPlayed = false;
 
   function animate(now) {
     const elapsed = now - startTime;
@@ -1896,7 +2321,15 @@ function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome) {
       slowing = true;
       win_.classList.remove('spinning');
       win_.classList.add('slowing');
-      playSound('spin');
+      if (isNearMissSlowReel) {
+        win_.classList.add('near-miss-reel');
+        if (!tensionPlayed) {
+          tensionPlayed = true;
+          playSound('tension');
+        }
+      } else {
+        playSound('spin');
+      }
       slowStartY = currentY;
     }
 
@@ -1908,7 +2341,10 @@ function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome) {
     } else {
       const slowElapsed = now - (startTime + spinDuration);
       const progress = Math.min(slowElapsed / slowDuration, 1);
-      const ease = 1 - Math.pow(1 - progress, 3);
+      // Near-miss reel uses extra dramatic ease-out
+      const ease = isNearMissSlowReel
+        ? 1 - Math.pow(1 - progress, 5)
+        : 1 - Math.pow(1 - progress, 3);
       const targetIdx = findBestLandingIndex(strip._items, targetName, slowStartY);
       const targetY = -(targetIdx * ITEM_HEIGHT) + (PAYLINE_CENTER - ITEM_HEIGHT / 2);
       const y = slowStartY + (targetY - slowStartY) * ease;
@@ -1919,7 +2355,7 @@ function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome) {
       } else {
         strip.style.transform = `translateY(${targetY}px)`;
         strip._currentIndex = targetIdx;
-        win_.classList.remove('slowing');
+        win_.classList.remove('slowing', 'near-miss-reel');
         win_.classList.add('stopped');
         playSound('click');
         if (isLast) finalizeSpin(outcome);
@@ -1942,6 +2378,11 @@ function findBestLandingIndex(items, targetName, currentY) {
 
 function finalizeSpin(outcome) {
   STATE.spinning = false;
+
+  // Re-add lever ready pulse
+  if (!STATE.gameOver && STATE.speed === 'manual') {
+    setTimeout(() => document.getElementById('lever-ball').classList.add('ready-pulse'), 500);
+  }
 
   if (outcome.win) {
     STATE.totalWins++;
@@ -1981,6 +2422,24 @@ function finalizeSpin(outcome) {
         }, 6500);
       }
     }
+  } else if (outcome.nearMiss) {
+    STATE.pullsSinceLastWin++;
+    // Near-miss: amber flash, red flash at end
+    const reelsContainer = document.getElementById('reels-container');
+    reelsContainer.classList.add('payline-near-miss');
+    setTimeout(() => {
+      reelsContainer.classList.remove('payline-near-miss');
+      playSound('nearMissFail');
+    }, 2000);
+    setStatus(`So close! ${outcome.results.join('  ·  ')}`, false);
+    emitMessage('slots:result', { symbols: outcome.results });
+
+    // Credit Stack: game over when credits hit 0 after a losing spin
+    if (STATE.mode === 'creditstack' && STATE.credits <= 0) {
+      setTimeout(() => {
+        if (!STATE.gameOver) { stopAutoSpin(); showGameOver(); }
+      }, 1200);
+    }
   } else {
     STATE.pullsSinceLastWin++;
     setStatus(`${outcome.results.join('  ·  ')}`, false);
@@ -2013,7 +2472,45 @@ function triggerWin(winner, symbols) {
   playSound('jackpot');
   setStatus(`🏆 WINNER: ${winner}!`, false, true);
   emitMessage('slots:winner', { winner, symbols });
-  setTimeout(() => clearWinState(), 6000);
+
+  // Payline win flash
+  const reelsContainer = document.getElementById('reels-container');
+  reelsContainer.classList.remove('payline-win-flash');
+  void reelsContainer.offsetWidth; // force reflow
+  reelsContainer.classList.add('payline-win-flash');
+
+  // Screen shake
+  triggerScreenShake();
+
+  // CSS coin shower (30 coins)
+  triggerCoinShower();
+
+  setTimeout(() => {
+    reelsContainer.classList.remove('payline-win-flash');
+    clearWinState();
+  }, 6000);
+}
+
+function triggerScreenShake() {
+  const gameArea = document.getElementById('game-area');
+  gameArea.style.transform = 'translate(2px, 1px)';
+  setTimeout(() => gameArea.style.transform = 'translate(-2px, -1px)', 50);
+  setTimeout(() => gameArea.style.transform = 'translate(1px, 2px)', 100);
+  setTimeout(() => gameArea.style.transform = '', 150);
+}
+
+function triggerCoinShower() {
+  for (let i = 0; i < 30; i++) {
+    setTimeout(() => {
+      const coin = document.createElement('div');
+      coin.className = 'shower-coin';
+      coin.style.left = Math.random() * 100 + 'vw';
+      coin.style.animationDuration = (0.8 + Math.random() * 0.8) + 's';
+      coin.style.animationDelay = '0s';
+      document.body.appendChild(coin);
+      setTimeout(() => coin.remove(), 2000);
+    }, i * 50);
+  }
 }
 
 function clearWinState() {
@@ -2116,9 +2613,12 @@ function setSpeed(speed) {
     stopAutoSpin();
     stopBtn.style.display = 'none';
     pullBtn.style.display = '';
+    // Add lever ready pulse when in manual mode
+    setTimeout(() => document.getElementById('lever-ball').classList.add('ready-pulse'), 200);
   } else {
     stopBtn.style.display = '';
     pullBtn.style.display = 'none';
+    document.getElementById('lever-ball').classList.remove('ready-pulse');
     startAutoSpin();
   }
   try { localStorage.setItem('slots_speed', speed); } catch(e) {}
@@ -2154,9 +2654,19 @@ function animateLeverAuto() {
    CREDITS
    ═══════════════════════════════════════════════ */
 function addCredits(amount) {
-  STATE.credits += amount;
+  if (amount > 0) {
+    STATE.credits += amount;
+    flashCreditCounter('up');
+  } else if (amount < 0) {
+    STATE.credits = Math.max(0, STATE.credits + amount);
+    flashCreditCounter('down');
+  }
   updateMainDisplay();
-  setStatus(`+${amount} credit${amount !== 1 ? 's' : ''} added!`, false);
+  if (amount > 0) {
+    setStatus(`+${amount} credit${amount !== 1 ? 's' : ''} added!`, false);
+  } else {
+    setStatus(`Credits updated: ${STATE.credits}`, false);
+  }
   emitMessage('slots:credits', { credits: STATE.credits });
   // If in auto/turbo with no interval (stopped due to 0 credits), restart
   if (STATE.speed !== 'manual' && !STATE.autoInterval && !STATE.gameOver) {
@@ -2164,16 +2674,103 @@ function addCredits(amount) {
   }
 }
 
+function setBudget(amount) {
+  const prev = STATE.credits;
+  STATE.credits = Math.max(0, amount);
+  if (STATE.credits > prev) {
+    flashCreditCounter('up');
+  } else if (STATE.credits < prev) {
+    flashCreditCounter('down');
+  }
+  updateMainDisplay();
+  setStatus(`Budget set to ${STATE.credits}`, false);
+  emitMessage('slots:credits', { credits: STATE.credits });
+  if (STATE.speed !== 'manual' && !STATE.autoInterval && !STATE.gameOver && STATE.credits > 0) {
+    startAutoSpin();
+  }
+}
+
+function flashCreditCounter(direction) {
+  const el = document.getElementById('credits-display');
+  const adminEl = document.getElementById('credits-admin-display');
+  const cls = direction === 'up' ? 'flash-up' : 'flash-down';
+  [el, adminEl].forEach(e => {
+    if (!e) return;
+    e.classList.remove('flash-up', 'flash-down', 'roll');
+    void e.offsetWidth;
+    e.classList.add('roll');
+    setTimeout(() => {
+      e.classList.remove('roll');
+      e.classList.add(cls);
+      setTimeout(() => e.classList.remove(cls), 300);
+    }, 125);
+  });
+}
+
+function animateCoinInsert() {
+  // Find the insert coin slot element for positioning
+  const slot = document.getElementById('insert-coin-slot');
+  if (!slot) return;
+
+  const slotRect = slot.getBoundingClientRect();
+
+  const coin = document.createElement('div');
+  coin.style.cssText = `
+    position: fixed;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffd700, #daa520, #b8860b);
+    border: 2px solid #ffd700;
+    box-shadow: 0 2px 8px rgba(218,165,32,0.6);
+    z-index: 1000;
+    pointer-events: none;
+    left: ${slotRect.left + slotRect.width / 2 - 12}px;
+    top: ${slotRect.top - 36}px;
+    transition: all 0.4s cubic-bezier(0.22, 1.2, 0.36, 1);
+  `;
+  document.body.appendChild(coin);
+
+  // Trigger animation on next frame
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      coin.style.top = (slotRect.top + slotRect.height / 2 - 12) + 'px';
+      coin.style.opacity = '0';
+      coin.style.transform = 'scale(0.5)';
+    });
+  });
+
+  setTimeout(() => coin.remove(), 500);
+  playSound('clink');
+  addCredits(1);
+
+  // Flash the coin slot
+  slot.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.8), 0 0 16px rgba(255,215,0,0.8)';
+  slot.style.borderColor = 'var(--gold)';
+  setTimeout(() => {
+    slot.style.boxShadow = '';
+    slot.style.borderColor = '';
+  }, 300);
+}
+
 function updateMainDisplay() {
   const labelEl = document.getElementById('credits-label');
   const valueEl = document.getElementById('credits-display');
   const adminEl = document.getElementById('credits-admin-display');
+  const insertCoinBtn = document.getElementById('insert-coin-btn');
+
   if (STATE.mode === 'creditstack') {
     labelEl.textContent = 'CREDITS';
     valueEl.textContent = STATE.credits;
+    // Show insert coin button in creditstack mode (when admin is visible)
+    if (insertCoinBtn) {
+      insertCoinBtn.style.display = STATE.adminVisible ? 'flex' : 'none';
+      // Pulse label if no credits
+      insertCoinBtn.classList.toggle('no-credits', STATE.credits === 0);
+    }
   } else {
     labelEl.textContent = 'PROGRESS';
     valueEl.textContent = `${STATE.sessionWinners.length}/${STATE.winnersNeeded}`;
+    if (insertCoinBtn) insertCoinBtn.style.display = 'none';
   }
   if (adminEl) adminEl.textContent = STATE.credits;
 }
@@ -2202,6 +2799,8 @@ function setMode(mode) {
 /* ═══════════════════════════════════════════════
    LED ANIMATIONS
    ═══════════════════════════════════════════════ */
+let ledChaseIntervalId = null;
+
 function buildLeds() {
   const strip = document.getElementById('led-strip');
   strip.innerHTML = '';
@@ -2213,6 +2812,7 @@ function buildLeds() {
 }
 
 function updateLedIdle() {
+  stopLedChase();
   document.querySelectorAll('.led').forEach((led, i) => {
     led.className = 'led';
     const phase = i % 3;
@@ -2220,9 +2820,36 @@ function updateLedIdle() {
     else if (phase === 1) led.classList.add('on-2');
     else led.classList.add('on-3');
   });
+  startLedChase();
+}
+
+function startLedChase() {
+  stopLedChase();
+  const leds = Array.from(document.querySelectorAll('.led'));
+  if (leds.length === 0) return;
+  let offset = 0;
+  ledChaseIntervalId = setInterval(() => {
+    leds.forEach((led, i) => {
+      // Remove all state classes
+      led.className = 'led';
+      const phase = (i + offset) % 3;
+      if (phase === 0) led.classList.add('on-1');
+      else if (phase === 1) led.classList.add('on-2');
+      else led.classList.add('on-3');
+    });
+    offset = (offset + 1) % 3;
+  }, 200);
+}
+
+function stopLedChase() {
+  if (ledChaseIntervalId) {
+    clearInterval(ledChaseIntervalId);
+    ledChaseIntervalId = null;
+  }
 }
 
 function startLedFlash() {
+  stopLedChase();
   document.querySelectorAll('.led').forEach((led, i) => {
     led.className = 'led';
     const phase = i % 3;
@@ -2474,12 +3101,16 @@ function applyUrlParams() {
   const p = new URLSearchParams(window.location.search);
   if (p.get('bg') === 'transparent') document.body.classList.add('transparent-bg');
   const theme = p.get('theme');
-  if (theme && ['dark','light','neon'].includes(theme)) setTheme(theme);
+  const allThemes = ['dark','light','neon','vegas','retro','cherry','midnight','emerald','cyber','royal'];
+  if (theme && allThemes.includes(theme)) setTheme(theme);
   const admin = p.get('admin');
   if (admin === 'false') {
     STATE.adminVisible = false;
     document.getElementById('admin-panel').classList.add('hidden');
     document.getElementById('admin-toggle').style.display = 'none';
+    // Hide insert coin button if admin is off
+    const icb = document.getElementById('insert-coin-btn');
+    if (icb) icb.style.display = 'none';
   }
   const names = p.get('names');
   if (names) {
@@ -2493,9 +3124,8 @@ function applyUrlParams() {
    ═══════════════════════════════════════════════ */
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  document.querySelectorAll('.theme-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.theme === theme);
-  });
+  const sel = document.getElementById('theme-select');
+  if (sel) sel.value = theme;
   try { localStorage.setItem('slots_theme', theme); } catch(e) {}
 }
 
@@ -2560,10 +3190,23 @@ function bindEvents() {
     if (v >= 1) { STATE.winnersNeeded = v; updateMainDisplay(); }
   });
 
-  // Credit buttons
+  // Credit plus buttons
   [1, 5, 10, 25].forEach(amt => {
     document.getElementById(`credit-btn-${amt}`).addEventListener('click', () => addCredits(amt));
   });
+
+  // Credit minus buttons
+  document.getElementById('credit-btn-m1').addEventListener('click', () => addCredits(-1));
+  document.getElementById('credit-btn-m5').addEventListener('click', () => addCredits(-5));
+  document.getElementById('credit-btn-reset').addEventListener('click', () => {
+    STATE.credits = 0;
+    flashCreditCounter('down');
+    updateMainDisplay();
+    setStatus('Credits reset to 0', false);
+    emitMessage('slots:credits', { credits: 0 });
+  });
+
+  // Custom add credits
   document.getElementById('add-custom-credits').addEventListener('click', () => {
     const inp = document.getElementById('custom-credits');
     const v = parseInt(inp.value);
@@ -2571,6 +3214,21 @@ function bindEvents() {
   });
   document.getElementById('custom-credits').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('add-custom-credits').click();
+  });
+
+  // Budget field
+  document.getElementById('set-budget-btn').addEventListener('click', () => {
+    const inp = document.getElementById('budget-credits');
+    const v = parseInt(inp.value);
+    if (!isNaN(v) && v >= 0) { setBudget(v); inp.value = ''; }
+  });
+  document.getElementById('budget-credits').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('set-budget-btn').click();
+  });
+
+  // Insert coin button
+  document.getElementById('insert-coin-btn').addEventListener('click', () => {
+    animateCoinInsert();
   });
 
   // Remove winners toggle
@@ -2607,6 +3265,7 @@ function bindEvents() {
     let isDragging = false;
     let startY = 0;
     let currentPull = 0;
+    let clunkPlayed = false;
 
     function updateLever(pullAmount) {
       pullAmount = Math.max(0, Math.min(pullAmount, MAX_PULL));
@@ -2621,8 +3280,16 @@ function bindEvents() {
           inset 0 -2px 4px rgba(0,0,0,0.4),
           inset 0 2px 4px rgba(255,100,68,0.6),
           0 0 ${20 * progress}px rgba(255,68,34,${0.3 + progress * 0.4})`;
+        // Screen shake at trigger point
+        if (!clunkPlayed && progress >= TRIGGER_PERCENT) {
+          clunkPlayed = true;
+          const gameArea = document.getElementById('game-area');
+          gameArea.style.transform = 'translate(1px, 0)';
+          setTimeout(() => gameArea.style.transform = '', 100);
+        }
       } else {
         ball.style.boxShadow = '';
+        clunkPlayed = false;
       }
     }
 
@@ -2635,15 +3302,24 @@ function bindEvents() {
       ball.style.boxShadow = '';
       setTimeout(() => { ball.style.transition = ''; shaft.style.transition = ''; }, 450);
       currentPull = 0;
+      clunkPlayed = false;
     }
 
     function autoComplete() {
       isDragging = false;
-      ball.style.transition = 'top 0.25s cubic-bezier(0.4, 0, 1, 1)';
+      clunkPlayed = false;
+      // Squish effect at bottom
+      ball.style.transition = 'top 0.25s cubic-bezier(0.4, 0, 1, 1), transform 0.1s';
       shaft.style.transition = 'height 0.25s cubic-bezier(0.4, 0, 1, 1), top 0.25s cubic-bezier(0.4, 0, 1, 1)';
       ball.style.top = (MAX_PULL + OVERSHOOT) + 'px';
       shaft.style.height = '0px';
       shaft.style.top = (SHAFT_TOP + MAX_PULL) + 'px';
+      // Squish ball at bottom
+      setTimeout(() => {
+        ball.style.transform = 'scale(1.1, 0.9)';
+        playSound('clunk');
+        setTimeout(() => { ball.style.transform = ''; }, 150);
+      }, 200);
       setTimeout(() => {
         ball.style.transition = 'top 0.5s cubic-bezier(0.22, 1.4, 0.36, 1)';
         shaft.style.transition = 'height 0.5s cubic-bezier(0.22, 1.4, 0.36, 1), top 0.5s cubic-bezier(0.22, 1.4, 0.36, 1)';
@@ -2660,6 +3336,7 @@ function bindEvents() {
       if (STATE.spinning || STATE.speed !== 'manual') return;
       e.preventDefault();
       isDragging = true;
+      clunkPlayed = false;
       startY = (e.touches ? e.touches[0].clientY : e.clientY) - currentPull;
       ball.style.transition = 'none';
       shaft.style.transition = 'none';
@@ -2681,6 +3358,7 @@ function bindEvents() {
       if (!isDragging) return;
       isDragging = false;
       assembly.style.cursor = 'grab';
+      clunkPlayed = false;
       if (currentPull / MAX_PULL < TRIGGER_PERCENT) {
         snapBack();
       }
@@ -2721,6 +3399,8 @@ function bindEvents() {
   document.getElementById('admin-toggle').addEventListener('click', () => {
     STATE.adminVisible = !STATE.adminVisible;
     document.getElementById('admin-panel').classList.toggle('hidden', !STATE.adminVisible);
+    // Update insert coin button visibility
+    updateMainDisplay();
   });
 
   // Sound toggle
@@ -2731,9 +3411,9 @@ function bindEvents() {
     try { localStorage.setItem('slots_sound', STATE.soundEnabled ? '1' : '0'); } catch(e) {}
   });
 
-  // Theme buttons
-  document.querySelectorAll('.theme-btn').forEach(btn => {
-    btn.addEventListener('click', () => setTheme(btn.dataset.theme));
+  // Theme dropdown
+  document.getElementById('theme-select').addEventListener('change', function() {
+    setTheme(this.value);
   });
 
   // Canvas resize
@@ -2749,13 +3429,13 @@ function bindEvents() {
    ═══════════════════════════════════════════════ */
 function init() {
   buildLeds();
-  updateLedIdle();
   loadNames();
 
   // Restore saved settings
   try {
+    const allThemes = ['dark','light','neon','vegas','retro','cherry','midnight','emerald','cyber','royal'];
     const savedTheme = localStorage.getItem('slots_theme');
-    if (savedTheme && ['dark','light','neon'].includes(savedTheme)) setTheme(savedTheme);
+    if (savedTheme && allThemes.includes(savedTheme)) setTheme(savedTheme);
     const s = localStorage.getItem('slots_sound');
     if (s === '0') {
       STATE.soundEnabled = false;
@@ -2790,7 +3470,16 @@ function init() {
   updateStats();
   updateMainDisplay();
   populateReels();
+  updateLedIdle();
   setStatus('Ready — pull the lever!', false);
+
+  // Add lever ready pulse in manual mode
+  setTimeout(() => {
+    if (STATE.speed === 'manual') {
+      document.getElementById('lever-ball').classList.add('ready-pulse');
+    }
+  }, 500);
+
   setTimeout(() => { const inp = document.getElementById('name-input'); if (inp) inp.focus(); }, 100);
 
   const canvas = document.getElementById('coin-canvas');
