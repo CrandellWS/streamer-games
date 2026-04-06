@@ -232,6 +232,10 @@ body.transparent-bg { background: transparent !important; }
   justify-content: center;
   position: relative;
   overflow: hidden;
+  min-height: 0;
+}
+#game-area > #slot-machine {
+  height: min(85vh, 100%);
 }
 
 /* ═══════════════════════════════════════════════
@@ -813,6 +817,9 @@ input[type="range"]::-moz-range-thumb {
 
 #cabinet {
   width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background: var(--machine-frame);
   border-radius: 32px 32px 24px 24px;
   padding: 20px 24px 28px;
@@ -933,9 +940,10 @@ input[type="range"]::-moz-range-thumb {
    ═══════════════════════════════════════════════ */
 #reel-section {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 0;
   width: 100%;
+  flex: 1;
   position: relative;
 }
 
@@ -1009,7 +1017,7 @@ input[type="range"]::-moz-range-thumb {
 
 .reel-window {
   flex: 1;
-  height: 320px;
+  min-height: 240px;
   background: var(--reel-bg);
   border-radius: 10px;
   overflow: hidden;
@@ -1103,7 +1111,7 @@ input[type="range"]::-moz-range-thumb {
   align-items: center;
   padding-left: 12px;
   position: relative;
-  height: 280px;
+  align-self: stretch;
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
@@ -1117,7 +1125,7 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 7px;
   position: absolute;
   top: 20px;
-  height: 230px;
+  height: calc(100% - 50px);
   transition: height 0.1s ease;
   box-shadow: 2px 0 8px rgba(0,0,0,0.5);
   z-index: 2;
@@ -1911,8 +1919,17 @@ const STATE = {
 
 const REEL_COUNT = 3;
 const ITEM_HEIGHT = 80;
-const REEL_WINDOW_HEIGHT = 320;
-const PAYLINE_CENTER = REEL_WINDOW_HEIGHT / 2;
+let REEL_WINDOW_HEIGHT = 320;
+// Update dynamically after DOM renders
+setTimeout(() => {
+  const rw = document.getElementById('reel-0');
+  if (rw) REEL_WINDOW_HEIGHT = rw.offsetHeight;
+}, 100);
+window.addEventListener('resize', () => {
+  const rw = document.getElementById('reel-0');
+  if (rw) REEL_WINDOW_HEIGHT = rw.offsetHeight;
+});
+function getPaylineCenter() { return REEL_WINDOW_HEIGHT / 2; }
 
 /* ═══════════════════════════════════════════════
    COLOR PALETTES
@@ -2187,7 +2204,7 @@ function populateReels() {
 }
 
 function positionStripAtIndex(strip, idx) {
-  const offsetY = -(idx * ITEM_HEIGHT) + (PAYLINE_CENTER - ITEM_HEIGHT / 2);
+  const offsetY = -(idx * ITEM_HEIGHT) + (getPaylineCenter() - ITEM_HEIGHT / 2);
   strip.style.transform = `translateY(${offsetY}px)`;
   strip._currentIndex = idx;
 }
@@ -2349,7 +2366,7 @@ function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome, isNearMissS
         ? 1 - Math.pow(1 - progress, 5)
         : 1 - Math.pow(1 - progress, 3);
       const targetIdx = findBestLandingIndex(strip._items, targetName, slowStartY);
-      const targetY = -(targetIdx * ITEM_HEIGHT) + (PAYLINE_CENTER - ITEM_HEIGHT / 2);
+      const targetY = -(targetIdx * ITEM_HEIGHT) + (getPaylineCenter() - ITEM_HEIGHT / 2);
       const y = slowStartY + (targetY - slowStartY) * ease;
       strip.style.transform = `translateY(${y}px)`;
 
@@ -2371,7 +2388,7 @@ function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome, isNearMissS
 }
 
 function findBestLandingIndex(items, targetName, currentY) {
-  const approxIdx = Math.round((-currentY + PAYLINE_CENTER - ITEM_HEIGHT / 2) / ITEM_HEIGHT);
+  const approxIdx = Math.round((-currentY + getPaylineCenter() - ITEM_HEIGHT / 2) / ITEM_HEIGHT);
   for (let offset = 0; offset < items.length; offset++) {
     const idx = (approxIdx + offset) % items.length;
     if (items[idx] === targetName) return idx;
@@ -3285,8 +3302,22 @@ function bindEvents() {
     const shaft = document.getElementById('lever-shaft');
 
     const RESTING_TOP = 0;
-    const SHAFT_HEIGHT = 230;
     const SHAFT_TOP = 20;
+    // Dynamic shaft height based on assembly size
+    function getShaftHeight() {
+      return Math.max(100, assembly.offsetHeight - SHAFT_TOP - 30);
+    }
+    let SHAFT_HEIGHT = getShaftHeight();
+    // Update on resize
+    window.addEventListener('resize', () => {
+      SHAFT_HEIGHT = getShaftHeight();
+      shaft.style.height = SHAFT_HEIGHT + 'px';
+    });
+    // Initial set
+    setTimeout(() => {
+      SHAFT_HEIGHT = getShaftHeight();
+      shaft.style.height = SHAFT_HEIGHT + 'px';
+    }, 100);
     const TRIGGER_PERCENT = 0.45;
     const MAX_PULL = SHAFT_HEIGHT;
     const OVERSHOOT = SHAFT_HEIGHT * 0.2;
