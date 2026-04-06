@@ -192,6 +192,7 @@ input[type="text"]:focus {
 
 .btn {
   padding: 10px 18px;
+  min-height: 44px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -215,7 +216,7 @@ input[type="text"]:focus {
   color: #fff;
   box-shadow: 0 4px 16px var(--accent-glow);
 }
-.btn-primary:hover { filter: brightness(1.15); box-shadow: 0 6px 24px var(--accent-glow); }
+.btn-primary:hover { filter: brightness(1.15); box-shadow: 0 6px 24px var(--accent-glow); transform: translateY(-2px); }
 
 .btn-gold {
   background: var(--gold);
@@ -223,18 +224,19 @@ input[type="text"]:focus {
   color: #1a1000;
   box-shadow: 0 4px 16px var(--gold-glow);
 }
-.btn-gold:hover { filter: brightness(1.1); box-shadow: 0 6px 24px var(--gold-glow); }
+.btn-gold:hover { filter: brightness(1.1); box-shadow: 0 6px 24px var(--gold-glow); transform: translateY(-2px); }
 
 .btn-danger { color: var(--danger); border-color: rgba(255,68,102,0.3); }
 .btn-danger:hover { background: rgba(255,68,102,0.1); border-color: var(--danger); }
 
-.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.btn-sm { padding: 6px 12px; min-height: 36px; font-size: 12px; border-radius: 8px; }
 .btn-block { width: 100%; }
 .btn-group { display: flex; gap: 8px; }
 
 .size-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 .size-btn {
   padding: 8px 12px;
+  min-height: 40px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -245,6 +247,9 @@ input[type="text"]:focus {
   transition: all 0.2s;
   flex: 1;
   text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .size-btn:hover { border-color: var(--accent); color: var(--text); }
 .size-btn.active {
@@ -559,6 +564,11 @@ input[type="text"]:focus {
   text-shadow: 0 0 30px var(--gold-glow);
   margin-bottom: 8px;
   word-break: break-word;
+  animation: treasureWinPulse 2s ease-in-out infinite;
+}
+@keyframes treasureWinPulse {
+  0%, 100% { text-shadow: 0 0 30px var(--gold-glow); }
+  50% { text-shadow: 0 0 60px var(--gold-glow), 0 0 100px var(--gold-glow); }
 }
 #winner-coord {
   font-size: 18px;
@@ -1341,6 +1351,8 @@ window.addEventListener('resize', () => {
    INIT
    ════════════════════════════════════════════════════════ */
 buildGrid();
+// Auto-focus name input for fast entry
+setTimeout(() => { const inp = document.getElementById('name-input'); if (inp) inp.focus(); }, 100);
 
 })();
 </script>

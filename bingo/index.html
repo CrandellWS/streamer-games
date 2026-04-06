@@ -212,6 +212,7 @@ textarea {
 
 .btn {
   padding: 10px 18px;
+  min-height: 44px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -236,7 +237,7 @@ textarea {
   color: #fff;
   box-shadow: 0 4px 16px var(--accent-glow);
 }
-.btn-primary:hover { filter: brightness(1.15); box-shadow: 0 6px 24px var(--accent-glow); }
+.btn-primary:hover { filter: brightness(1.15); box-shadow: 0 6px 24px var(--accent-glow); transform: translateY(-2px); }
 
 .btn-success {
   background: var(--success);
@@ -253,12 +254,12 @@ textarea {
   font-weight: 800;
   box-shadow: 0 4px 16px var(--gold-glow);
 }
-.btn-gold:hover { filter: brightness(1.1); }
+.btn-gold:hover { filter: brightness(1.1); box-shadow: 0 6px 24px var(--gold-glow); transform: translateY(-2px); }
 
 .btn-danger { color: var(--danger); border-color: rgba(255,68,102,0.3); }
 .btn-danger:hover { background: rgba(255,68,102,0.1); border-color: var(--danger); }
 
-.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.btn-sm { padding: 6px 12px; min-height: 36px; font-size: 12px; border-radius: 8px; }
 .btn-block { width: 100%; }
 
 .btn-group { display: flex; gap: 8px; }
@@ -320,10 +321,16 @@ textarea {
   color: var(--text-dim);
   cursor: pointer;
   font-size: 16px;
-  padding: 0 2px;
+  padding: 4px 8px;
+  min-width: 28px;
+  min-height: 28px;
   line-height: 1;
-  transition: color 0.2s;
+  transition: color 0.15s, background 0.15s;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
 }
 .player-remove:hover { color: var(--danger); }
 
@@ -1945,6 +1952,8 @@ function init() {
   renderCards();
   restoreCalledBoard();
   updateCounts();
+  // Auto-focus name input for fast entry
+  setTimeout(() => { const inp = document.getElementById('name-input'); if (inp) inp.focus(); }, 100);
 }
 
 init();

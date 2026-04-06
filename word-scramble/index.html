@@ -217,6 +217,7 @@ input[type="text"]:focus {
 
 .btn {
   padding: 10px 18px;
+  min-height: 44px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -247,6 +248,7 @@ input[type="text"]:focus {
 .btn-primary:hover {
   filter: brightness(1.15);
   box-shadow: 0 6px 24px var(--accent-glow);
+  transform: translateY(-2px);
 }
 
 .btn-gold {
@@ -642,6 +644,11 @@ select:focus {
   color: var(--gold);
   text-shadow: 0 0 24px var(--gold-glow), 0 0 48px var(--gold-glow);
   letter-spacing: 1px;
+  animation: winnerGlowPulse 2s ease-in-out infinite;
+}
+@keyframes winnerGlowPulse {
+  0%, 100% { text-shadow: 0 0 24px var(--gold-glow), 0 0 48px var(--gold-glow); }
+  50% { text-shadow: 0 0 40px var(--gold-glow), 0 0 80px var(--gold-glow), 0 0 120px var(--gold-glow); }
 }
 #winner-sub {
   font-size: 14px;
@@ -1720,6 +1727,8 @@ function init() {
   startNewWord(word);
 
   renderScoreboards();
+  // Auto-focus custom word input for fast entry
+  if (state.adminVisible) setTimeout(() => customInput.focus(), 100);
 }
 
 init();

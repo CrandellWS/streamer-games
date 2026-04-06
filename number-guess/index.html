@@ -190,6 +190,14 @@ body.transparent-bg { background: transparent !important; }
   display: block;
   min-width: 300px;
   text-align: center;
+  animation: numberIdleBreathe 4s ease-in-out infinite;
+}
+#number-display.flip-out, #number-display.flip-in {
+  animation: none;
+}
+@keyframes numberIdleBreathe {
+  0%, 100% { text-shadow: 0 0 60px var(--accent-glow), 0 0 120px var(--accent-glow); }
+  50% { text-shadow: 0 0 80px var(--accent-glow), 0 0 160px var(--accent-glow), 0 0 200px var(--accent-glow); }
 }
 
 #number-display.flip-out {
@@ -493,6 +501,7 @@ body.transparent-bg { background: transparent !important; }
 
 .btn {
   padding: 10px 18px;
+  min-height: 44px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -523,6 +532,7 @@ body.transparent-bg { background: transparent !important; }
 .btn-primary:hover {
   filter: brightness(1.15);
   box-shadow: 0 6px 24px var(--accent-glow);
+  transform: translateY(-2px);
 }
 
 .btn-danger {

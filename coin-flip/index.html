@@ -150,6 +150,7 @@ input[type="text"]:focus {
 
 .btn {
   padding: 10px 18px;
+  min-height: 44px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -176,7 +177,7 @@ input[type="text"]:focus {
   border-color: var(--gold); color: #1a1000; font-weight: 700;
   box-shadow: 0 4px 16px var(--gold-glow);
 }
-.btn-gold:hover { filter: brightness(1.1); box-shadow: 0 6px 24px var(--gold-glow); }
+.btn-gold:hover { filter: brightness(1.1); box-shadow: 0 6px 24px var(--gold-glow); transform: translateY(-2px); }
 
 .btn-silver {
   background: linear-gradient(135deg, #888, var(--silver));
@@ -188,7 +189,7 @@ input[type="text"]:focus {
 .btn-danger { color: var(--danger); border-color: rgba(255,68,102,0.3); }
 .btn-danger:hover { background: rgba(255,68,102,0.1); border-color: var(--danger); }
 
-.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.btn-sm { padding: 6px 12px; min-height: 32px; font-size: 12px; border-radius: 8px; }
 .btn-block { width: 100%; }
 .btn-group { display: flex; gap: 8px; }
 
@@ -544,6 +545,11 @@ input[type="text"]:focus {
   text-transform: uppercase; letter-spacing: 3px;
   color: var(--gold);
   text-shadow: 0 0 30px var(--gold-glow);
+  animation: winnerGlowPulse 2s ease-in-out infinite;
+}
+@keyframes winnerGlowPulse {
+  0%, 100% { text-shadow: 0 0 20px var(--gold-glow); }
+  50% { text-shadow: 0 0 40px var(--gold-glow), 0 0 60px var(--gold-glow); }
 }
 #winner-banner .winner-names {
   font-size: 13px; color: rgba(255,215,0,0.7);
@@ -813,6 +819,8 @@ function init() {
   }
 
   setStatus('Ready — Space or click Flip Coin');
+  // Auto-focus name input for fast entry
+  if (adminMode) setTimeout(() => nameInput.focus(), 100);
 }
 
 /* ═══════════════════════════════════════════════

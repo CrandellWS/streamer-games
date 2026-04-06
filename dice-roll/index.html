@@ -217,6 +217,7 @@ textarea {
 
 .btn {
   padding: 10px 18px;
+  min-height: 44px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -244,6 +245,7 @@ textarea {
 .btn-primary:hover {
   filter: brightness(1.15);
   box-shadow: 0 6px 24px var(--accent-glow);
+  transform: translateY(-2px);
 }
 .btn-primary:disabled {
   opacity: 0.45;
@@ -254,7 +256,7 @@ textarea {
 .btn-danger { color: var(--danger); border-color: rgba(255,68,102,0.3); }
 .btn-danger:hover { background: rgba(255,68,102,0.1); border-color: var(--danger); }
 
-.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.btn-sm { padding: 6px 12px; min-height: 36px; font-size: 12px; border-radius: 8px; }
 .btn-block { width: 100%; }
 
 .btn-group { display: flex; gap: 8px; }
@@ -270,6 +272,7 @@ textarea {
 .seg-btn {
   flex: 1;
   padding: 9px 0;
+  min-height: 44px;
   background: var(--surface);
   border: none;
   color: var(--text-dim);
@@ -1589,6 +1592,8 @@ function init() {
   setRollBtn(true);
   // Kick off first ambient die immediately
   spawnAmbient();
+  // Auto-focus name input for fast entry
+  if (state.adminVisible) setTimeout(() => { const inp = document.getElementById('name-input'); if (inp) inp.focus(); }, 100);
 }
 
 init();

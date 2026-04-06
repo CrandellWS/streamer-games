@@ -201,6 +201,7 @@ textarea {
 
 .btn {
   padding: 10px 18px;
+  min-height: 44px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -224,7 +225,7 @@ textarea {
   color: #fff;
   box-shadow: 0 4px 16px var(--accent-glow);
 }
-.btn-primary:hover { filter: brightness(1.15); box-shadow: 0 6px 24px var(--accent-glow); }
+.btn-primary:hover { filter: brightness(1.15); box-shadow: 0 6px 24px var(--accent-glow); transform: translateY(-2px); }
 .btn-danger { color: var(--danger); border-color: rgba(255,68,102,0.3); }
 .btn-danger:hover { background: rgba(255,68,102,0.1); border-color: var(--danger); }
 .btn-gold {
@@ -234,8 +235,8 @@ textarea {
   font-weight: 700;
   box-shadow: 0 4px 16px var(--gold-glow);
 }
-.btn-gold:hover { filter: brightness(1.1); }
-.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.btn-gold:hover { filter: brightness(1.1); box-shadow: 0 6px 24px var(--gold-glow); transform: translateY(-2px); }
+.btn-sm { padding: 6px 12px; min-height: 36px; font-size: 12px; border-radius: 8px; }
 .btn-block { width: 100%; }
 .btn-group { display: flex; gap: 8px; }
 
@@ -294,7 +295,7 @@ textarea {
 .name-item:hover { border-color: var(--accent); }
 .name-item-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .name-remove {
-  width: 20px; height: 20px;
+  width: 28px; height: 28px;
   border-radius: 6px;
   border: none;
   background: transparent;
@@ -802,6 +803,7 @@ textarea {
 .theme-btn {
   flex: 1;
   padding: 8px;
+  min-height: 36px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -811,6 +813,9 @@ textarea {
   cursor: pointer;
   transition: all 0.2s;
   text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .theme-btn:hover { border-color: var(--accent); color: var(--text); }
 .theme-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
@@ -824,6 +829,7 @@ textarea {
   gap: 8px;
   cursor: pointer;
   padding: 8px 12px;
+  min-height: 44px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -1890,6 +1896,8 @@ function init() {
   populateReels();
   bindEvents();
   setStatus('Ready — pull the lever!', false);
+  // Auto-focus name input for fast entry
+  setTimeout(() => { const inp = document.getElementById('name-input'); if (inp) inp.focus(); }, 100);
 
   // Canvas sizing
   const canvas = document.getElementById('coin-canvas');

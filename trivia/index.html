@@ -207,6 +207,7 @@ textarea {
 
 .btn {
   padding: 9px 16px;
+  min-height: 44px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -230,12 +231,12 @@ textarea {
   color: #fff;
   box-shadow: 0 4px 16px var(--accent-glow);
 }
-.btn-primary:hover { filter: brightness(1.15); box-shadow: 0 6px 24px var(--accent-glow); }
+.btn-primary:hover { filter: brightness(1.15); box-shadow: 0 6px 24px var(--accent-glow); transform: translateY(-2px); }
 .btn-success { background: var(--success); border-color: var(--success); color: #0a0a0a; font-weight: 700; }
 .btn-success:hover { filter: brightness(1.1); }
 .btn-danger { color: var(--danger); border-color: rgba(255,68,102,0.3); }
 .btn-danger:hover { background: rgba(255,68,102,0.1); border-color: var(--danger); }
-.btn-sm { padding: 6px 11px; font-size: 12px; border-radius: 8px; }
+.btn-sm { padding: 6px 11px; min-height: 36px; font-size: 12px; border-radius: 8px; }
 .btn-block { width: 100%; }
 .btn-group { display: flex; gap: 8px; }
 
@@ -380,7 +381,7 @@ textarea {
   border: 1px solid var(--border);
   color: var(--text-dim);
   font-size: 18px;
-  width: 36px; height: 36px;
+  width: 44px; height: 44px;
   border-radius: 10px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -1998,6 +1999,8 @@ renderQueue();
 renderScoreboard();
 updateStats();
 updateSoundUI();
+// Auto-focus first text input in admin panel for fast entry
+setTimeout(() => { const inp = document.querySelector('#admin-panel input[type="text"]'); if (inp) inp.focus(); }, 100);
 
 })();
 </script>

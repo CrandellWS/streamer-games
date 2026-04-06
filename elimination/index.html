@@ -211,6 +211,7 @@ textarea {
 
 .btn {
   padding: 10px 18px;
+  min-height: 44px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -248,6 +249,7 @@ textarea {
 .btn-primary:hover {
   filter: brightness(1.15);
   box-shadow: 0 6px 24px var(--accent-glow);
+  transform: translateY(-2px);
 }
 
 .btn-danger {
@@ -362,10 +364,15 @@ textarea {
   color: var(--text-dim);
   cursor: pointer;
   font-size: 14px;
-  padding: 2px 4px;
+  padding: 4px 8px;
+  min-width: 28px;
+  min-height: 28px;
   border-radius: 4px;
-  transition: color 0.15s;
+  transition: color 0.15s, background 0.15s;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .name-item .remove-btn:hover { color: var(--danger); }
 
@@ -1740,6 +1747,8 @@ window.addEventListener('message', e => {
 load();
 renderNameList();
 renderStartState();
+// Auto-focus name input for fast entry
+setTimeout(() => { const inp = document.getElementById('name-input'); if (inp) inp.focus(); }, 100);
 
 })();
 </script>
