@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Office Studios — Free Streamer Games</title>
+<meta name="description" content="Free, open-source games for streamers. Drop into OBS, connect your chat bot, and engage your audience. No ads, no login, no fees.">
+<meta property="og:title" content="Home Office Studios — Free Streamer Games">
+<meta property="og:description" content="15 free streamer games. OBS-ready overlays. Zero dependencies. Open source.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://homeofficestudios.com">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d14;
+  --bg2: #14141f;
+  --surface: #1a1a2e;
+  --surface2: #22223a;
+  --border: #2a2a4a;
+  --text: #e8e8f0;
+  --text-dim: #8888aa;
+  --accent: #7c5cfc;
+  --accent-glow: rgba(124, 92, 252, 0.4);
+  --gold: #ffd700;
+  --success: #44ff88;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ═══ HERO ═══ */
+.hero {
+  text-align: center;
+  padding: 80px 24px 60px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(124, 92, 252, 0.15) 0%, transparent 70%);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 20%, rgba(124, 92, 252, 0.05) 0%, transparent 40%),
+              radial-gradient(circle at 70% 80%, rgba(255, 215, 0, 0.03) 0%, transparent 40%);
+  animation: drift 20s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes drift {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  100% { transform: translate(-30px, -20px) rotate(3deg); }
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  position: relative;
+  z-index: 1;
+}
+
+.hero h1 .accent { color: var(--accent); }
+.hero h1 .gold { color: var(--gold); }
+
+.hero .tagline {
+  font-size: clamp(1rem, 2.5vw, 1.3rem);
+  color: var(--text-dim);
+  margin-top: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero .badges {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 28px;
+  position: relative;
+  z-index: 1;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.badge .icon { font-size: 16px; }
+
+/* ═══ GAMES GRID ═══ */
+.games-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.games-section h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.games-section .subtitle {
+  color: var(--text-dim);
+  margin-bottom: 32px;
+  font-size: 0.95rem;
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.game-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(124, 92, 252, 0.05) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.game-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(124, 92, 252, 0.15), 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.game-card:hover::before { opacity: 1; }
+
+.game-card .game-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.game-card h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  position: relative;
+}
+
+.game-card p {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  position: relative;
+}
+
+.game-card .tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  background: var(--bg2);
+  color: var(--text-dim);
+  font-weight: 500;
+  border: 1px solid var(--border);
+}
+
+.tag.visual { color: var(--accent); border-color: rgba(124, 92, 252, 0.3); }
+.tag.chat { color: var(--success); border-color: rgba(68, 255, 136, 0.3); }
+.tag.quick { color: var(--gold); border-color: rgba(255, 215, 0, 0.3); }
+
+/* ═══ HOW IT WORKS ═══ */
+.how-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+.how-section h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+}
+
+.step {
+  text-align: center;
+  padding: 32px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.step .number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), #9b7cfc);
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.step h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.step p {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+}
+
+/* ═══ FOOTER ═══ */
+footer {
+  text-align: center;
+  padding: 40px 24px;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+footer a:hover { text-decoration: underline; }
+
+footer .footer-links {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 600px) {
+  .hero { padding: 60px 16px 40px; }
+  .games-section { padding: 24px 16px 60px; }
+  .games-grid { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <h1><span class="accent">Home Office</span> <span class="gold">Studios</span></h1>
+  <p class="tagline">Free, open-source games for streamers. Drop into OBS and go.</p>
+  <div class="badges">
+    <span class="badge"><span class="icon">🆓</span> 100% Free</span>
+    <span class="badge"><span class="icon">📂</span> Open Source</span>
+    <span class="badge"><span class="icon">🔌</span> OBS Ready</span>
+    <span class="badge"><span class="icon">🤖</span> Chat Bot API</span>
+    <span class="badge"><span class="icon">📡</span> No Server Needed</span>
+  </div>
+</section>
+
+<section class="games-section" id="games">
+  <h2>Games</h2>
+  <p class="subtitle">Every game is a single HTML file. No installs, no accounts, no dependencies.</p>
+
+  <div class="games-grid">
+
+    <a href="spin-wheel/" class="game-card">
+      <span class="game-icon">🎡</span>
+      <h3>Spin Wheel</h3>
+      <p>Colorful wheel for giveaways and random picks. Quartic ease-out physics, 35 segment colors, confetti celebration.</p>
+      <div class="tags">
+        <span class="tag visual">Visual</span>
+        <span class="tag quick">Quick</span>
+      </div>
+    </a>
+
+    <a href="marble-race/" class="game-card">
+      <span class="game-icon">🔮</span>
+      <h3>Marble Race</h3>
+      <p>Physics-based marble drop with pegs, bumpers, and funnels. Viewers get colored marbles — first to the finish wins.</p>
+      <div class="tags">
+        <span class="tag visual">Visual</span>
+        <span class="tag chat">Chat</span>
+      </div>
+    </a>
+
+    <a href="bingo/" class="game-card">
+      <span class="game-icon">🎱</span>
+      <h3>Bingo</h3>
+      <p>Classic 5x5 bingo with animated ball draw. Viewers get unique cards, first to complete a line wins.</p>
+      <div class="tags">
+        <span class="tag chat">Chat</span>
+        <span class="tag visual">Visual</span>
+      </div>
+    </a>
+
+    <a href="trivia/" class="game-card">
+      <span class="game-icon">🧠</span>
+      <h3>Trivia</h3>
+      <p>Game show style trivia. Load your own questions, viewers answer A/B/C/D, live scoreboard tracks rounds.</p>
+      <div class="tags">
+        <span class="tag chat">Chat</span>
+      </div>
+    </a>
+
+    <a href="rps-battle/" class="game-card">
+      <span class="game-icon">✊</span>
+      <h3>Rock Paper Scissors</h3>
+      <p>Tournament bracket elimination. Viewers pick R/P/S, animated hand reveals, last one standing wins.</p>
+      <div class="tags">
+        <span class="tag chat">Chat</span>
+        <span class="tag visual">Visual</span>
+      </div>
+    </a>
+
+    <a href="auction/" class="game-card">
+      <span class="game-icon">🔨</span>
+      <h3>Auction Wars</h3>
+      <p>Bid fake currency on mystery items. Rising bid ticker, going-going-gone gavel, highest bidder takes it.</p>
+      <div class="tags">
+        <span class="tag chat">Chat</span>
+      </div>
+    </a>
+
+    <a href="slot-machine/" class="game-card">
+      <span class="game-icon">🎰</span>
+      <h3>Slot Machine</h3>
+      <p>Classic 3-reel slots with viewer names. Pull the lever — match three of the same name to win. Coin shower jackpot.</p>
+      <div class="tags">
+        <span class="tag visual">Visual</span>
+        <span class="tag quick">Quick</span>
+      </div>
+    </a>
+
+    <a href="elimination/" class="game-card">
+      <span class="game-icon">💀</span>
+      <h3>Elimination</h3>
+      <p>Random elimination with dramatic spotlight. Names fade and shatter one by one. Last person standing wins.</p>
+      <div class="tags">
+        <span class="tag visual">Visual</span>
+        <span class="tag chat">Chat</span>
+      </div>
+    </a>
+
+    <a href="hot-potato/" class="game-card">
+      <span class="game-icon">🥔</span>
+      <h3>Hot Potato</h3>
+      <p>Glowing potato bounces between names faster and faster. Hidden timer — whoever holds it when time runs out is eliminated.</p>
+      <div class="tags">
+        <span class="tag visual">Visual</span>
+        <span class="tag chat">Chat</span>
+      </div>
+    </a>
+
+    <a href="word-scramble/" class="game-card">
+      <span class="game-icon">🔤</span>
+      <h3>Word Scramble</h3>
+      <p>Scrambled letter tiles appear — first viewer to unscramble the word in chat wins. Built-in categories and hints.</p>
+      <div class="tags">
+        <span class="tag chat">Chat</span>
+        <span class="tag quick">Quick</span>
+      </div>
+    </a>
+
+    <a href="treasure-dig/" class="game-card">
+      <span class="game-icon">💎</span>
+      <h3>Treasure Dig</h3>
+      <p>Grid of hidden tiles. Viewers pick coordinates to dig — find dirt, rocks, or the buried treasure. X marks near misses.</p>
+      <div class="tags">
+        <span class="tag chat">Chat</span>
+        <span class="tag visual">Visual</span>
+      </div>
+    </a>
+
+    <a href="scratch-card/" class="game-card">
+      <span class="game-icon">🎫</span>
+      <h3>Scratch Card</h3>
+      <p>Giant scratch-off reveal with metallic surface animation. Match 3 symbols to win. Viewer names as prizes.</p>
+      <div class="tags">
+        <span class="tag visual">Visual</span>
+        <span class="tag quick">Quick</span>
+      </div>
+    </a>
+
+    <a href="coin-flip/" class="game-card">
+      <span class="game-icon">🪙</span>
+      <h3>Coin Flip</h3>
+      <p>Heads or tails — 3D animated coin flip with team split view. Great for decisions, team picks, or viewer battles.</p>
+      <div class="tags">
+        <span class="tag quick">Quick</span>
+        <span class="tag visual">Visual</span>
+      </div>
+    </a>
+
+    <a href="number-guess/" class="game-card">
+      <span class="game-icon">🔢</span>
+      <h3>Number Guess</h3>
+      <p>Secret number, higher/lower hints, proximity heat meter. Closest guess wins, exact match for instant jackpot.</p>
+      <div class="tags">
+        <span class="tag chat">Chat</span>
+        <span class="tag quick">Quick</span>
+      </div>
+    </a>
+
+    <a href="dice-roll/" class="game-card">
+      <span class="game-icon">🎲</span>
+      <h3>Dice Roll</h3>
+      <p>3D dice with physics bounce. Viewers roll 1-3 dice, highest total wins. Ties re-roll for the crown.</p>
+      <div class="tags">
+        <span class="tag quick">Quick</span>
+        <span class="tag visual">Visual</span>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<section class="how-section">
+  <h2>How It Works</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="number">1</div>
+      <h3>Pick a Game</h3>
+      <p>Click any game above. It opens right in your browser — nothing to install.</p>
+    </div>
+    <div class="step">
+      <div class="number">2</div>
+      <h3>Add to OBS</h3>
+      <p>Add as a Browser Source with <code>?admin=false&amp;bg=transparent</code> for a clean overlay.</p>
+    </div>
+    <div class="step">
+      <div class="number">3</div>
+      <h3>Add Names</h3>
+      <p>Type viewer names in the admin panel, or connect a chat bot via the postMessage API.</p>
+    </div>
+    <div class="step">
+      <div class="number">4</div>
+      <h3>Go Live</h3>
+      <p>Hit Start and let the game run. Winners announced automatically.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-links">
+    <a href="https://github.com/CrandellWS/streamer-games">GitHub</a>
+    <a href="https://github.com/CrandellWS/streamer-games/issues">Request a Game</a>
+  </div>
+  <p>Home Office Studios &mdash; Made for streamers, by streamers. MIT License.</p>
+</footer>
+
+</body>
+</html>
