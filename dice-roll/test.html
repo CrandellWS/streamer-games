@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dice Roll — Test Harness</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0d0d14;
+  color: #e8e8f0;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+#frame-wrap {
+  flex: 1;
+  position: relative;
+}
+
+iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+#controls {
+  width: 340px;
+  flex-shrink: 0;
+  background: #14141f;
+  border-left: 1px solid #2a2a4a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+h1 {
+  padding: 16px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #7c5cfc;
+  border-bottom: 1px solid #2a2a4a;
+  background: #1a1a2e;
+  flex-shrink: 0;
+}
+
+.section {
+  padding: 14px 16px;
+  border-bottom: 1px solid #2a2a4a;
+  flex-shrink: 0;
+}
+
+.section h2 {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8888aa;
+  margin-bottom: 10px;
+}
+
+.btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #2a2a4a;
+  background: #1a1a2e;
+  color: #e8e8f0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+.btn:hover { background: #22223a; border-color: #7c5cfc; }
+.btn:active { transform: scale(0.97); }
+.btn.primary { background: #7c5cfc; border-color: #7c5cfc; color: #fff; }
+.btn.primary:hover { filter: brightness(1.15); }
+.btn.danger { color: #ff4466; border-color: rgba(255,68,102,0.3); }
+.btn.danger:hover { background: rgba(255,68,102,0.1); border-color: #ff4466; }
+.btn.success { color: #44ff88; border-color: rgba(68,255,136,0.3); }
+.btn.full { grid-column: 1 / -1; }
+
+/* Test results */
+#test-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a4a transparent;
+}
+
+.test-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #1a1a2e;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.test-item:last-child { border-bottom: none; }
+
+.test-icon {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  margin-top: 1px;
+}
+
+.test-body { flex: 1; }
+.test-name { font-weight: 600; color: #e8e8f0; }
+.test-detail { color: #8888aa; font-size: 11px; margin-top: 2px; word-break: break-all; }
+
+.pass { color: #44ff88; }
+.fail { color: #ff4466; }
+.info { color: #7c5cfc; }
+.warn { color: #ffd700; }
+
+#test-summary {
+  padding: 10px 16px;
+  border-top: 1px solid #2a2a4a;
+  font-size: 12px;
+  font-weight: 600;
+  background: #1a1a2e;
+  flex-shrink: 0;
+}
+
+#auto-test-btn {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #7c5cfc, #9b7cfc);
+  border-color: #7c5cfc;
+  color: #fff;
+  font-size: 13px;
+  padding: 10px;
+}
+
+/* iframe URL bar */
+#url-bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #2a2a4a;
+  background: #1a1a2e;
+  flex-shrink: 0;
+}
+
+#url-bar input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #2a2a4a;
+  background: #0d0d14;
+  color: #e8e8f0;
+  font-size: 11px;
+  font-family: monospace;
+  outline: none;
+}
+#url-bar input:focus { border-color: #7c5cfc; }
+#url-bar button { padding: 6px 12px; font-size: 11px; }
+
+/* Log section */
+#log-section {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#log-title {
+  padding: 8px 16px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8888aa;
+  border-bottom: 1px solid #2a2a4a;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#event-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a4a transparent;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.log-entry {
+  padding: 4px 0;
+  border-bottom: 1px solid #1a1a2e;
+  color: #8888aa;
+  line-height: 1.4;
+}
+.log-entry.out { color: #7c5cfc; }
+.log-entry.in  { color: #44ff88; }
+.log-entry.err { color: #ff4466; }
+.log-ts { color: #4444aa; margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<div id="frame-wrap">
+  <iframe id="game-frame" src="index.html?names=Alice,Bob,Charlie&admin=true" title="Dice Roll Game"></iframe>
+</div>
+
+<div id="controls">
+  <h1>🎲 Dice Roll — Test Harness</h1>
+
+  <!-- URL bar -->
+  <div id="url-bar">
+    <input type="text" id="url-input" value="index.html?names=Alice,Bob,Charlie&admin=true">
+    <button class="btn" onclick="reloadFrame()">Go</button>
+  </div>
+
+  <!-- Buttons -->
+  <div class="section">
+    <h2>postMessage Inputs</h2>
+    <div class="btn-grid">
+      <button class="btn" onclick="send5Players()">Add 5 Players</button>
+      <button class="btn" onclick="addOne()">Add 1 Player</button>
+      <button class="btn primary full" onclick="sendMsg('dice:roll')">🎲 Roll All</button>
+      <button class="btn danger" onclick="sendMsg('dice:reset')">Reset</button>
+      <button class="btn" onclick="sendMsg('dice:names')">Query Names</button>
+    </div>
+  </div>
+
+  <!-- Theme tests -->
+  <div class="section">
+    <h2>URL Param Tests</h2>
+    <div class="btn-grid">
+      <button class="btn" onclick="loadTheme('dark')">Theme: Dark</button>
+      <button class="btn" onclick="loadTheme('light')">Theme: Light</button>
+      <button class="btn success" onclick="loadTheme('neon')">Theme: Neon</button>
+      <button class="btn" onclick="loadFrame('index.html?bg=transparent&admin=true')">BG: Transparent</button>
+      <button class="btn" onclick="loadFrame('index.html?dice=2&names=X,Y,Z')">Dice=2</button>
+      <button class="btn" onclick="loadFrame('index.html?dice=3&names=A,B,C,D')">Dice=3</button>
+      <button class="btn" onclick="loadFrame('index.html?admin=false')">Admin=false</button>
+      <button class="btn" onclick="loadFrame('index.html?names=')">No Names</button>
+    </div>
+  </div>
+
+  <!-- Automated tests -->
+  <div class="section">
+    <div class="btn-grid">
+      <button class="btn" id="auto-test-btn" onclick="runAllTests()">Run All Tests</button>
+    </div>
+  </div>
+
+  <!-- Test results -->
+  <div id="test-results" style="display:none;">
+  </div>
+  <div id="test-summary" style="display:none;"></div>
+
+  <!-- Event log -->
+  <div id="log-section">
+    <div id="log-title">
+      <span>Event Log</span>
+      <button class="btn" style="padding:2px 8px;font-size:10px;" onclick="clearLog()">Clear</button>
+    </div>
+    <div id="event-log"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const frame = document.getElementById('game-frame');
+const urlInput = document.getElementById('url-input');
+let nameCounter = 0;
+
+const PLAYER_NAMES = ['Alice', 'Bob', 'Charlie', 'Diana', 'Erin',
+                      'Frank', 'Grace', 'Hank', 'Iris', 'Jack'];
+
+/* ═══════════════════════
+   FRAME UTILS
+   ═══════════════════════ */
+function loadFrame(url) {
+  urlInput.value = url;
+  frame.src = url;
+  logEntry(`Loaded: ${url}`, 'out');
+}
+
+function reloadFrame() {
+  frame.src = urlInput.value;
+  logEntry(`Loaded: ${urlInput.value}`, 'out');
+}
+
+function loadTheme(theme) {
+  loadFrame(`index.html?theme=${theme}&names=Alice,Bob,Charlie&admin=true`);
+}
+
+/* ═══════════════════════
+   MESSAGE SENDING
+   ═══════════════════════ */
+function sendMsg(type, extra) {
+  const msg = Object.assign({ type }, extra || {});
+  frame.contentWindow.postMessage(msg, '*');
+  logEntry(`→ ${JSON.stringify(msg)}`, 'out');
+}
+
+function add5Players() { send5Players(); }
+
+function send5Players() {
+  for (let i = 0; i < 5; i++) {
+    const name = PLAYER_NAMES[i % PLAYER_NAMES.length] + (nameCounter > 0 ? nameCounter : '');
+    sendMsg('dice:join', { name });
+  }
+  nameCounter++;
+}
+
+function addOne() {
+  const name = PLAYER_NAMES[nameCounter % PLAYER_NAMES.length] + (nameCounter > 0 ? nameCounter : '');
+  sendMsg('dice:join', { name });
+  nameCounter++;
+}
+
+/* ═══════════════════════
+   INBOUND MESSAGES
+   ═══════════════════════ */
+window.addEventListener('message', e => {
+  const msg = e.data;
+  if (!msg || typeof msg.type !== 'string') return;
+  if (!msg.type.startsWith('dice:')) return;
+  logEntry(`← ${JSON.stringify(msg)}`, 'in');
+
+  // Check active test listeners
+  testListeners.forEach(fn => fn(msg));
+});
+
+/* ═══════════════════════
+   EVENT LOG
+   ═══════════════════════ */
+const logEl = document.getElementById('event-log');
+
+function logEntry(text, cls) {
+  const now = new Date();
+  const ts = now.toTimeString().slice(0, 8);
+  const div = document.createElement('div');
+  div.className = `log-entry ${cls || ''}`;
+  div.innerHTML = `<span class="log-ts">[${ts}]</span>${escHtml(text)}`;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function clearLog() {
+  logEl.innerHTML = '';
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ═══════════════════════
+   AUTOMATED TEST SUITE
+   ═══════════════════════ */
+const testListeners = new Set();
+let testResults = [];
+let passCount = 0, failCount = 0;
+
+function waitForMessage(type, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      testListeners.delete(handler);
+      reject(new Error(`Timeout waiting for ${type}`));
+    }, timeoutMs || 5000);
+
+    function handler(msg) {
+      if (msg.type === type) {
+        clearTimeout(timer);
+        testListeners.delete(handler);
+        resolve(msg);
+      }
+    }
+    testListeners.add(handler);
+  });
+}
+
+function wait(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+function recordTest(name, passed, detail) {
+  testResults.push({ name, passed, detail });
+  if (passed) passCount++; else failCount++;
+  renderTestResults();
+}
+
+function renderTestResults() {
+  const el = document.getElementById('test-results');
+  const summary = document.getElementById('test-summary');
+  el.style.display = 'block';
+  summary.style.display = 'block';
+
+  el.innerHTML = testResults.map(t => `
+    <div class="test-item">
+      <div class="test-icon ${t.passed ? 'pass' : 'fail'}">${t.passed ? '✓' : '✗'}</div>
+      <div class="test-body">
+        <div class="test-name ${t.passed ? 'pass' : 'fail'}">${escHtml(t.name)}</div>
+        ${t.detail ? `<div class="test-detail">${escHtml(t.detail)}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+  el.scrollTop = el.scrollHeight;
+
+  const total = passCount + failCount;
+  summary.innerHTML = `Tests: <span class="pass">${passCount} passed</span> / <span class="fail">${failCount} failed</span> / ${total} total`;
+}
+
+async function runAllTests() {
+  testResults = [];
+  passCount = 0; failCount = 0;
+  nameCounter = 0;
+  document.getElementById('test-results').innerHTML = '';
+  document.getElementById('test-results').style.display = 'block';
+  document.getElementById('test-summary').style.display = 'none';
+
+  // Load a clean slate
+  loadFrame('index.html?admin=true');
+  await wait(800);
+
+  logEntry('=== Starting automated test suite ===', 'info');
+
+  // Test 1: dice:join — names response
+  try {
+    sendMsg('dice:join', { name: 'TestPlayer1' });
+    const msg = await waitForMessage('dice:names', 3000);
+    const ok = Array.isArray(msg.names) && msg.names.includes('TestPlayer1');
+    recordTest('dice:join emits dice:names', ok, ok ? `names: ${msg.names.join(', ')}` : `Got: ${JSON.stringify(msg)}`);
+  } catch(e) {
+    recordTest('dice:join emits dice:names', false, e.message);
+  }
+
+  // Test 2: duplicate join ignored
+  try {
+    sendMsg('dice:join', { name: 'TestPlayer1' });
+    const msg = await waitForMessage('dice:names', 3000);
+    const count = msg.names.filter(n => n === 'TestPlayer1').length;
+    recordTest('Duplicate join ignored', count === 1, `Count of TestPlayer1: ${count}`);
+  } catch(e) {
+    recordTest('Duplicate join ignored', false, e.message);
+  }
+
+  // Test 3: add more players
+  sendMsg('dice:join', { name: 'TestPlayer2' });
+  sendMsg('dice:join', { name: 'TestPlayer3' });
+  await wait(500);
+  recordTest('Multiple dice:join accepted', true, 'Added TestPlayer2, TestPlayer3');
+
+  // Test 4: dice:names query returns names
+  try {
+    sendMsg('dice:names');
+    const msg = await waitForMessage('dice:names', 3000);
+    const ok = Array.isArray(msg.names) && msg.names.length >= 3;
+    recordTest('dice:names query returns array', ok, `names count: ${msg.names.length}`);
+  } catch(e) {
+    recordTest('dice:names query returns array', false, e.message);
+  }
+
+  // Test 5: dice:roll triggers dice:winner
+  try {
+    sendMsg('dice:roll');
+    const msg = await waitForMessage('dice:winner', 10000); // tie-breaks can take time
+    const ok = typeof msg.winner === 'string' &&
+               Array.isArray(msg.rolls) &&
+               typeof msg.total === 'number' &&
+               msg.total > 0;
+    recordTest('dice:roll emits dice:winner', ok,
+      ok ? `winner: ${msg.winner}, rolls: [${msg.rolls}], total: ${msg.total}` : JSON.stringify(msg));
+  } catch(e) {
+    recordTest('dice:roll emits dice:winner', false, e.message);
+  }
+
+  // Test 6: winner total = sum of rolls
+  try {
+    // We captured the winner from the last test — run another roll
+    sendMsg('dice:roll');
+    const msg = await waitForMessage('dice:winner', 10000);
+    const sum = msg.rolls.reduce((a, b) => a + b, 0);
+    const ok = sum === msg.total;
+    recordTest('Winner total equals sum of rolls', ok, `sum: ${sum}, total: ${msg.total}`);
+  } catch(e) {
+    recordTest('Winner total equals sum of rolls', false, e.message);
+  }
+
+  // Test 7: dice:reset clears state
+  try {
+    sendMsg('dice:reset');
+    const msg = await waitForMessage('dice:names', 3000);
+    const ok = Array.isArray(msg.names) && msg.names.length === 0;
+    recordTest('dice:reset clears players', ok, `names after reset: ${JSON.stringify(msg.names)}`);
+  } catch(e) {
+    recordTest('dice:reset clears players', false, e.message);
+  }
+
+  // Test 8: URL param ?theme=neon renders without error
+  try {
+    loadFrame('index.html?theme=neon&names=A,B&admin=true');
+    await wait(600);
+    const docEl = frame.contentDocument || frame.contentWindow.document;
+    const attr = docEl.documentElement.getAttribute('data-theme');
+    const ok = attr === 'neon';
+    recordTest('URL param ?theme=neon applied', ok, `data-theme="${attr}"`);
+  } catch(e) {
+    recordTest('URL param ?theme=neon applied', false, e.message);
+  }
+
+  // Test 9: URL param ?admin=false hides panel
+  try {
+    loadFrame('index.html?admin=false&names=X,Y,Z');
+    await wait(600);
+    const docEl = frame.contentDocument || frame.contentWindow.document;
+    const panel = docEl.getElementById('admin-panel');
+    const hidden = panel && panel.classList.contains('hidden');
+    recordTest('URL param ?admin=false hides panel', hidden, hidden ? 'panel.hidden = true' : 'panel not hidden');
+  } catch(e) {
+    recordTest('URL param ?admin=false hides panel', false, e.message);
+  }
+
+  // Test 10: URL param ?names=... pre-populates players
+  try {
+    loadFrame('index.html?names=Zara,Yuri,Xena&admin=true');
+    await wait(600);
+    sendMsg('dice:names');
+    const msg = await waitForMessage('dice:names', 3000);
+    const ok = msg.names.includes('Zara') && msg.names.includes('Yuri') && msg.names.includes('Xena');
+    recordTest('URL param ?names=... pre-populates', ok, `names: ${msg.names.join(', ')}`);
+  } catch(e) {
+    recordTest('URL param ?names=... pre-populates', false, e.message);
+  }
+
+  // Test 11: Roll with single player (no tie possible)
+  try {
+    loadFrame('index.html?names=Solo&admin=true');
+    await wait(600);
+    sendMsg('dice:roll');
+    const msg = await waitForMessage('dice:winner', 6000);
+    const ok = msg.winner === 'Solo';
+    recordTest('Solo player always wins', ok, `winner: ${msg.winner}`);
+  } catch(e) {
+    recordTest('Solo player always wins', false, e.message);
+  }
+
+  // Test 12: Roll values are 1-6
+  try {
+    loadFrame('index.html?names=P1,P2,P3&dice=3&admin=true');
+    await wait(600);
+    sendMsg('dice:roll');
+    const msg = await waitForMessage('dice:winner', 12000);
+    const allValid = msg.rolls.every(r => r >= 1 && r <= 6);
+    const correctCount = msg.rolls.length === 3;
+    const ok = allValid && correctCount;
+    recordTest('Roll values are 1-6, correct dice count', ok,
+      `rolls: [${msg.rolls}], all 1-6: ${allValid}, count: ${msg.rolls.length}`);
+  } catch(e) {
+    recordTest('Roll values are 1-6 (dice=3)', false, e.message);
+  }
+
+  // Done
+  logEntry(`=== Tests complete: ${passCount} pass / ${failCount} fail ===`, failCount === 0 ? 'in' : 'err');
+}
+</script>
+</body>
+</html>

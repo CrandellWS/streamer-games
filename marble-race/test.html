@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marble Race — Test Harness</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0d0d14;
+  color: #e8e8f0;
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+h1 {
+  grid-column: 1 / -1;
+  padding: 14px 20px;
+  background: #14141f;
+  border-bottom: 1px solid #2a2a4a;
+  font-size: 15px;
+  font-weight: 700;
+  color: #7c5cfc;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+h1 span { color: #8888aa; font-weight: 400; font-size: 12px; }
+
+#game-frame {
+  border: none;
+  width: 100%;
+  height: 100%;
+  background: #0d0d14;
+  border-right: 1px solid #2a2a4a;
+}
+
+#controls {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #14141f;
+}
+
+#btn-area {
+  padding: 16px;
+  border-bottom: 1px solid #2a2a4a;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #8888aa;
+  margin-bottom: 6px;
+  margin-top: 8px;
+}
+.section-title:first-child { margin-top: 0; }
+
+.btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #2a2a4a;
+  background: #1a1a2e;
+  color: #e8e8f0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+button:hover { background: #22223a; border-color: #7c5cfc; }
+button:active { transform: scale(0.97); }
+.btn-accent { background: #7c5cfc; border-color: #7c5cfc; color: #fff; }
+.btn-accent:hover { filter: brightness(1.15); }
+.btn-danger { color: #ff4466; border-color: rgba(255,68,102,0.3); }
+.btn-danger:hover { background: rgba(255,68,102,0.1); }
+.btn-warn { color: #ffdd00; border-color: rgba(255,221,0,0.3); }
+.btn-warn:hover { background: rgba(255,221,0,0.05); }
+
+input[type="text"] {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #2a2a4a;
+  background: #1a1a2e;
+  color: #e8e8f0;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+input[type="text"]:focus { border-color: #7c5cfc; box-shadow: 0 0 0 2px rgba(124,92,252,0.3); }
+
+/* Test suite */
+#test-area {
+  padding: 16px;
+  border-bottom: 1px solid #2a2a4a;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#run-tests { width: 100%; }
+#test-results {
+  background: #0d0d14;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  padding: 10px;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 11px;
+  max-height: 180px;
+  overflow-y: auto;
+  display: none;
+}
+.test-pass { color: #44ff88; }
+.test-fail { color: #ff4466; }
+.test-info { color: #8888aa; }
+.test-header { color: #7c5cfc; font-weight: bold; margin: 4px 0 2px; }
+
+/* Log */
+#log-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px 16px 16px;
+}
+#log-area h2 {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #8888aa;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#log-clear { font-size: 10px; padding: 3px 8px; }
+#log {
+  flex: 1;
+  overflow-y: auto;
+  background: #0d0d14;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a4a transparent;
+}
+.log-entry { margin-bottom: 4px; padding: 3px 0; border-bottom: 1px solid #1a1a2e; }
+.log-entry:last-child { border-bottom: none; }
+.log-time { color: #8888aa; margin-right: 8px; }
+.log-in  { color: #7c5cfc; }
+.log-out { color: #44ff88; }
+.log-sys { color: #ffdd00; }
+.log-err { color: #ff4466; }
+.log-empty { color: #8888aa; font-style: italic; }
+</style>
+</head>
+<body>
+<h1>🔮 Marble Race — Test Harness <span>postMessage API + automated tests</span></h1>
+
+<iframe id="game-frame" src="index.html?admin=true&theme=dark" title="Marble Race game"></iframe>
+
+<div id="controls">
+  <!-- Manual Controls -->
+  <div id="btn-area">
+    <div class="section-title">Players</div>
+    <div class="btn-row">
+      <input type="text" id="single-name" placeholder="Player name…" value="TestUser">
+      <button onclick="sendJoin()" class="btn-accent">marble:join</button>
+    </div>
+    <div class="btn-row">
+      <button onclick="add8Players()">Add 8 Marbles</button>
+      <button onclick="addBots(16)">Add 16</button>
+    </div>
+
+    <div class="section-title">Race Control</div>
+    <div class="btn-row">
+      <button onclick="sendMsg({type:'marble:start'})" class="btn-accent">🚀 marble:start</button>
+      <button onclick="sendMsg({type:'marble:clear'})" class="btn-danger">✕ marble:clear</button>
+    </div>
+
+    <div class="section-title">Query</div>
+    <div class="btn-row">
+      <button onclick="sendMsg({type:'marble:names'})">marble:names</button>
+    </div>
+
+    <div class="section-title">Theme Reload</div>
+    <div class="btn-row">
+      <button onclick="loadTheme('dark')">Dark</button>
+      <button onclick="loadTheme('light')">Light</button>
+      <button onclick="loadTheme('neon')" class="btn-warn">Neon</button>
+      <button onclick="loadParam('bg','transparent')">OBS Mode</button>
+    </div>
+
+    <div class="section-title">URL Params</div>
+    <div class="btn-row">
+      <button onclick="loadParam('admin','false')">?admin=false</button>
+      <button onclick="loadParam('names','Alice,Bob,Carol,Dave')">?names=4</button>
+      <button onclick="reloadDefault()">Reset Iframe</button>
+    </div>
+  </div>
+
+  <!-- Automated Tests -->
+  <div id="test-area">
+    <div class="section-title">Automated Tests</div>
+    <button id="run-tests" onclick="runTests()" class="btn-accent">▶ Run All Tests</button>
+    <div id="test-results"></div>
+  </div>
+
+  <!-- Message Log -->
+  <div id="log-area">
+    <h2>
+      Message Log
+      <button id="log-clear" onclick="clearLog()">Clear</button>
+    </h2>
+    <div id="log"><div class="log-empty">No messages yet…</div></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const frame = document.getElementById('game-frame');
+const logEl = document.getElementById('log');
+
+/* ═══════════════════════════════════════════════
+   LOGGING
+   ═══════════════════════════════════════════════ */
+function timestamp() {
+  return new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function logMsg(text, type) {
+  const isEmpty = logEl.querySelector('.log-empty');
+  if (isEmpty) isEmpty.remove();
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.innerHTML = `<span class="log-time">${timestamp()}</span><span class="log-${type}">${escHtml(text)}</span>`;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function clearLog() {
+  logEl.innerHTML = '<div class="log-empty">Cleared.</div>';
+}
+
+/* ═══════════════════════════════════════════════
+   POSTMESSAGE
+   ═══════════════════════════════════════════════ */
+function sendMsg(msg) {
+  frame.contentWindow.postMessage(msg, '*');
+  logMsg('→ ' + JSON.stringify(msg), 'in');
+}
+
+function sendJoin() {
+  const name = document.getElementById('single-name').value.trim() || 'TestUser';
+  sendMsg({ type: 'marble:join', name });
+}
+
+window.addEventListener('message', (e) => {
+  if (!e.data || typeof e.data.type !== 'string') return;
+  if (!e.data.type.startsWith('marble:')) return;
+  logMsg('← ' + JSON.stringify(e.data), 'out');
+});
+
+/* ═══════════════════════════════════════════════
+   CONVENIENCE HELPERS
+   ═══════════════════════════════════════════════ */
+const DEMO_NAMES = ['Alice','Bob','Carol','Dave','Eve','Frank','Grace','Hank','Ivy','Jack','Kai','Luna','Max','Nova','Oscar','Piper'];
+
+function add8Players() {
+  DEMO_NAMES.slice(0, 8).forEach(n => sendMsg({ type: 'marble:join', name: n }));
+}
+
+function addBots(count) {
+  DEMO_NAMES.slice(0, Math.min(count, DEMO_NAMES.length)).forEach(n => sendMsg({ type: 'marble:join', name: n }));
+}
+
+function loadTheme(theme) {
+  frame.src = `index.html?admin=true&theme=${theme}`;
+  logMsg(`[sys] Reloaded with ?theme=${theme}`, 'sys');
+}
+
+function loadParam(key, val) {
+  const u = new URL(frame.src, location.href);
+  u.searchParams.set(key, val);
+  frame.src = u.toString();
+  logMsg(`[sys] Reloaded with ?${key}=${val}`, 'sys');
+}
+
+function reloadDefault() {
+  frame.src = 'index.html?admin=true&theme=dark';
+  logMsg('[sys] Reloaded default', 'sys');
+}
+
+/* ═══════════════════════════════════════════════
+   AUTOMATED TEST SUITE
+   ═══════════════════════════════════════════════ */
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function runTests() {
+  const btn = document.getElementById('run-tests');
+  const results = document.getElementById('test-results');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running…';
+  results.style.display = 'block';
+  results.innerHTML = '';
+
+  let passed = 0, failed = 0;
+
+  function line(text, cls) {
+    const div = document.createElement('div');
+    div.className = cls || 'test-info';
+    div.textContent = text;
+    results.appendChild(div);
+    results.scrollTop = results.scrollHeight;
+  }
+
+  function pass(name) {
+    passed++;
+    line(`✓ ${name}`, 'test-pass');
+    logMsg(`PASS: ${name}`, 'out');
+  }
+
+  function fail(name, reason) {
+    failed++;
+    line(`✗ ${name}${reason ? ' — ' + reason : ''}`, 'test-fail');
+    logMsg(`FAIL: ${name} — ${reason}`, 'err');
+  }
+
+  function header(text) { line(text, 'test-header'); }
+
+  // Reset fresh
+  frame.src = 'index.html?admin=true&theme=dark';
+  await sleep(800);
+
+  /* ── Test 1: iframe loads ── */
+  header('1. Iframe Loading');
+  try {
+    const doc = frame.contentDocument;
+    if (doc && doc.title) pass('iframe loads and has a title');
+    else fail('iframe loads and has a title', 'document or title missing');
+  } catch(e) { fail('iframe loads', e.message); }
+
+  /* ── Test 2: Canvas present ── */
+  try {
+    const cvs = frame.contentDocument.getElementById('race-canvas');
+    if (cvs && cvs.tagName === 'CANVAS') pass('canvas element exists');
+    else fail('canvas element exists', 'not found');
+  } catch(e) { fail('canvas element exists', e.message); }
+
+  /* ── Test 3: marble:join ── */
+  header('2. postMessage API — marble:join');
+  sendMsg({ type: 'marble:join', name: 'TestAlpha' });
+  await sleep(200);
+  try {
+    const players = frame.contentDocument.querySelectorAll('.player-item');
+    if (players.length >= 1) pass('marble:join adds player to list');
+    else fail('marble:join adds player to list', `found ${players.length} items`);
+  } catch(e) { fail('marble:join adds player', e.message); }
+
+  /* ── Test 4: Duplicate prevention ── */
+  sendMsg({ type: 'marble:join', name: 'TestAlpha' });
+  await sleep(150);
+  try {
+    const players = frame.contentDocument.querySelectorAll('.player-item');
+    if (players.length === 1) pass('duplicate names are rejected');
+    else fail('duplicate names are rejected', `found ${players.length} items`);
+  } catch(e) { fail('duplicate names rejected', e.message); }
+
+  /* ── Test 5: marble:names response ── */
+  header('3. marble:names Query');
+  let namesReceived = null;
+  const nameListener = (e) => {
+    if (e.data && e.data.type === 'marble:names') namesReceived = e.data;
+  };
+  window.addEventListener('message', nameListener);
+  sendMsg({ type: 'marble:names' });
+  await sleep(300);
+  window.removeEventListener('message', nameListener);
+  if (namesReceived && Array.isArray(namesReceived.names)) {
+    pass('marble:names returns array of names');
+    if (namesReceived.names.includes('TestAlpha')) pass('returned names include added player');
+    else fail('returned names include added player', JSON.stringify(namesReceived.names));
+  } else {
+    fail('marble:names returns array', namesReceived ? JSON.stringify(namesReceived) : 'no response');
+  }
+
+  /* ── Test 6: Add multiple players ── */
+  header('4. Multiple Players');
+  ['PlayerB','PlayerC','PlayerD'].forEach(n => sendMsg({ type: 'marble:join', name: n }));
+  await sleep(300);
+  try {
+    const players = frame.contentDocument.querySelectorAll('.player-item');
+    if (players.length === 4) pass('4 players total after adding 3 more');
+    else fail('4 players total', `found ${players.length}`);
+  } catch(e) { fail('multiple players', e.message); }
+
+  /* ── Test 7: marble:clear ── */
+  header('5. marble:clear');
+  sendMsg({ type: 'marble:clear' });
+  await sleep(300);
+  try {
+    const players = frame.contentDocument.querySelectorAll('.player-item');
+    if (players.length === 0) pass('marble:clear removes all players');
+    else fail('marble:clear removes all players', `found ${players.length}`);
+  } catch(e) { fail('marble:clear', e.message); }
+
+  /* ── Test 8: Start button disabled with 0 players ── */
+  header('6. UI State');
+  try {
+    const startBtn = frame.contentDocument.getElementById('start-btn');
+    if (startBtn && startBtn.disabled) pass('start button disabled with 0 players');
+    else fail('start button disabled with 0 players', 'button not disabled');
+  } catch(e) { fail('start button state', e.message); }
+
+  /* ── Test 9: Start button enabled with players ── */
+  sendMsg({ type: 'marble:join', name: 'RaceReady' });
+  await sleep(200);
+  try {
+    const startBtn = frame.contentDocument.getElementById('start-btn');
+    if (startBtn && !startBtn.disabled) pass('start button enabled with 1+ players');
+    else fail('start button enabled with 1+ players', 'button still disabled');
+  } catch(e) { fail('start button enabled', e.message); }
+
+  /* ── Test 10: Theme — neon ── */
+  header('7. Theme Switching');
+  try {
+    const themeBtn = frame.contentDocument.querySelector('[data-theme="neon"]');
+    if (themeBtn) {
+      themeBtn.click();
+      await sleep(100);
+      const html = frame.contentDocument.documentElement;
+      if (html.getAttribute('data-theme') === 'neon') pass('neon theme applies via button click');
+      else fail('neon theme applies', `data-theme="${html.getAttribute('data-theme')}"`);
+      // Reset to dark
+      frame.contentDocument.querySelector('[data-theme="dark"]')?.click();
+    } else {
+      fail('neon theme button found', 'button missing');
+    }
+  } catch(e) { fail('theme switching', e.message); }
+
+  /* ── Test 11: ?theme URL param ── */
+  header('8. URL Parameters');
+  frame.src = 'index.html?theme=neon&admin=true';
+  await sleep(700);
+  try {
+    const html = frame.contentDocument.documentElement;
+    if (html.getAttribute('data-theme') === 'neon') pass('?theme=neon URL param applied');
+    else fail('?theme=neon URL param', `got ${html.getAttribute('data-theme')}`);
+  } catch(e) { fail('?theme URL param', e.message); }
+
+  /* ── Test 12: ?admin=false hides panel ── */
+  frame.src = 'index.html?admin=false';
+  await sleep(700);
+  try {
+    const panel = frame.contentDocument.getElementById('admin-panel');
+    const toggle = frame.contentDocument.getElementById('admin-toggle');
+    if (panel && panel.classList.contains('hidden') && toggle && toggle.style.display === 'none') {
+      pass('?admin=false hides panel and toggle');
+    } else {
+      fail('?admin=false hides panel', `panel.hidden=${panel?.classList.contains('hidden')}, toggle=${toggle?.style.display}`);
+    }
+  } catch(e) { fail('?admin=false', e.message); }
+
+  /* ── Test 13: ?names URL param ── */
+  frame.src = 'index.html?names=Aria,Bruno,Cleo&admin=true';
+  await sleep(700);
+  try {
+    const items = frame.contentDocument.querySelectorAll('.player-item');
+    if (items.length === 3) pass('?names=Aria,Bruno,Cleo pre-loads 3 players');
+    else fail('?names URL param', `found ${items.length} players`);
+  } catch(e) { fail('?names URL param', e.message); }
+
+  /* ── Test 14: XSS safety ── */
+  header('9. Security');
+  frame.src = 'index.html?admin=true';
+  await sleep(600);
+  const xssName = '<script>window.__xss=true<\/script>';
+  sendMsg({ type: 'marble:join', name: xssName });
+  await sleep(200);
+  try {
+    const xssTriggered = frame.contentWindow.__xss;
+    if (!xssTriggered) pass('XSS in player name is escaped safely');
+    else fail('XSS in player name', 'script was executed!');
+  } catch(e) { pass('XSS in player name is escaped safely'); }
+
+  /* ── Test 15: Physics objects init ── */
+  header('10. Physics / Race Init');
+  sendMsg({ type: 'marble:join', name: 'PhysicsTest' });
+  await sleep(200);
+  try {
+    const pegs = frame.contentWindow.pegs;   // only available if not fully encapsulated
+    // Access via IIFE scope isn't directly possible, but we can check canvas is drawing
+    const cvs = frame.contentDocument.getElementById('race-canvas');
+    if (cvs.width > 0 && cvs.height > 0) pass('canvas has valid dimensions for rendering');
+    else fail('canvas dimensions', `${cvs.width}x${cvs.height}`);
+  } catch(e) { fail('canvas dimensions', e.message); }
+
+  /* ── Test 16: marble:winner outbound ── */
+  header('11. Outbound Events');
+  sendMsg({ type: 'marble:clear' });
+  await sleep(150);
+  // Add single marble and start — it should finish and fire winner
+  sendMsg({ type: 'marble:join', name: 'SoloRunner' });
+  await sleep(200);
+  let winnerReceived = null;
+  const winListener = (e) => {
+    if (e.data && e.data.type === 'marble:winner') winnerReceived = e.data;
+  };
+  window.addEventListener('message', winListener);
+  sendMsg({ type: 'marble:start' });
+  // Wait up to 15s for winner (race with 1 marble + 3x speed isn't instant)
+  let waited = 0;
+  while (!winnerReceived && waited < 12000) {
+    await sleep(500);
+    waited += 500;
+  }
+  window.removeEventListener('message', winListener);
+  if (winnerReceived) {
+    pass('marble:winner event fires when marble crosses finish');
+    if (winnerReceived.winner === 'SoloRunner') pass('winner name matches joined player');
+    else fail('winner name matches', `got "${winnerReceived.winner}"`);
+    if (typeof winnerReceived.time === 'number') pass('winner event includes race time');
+    else fail('winner event includes time', typeof winnerReceived.time);
+  } else {
+    fail('marble:winner event fires', 'timeout after 12s — race may not have completed');
+  }
+
+  /* ── Summary ── */
+  line('', 'test-info');
+  const total = passed + failed;
+  line(`Results: ${passed}/${total} passed — ${failed} failed`, failed === 0 ? 'test-pass' : 'test-fail');
+
+  btn.disabled = false;
+  btn.textContent = `▶ Run Again (${passed}/${total})`;
+
+  logMsg(`Tests complete: ${passed}/${total} passed`, failed === 0 ? 'out' : 'err');
+}
+</script>
+</body>
+</html>

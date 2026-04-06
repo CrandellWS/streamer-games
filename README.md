@@ -7,6 +7,20 @@ A free, open-source collection of interactive games designed for live streamers.
 | Game | Description | Status |
 |------|-------------|--------|
 | [Spin Wheel](spin-wheel/) | Colorful spin wheel for giveaways, viewer picks, and random selection | ✅ Ready |
+| [Bingo](bingo/) | Classic 5x5 bingo — caller draws numbers, viewers mark unique auto-generated cards | ✅ Ready |
+| [Trivia](trivia/) | Multi-round trivia — host sets questions, viewers answer A/B/C/D, scoreboard | ✅ Ready |
+| [RPS Battle](rps-battle/) | Rock Paper Scissors tournament bracket — viewers pick, elimination rounds | ✅ Ready |
+| [Auction Wars](auction/) | Viewers bid fake currency on items — countdown timer, gavel slam, leaderboard | ✅ Ready |
+| [Word Scramble](word-scramble/) | Scrambled word appears, first viewer to unscramble wins, 6 categories | ✅ Ready |
+| [Treasure Dig](treasure-dig/) | Grid of tiles — viewers pick coordinates, find the hidden treasure | ✅ Ready |
+| [Scratch Card](scratch-card/) | Animated scratch-off reveal — match 3 symbols to win | ✅ Ready |
+| [Hot Potato](hot-potato/) | Potato bounces between players at increasing speed — last one holding it is out | ✅ Ready |
+| [Marble Race](marble-race/) | Physics-based marble drop — viewers pick colors, first to finish wins | ✅ Ready |
+| [Slot Machine](slot-machine/) | 3-reel slots with viewer names — match 3 for jackpot, coin shower | ✅ Ready |
+| [Coin Flip](coin-flip/) | 3D animated coin flip — viewers pick heads/tails, team split view | ✅ Ready |
+| [Number Guess](number-guess/) | Higher/lower guessing — closest to secret number wins, heat meter | ✅ Ready |
+| [Elimination](elimination/) | Random elimination with spotlight and shatter effects — last one standing wins | ✅ Ready |
+| [Dice Roll](dice-roll/) | CSS 3D dice — viewers roll 1-3 dice, highest total wins | ✅ Ready |
 
 ## Quick Start
 

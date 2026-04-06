@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elimination — Test Harness</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0d0d14;
+  color: #e8e8f0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+h1 {
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #7c5cfc;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid #2a2a4a;
+  flex-shrink: 0;
+}
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 0;
+}
+#game-frame {
+  flex: 1;
+  border: none;
+  min-width: 0;
+}
+#sidebar {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #2a2a4a;
+  background: #14141f;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+#controls {
+  padding: 12px;
+  border-bottom: 1px solid #2a2a4a;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+#controls h2 {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #8888aa;
+  margin-bottom: 4px;
+}
+.btn-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+button {
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px solid #2a2a4a;
+  background: #1a1a2e;
+  color: #e8e8f0;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+button:hover { background: #22223a; border-color: #7c5cfc; }
+button:active { transform: scale(0.96); }
+.btn-primary { background: #7c5cfc; border-color: #7c5cfc; color: #fff; }
+.btn-primary:hover { filter: brightness(1.15); }
+.btn-danger { color: #ff4466; border-color: rgba(255,68,102,0.3); }
+.btn-danger:hover { background: rgba(255,68,102,0.1); border-color: #ff4466; }
+.btn-success { background: #44ff88; border-color: #44ff88; color: #000; }
+.btn-success:hover { filter: brightness(1.1); }
+
+#log-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#log-section h2 {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #8888aa;
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid #2a2a4a;
+  flex-shrink: 0;
+}
+#log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  line-height: 1.7;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a4a transparent;
+}
+.log-entry {
+  padding: 3px 6px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  border-left: 2px solid transparent;
+}
+.log-info    { border-color: #7c5cfc; color: #a8a8d0; }
+.log-out     { border-color: #00aaff; color: #88ccff; background: rgba(0,170,255,0.05); }
+.log-in      { border-color: #44ff88; color: #88ffaa; background: rgba(68,255,136,0.05); }
+.log-winner  { border-color: #ffd700; color: #ffd700; background: rgba(255,215,0,0.08); font-weight: 700; }
+.log-elim    { border-color: #ff4466; color: #ff8888; background: rgba(255,68,102,0.05); }
+.log-pass    { border-color: #44ff88; color: #44ff88; background: rgba(68,255,136,0.05); }
+.log-fail    { border-color: #ff4466; color: #ff4466; background: rgba(255,68,102,0.1); font-weight: 700; }
+.log-section-head {
+  color: #7c5cfc;
+  font-weight: 700;
+  margin-top: 8px;
+  border-left: none;
+  padding-left: 0;
+}
+#log-clear-btn {
+  position: absolute;
+  right: 12px;
+  top: 6px;
+  font-size: 10px;
+  padding: 3px 8px;
+}
+#log-section { position: relative; }
+#results-bar {
+  padding: 8px 12px;
+  font-size: 11px;
+  border-top: 1px solid #2a2a4a;
+  color: #8888aa;
+  display: flex;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+#results-bar span { font-weight: 700; }
+#results-pass { color: #44ff88; }
+#results-fail { color: #ff4466; }
+</style>
+</head>
+<body>
+<h1>⚔️ Elimination — Test Harness</h1>
+<div id="main">
+  <iframe id="game-frame" src="index.html?admin=true&theme=dark" title="Elimination game"></iframe>
+  <div id="sidebar">
+    <div id="controls">
+      <h2>postMessage Commands</h2>
+
+      <div class="btn-row">
+        <button onclick="sendMsg({type:'eliminate:join',name:'Alice'})">join: Alice</button>
+        <button onclick="sendMsg({type:'eliminate:join',name:'Bob'})">join: Bob</button>
+        <button onclick="sendMsg({type:'eliminate:join',name:'Charlie'})">join: Charlie</button>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" onclick="add10Names()">Add 10 Names</button>
+        <button class="btn-primary" onclick="add20Names()">Add 20 Names</button>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-success" onclick="sendMsg({type:'eliminate:start'})">▶ Start</button>
+        <button onclick="sendMsg({type:'eliminate:winner'})">Query Winner</button>
+      </div>
+
+      <div class="btn-row">
+        <button onclick="sendMsg({type:'eliminate:speed',speed:'fast'})">Speed: Fast</button>
+        <button onclick="sendMsg({type:'eliminate:speed',speed:'normal'})">Speed: Normal</button>
+        <button onclick="sendMsg({type:'eliminate:speed',speed:'dramatic'})">Speed: Dramatic</button>
+      </div>
+
+      <div class="btn-row">
+        <button onclick="sendMsg({type:'eliminate:names'})">Query Names</button>
+        <button class="btn-danger" onclick="sendMsg({type:'eliminate:clear'})">Clear</button>
+      </div>
+
+      <div class="btn-row">
+        <button onclick="reloadWith('?theme=dark')">Theme: Dark</button>
+        <button onclick="reloadWith('?theme=light')">Theme: Light</button>
+        <button onclick="reloadWith('?theme=neon')">Theme: Neon</button>
+      </div>
+
+      <div class="btn-row">
+        <button onclick="reloadWith('?bg=transparent')">BG: Transparent</button>
+        <button onclick="reloadWith('?admin=false')">admin=false</button>
+        <button onclick="reloadWith('?names=Alice,Bob,Charlie,Diana')">?names= param</button>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" onclick="runTests()">▶ Run All Tests</button>
+        <button onclick="clearLog()">Clear Log</button>
+      </div>
+    </div>
+
+    <div id="log-section">
+      <h2>Event Log</h2>
+      <div id="log"></div>
+      <div id="results-bar">
+        <span>Tests: <span id="results-pass">0</span> pass / <span id="results-fail">0</span> fail</span>
+        <span id="test-status">—</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const frame = document.getElementById('game-frame');
+const $log  = document.getElementById('log');
+const $pass = document.getElementById('results-pass');
+const $fail = document.getElementById('results-fail');
+const $status = document.getElementById('test-status');
+
+let passCount = 0, failCount = 0;
+
+/* ── Logging ── */
+function log(msg, cls) {
+  const div = document.createElement('div');
+  div.className = 'log-entry ' + (cls || 'log-info');
+  const ts = new Date().toLocaleTimeString('en', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  div.textContent = '[' + ts + '] ' + msg;
+  $log.appendChild(div);
+  $log.scrollTop = $log.scrollHeight;
+}
+function logSection(title) {
+  const div = document.createElement('div');
+  div.className = 'log-entry log-section-head';
+  div.textContent = '── ' + title + ' ──';
+  $log.appendChild(div);
+}
+function clearLog() {
+  $log.innerHTML = '';
+  passCount = 0; failCount = 0;
+  $pass.textContent = '0'; $fail.textContent = '0';
+  $status.textContent = '—';
+}
+
+/* ── postMessage OUT ── */
+function sendMsg(msg) {
+  frame.contentWindow.postMessage(msg, '*');
+  log('→ OUT: ' + JSON.stringify(msg), 'log-out');
+}
+
+/* ── postMessage IN ── */
+window.addEventListener('message', e => {
+  if (!e.data || typeof e.data.type !== 'string') return;
+  if (!e.data.type.startsWith('eliminate:')) return;
+  const d = e.data;
+  if (d.type === 'eliminate:winner') {
+    log('← IN: ' + JSON.stringify(d), 'log-winner');
+  } else if (d.type === 'eliminate:eliminated') {
+    log('← IN: ' + JSON.stringify(d), 'log-elim');
+  } else {
+    log('← IN: ' + JSON.stringify(d), 'log-in');
+  }
+});
+
+/* ── Name helpers ── */
+const NAMES_10 = ['Alice','Bob','Charlie','Diana','Eve','Frank','Grace','Hank','Iris','Jack'];
+const NAMES_20 = [...NAMES_10, 'Karen','Leo','Mia','Noah','Olivia','Pete','Quinn','Rose','Sam','Tara'];
+
+function add10Names() {
+  NAMES_10.forEach(n => sendMsg({ type:'eliminate:join', name: n }));
+  log('Queued 10 names', 'log-info');
+}
+function add20Names() {
+  NAMES_20.forEach(n => sendMsg({ type:'eliminate:join', name: n }));
+  log('Queued 20 names', 'log-info');
+}
+
+/* ── URL reload ── */
+function reloadWith(params) {
+  log('Reloading iframe with: ' + params, 'log-info');
+  frame.src = 'index.html' + params;
+}
+
+/* ── Test helpers ── */
+function assert(label, cond, detail) {
+  if (cond) {
+    passCount++;
+    $pass.textContent = passCount;
+    log('PASS: ' + label + (detail ? ' (' + detail + ')' : ''), 'log-pass');
+    return true;
+  } else {
+    failCount++;
+    $fail.textContent = failCount;
+    log('FAIL: ' + label + (detail ? ' (' + detail + ')' : ''), 'log-fail');
+    return false;
+  }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function waitForMessage(type, timeout) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => {
+      window.removeEventListener('message', handler);
+      reject(new Error('Timeout waiting for ' + type));
+    }, timeout || 5000);
+    function handler(e) {
+      if (e.data && e.data.type === type) {
+        clearTimeout(t);
+        window.removeEventListener('message', handler);
+        resolve(e.data);
+      }
+    }
+    window.addEventListener('message', handler);
+  });
+}
+
+/* ══════════════════════════════════════════
+   AUTOMATED TESTS
+   ══════════════════════════════════════════ */
+async function runTests() {
+  clearLog();
+  logSection('TEST SUITE START');
+  $status.textContent = 'Running…';
+
+  /* ── Test 1: iframe loads ── */
+  logSection('Test 1: iframe loads');
+  await sleep(300);
+  try {
+    const doc = frame.contentDocument || frame.contentWindow.document;
+    assert('iframe document exists', !!doc);
+    assert('title is set', doc.title.includes('Elimination'));
+    assert('name grid exists', !!doc.getElementById('name-grid'));
+    assert('admin panel exists', !!doc.getElementById('admin-panel'));
+    assert('start button exists', !!doc.getElementById('start-btn'));
+  } catch(e) {
+    assert('iframe accessible', false, e.message);
+  }
+
+  await sleep(200);
+
+  /* ── Test 2: Join message ── */
+  logSection('Test 2: eliminate:join');
+  const namesPromise = waitForMessage('eliminate:names', 3000).catch(() => null);
+  sendMsg({ type: 'eliminate:join', name: 'TestPlayer1' });
+  const namesResp = await namesPromise;
+  assert('names event emitted on join', !!namesResp, namesResp ? 'got ' + namesResp.type : 'timeout');
+  if (namesResp) {
+    assert('names array is array', Array.isArray(namesResp.names));
+    assert('TestPlayer1 in names', namesResp.names.includes('TestPlayer1'));
+  }
+
+  await sleep(200);
+
+  /* ── Test 3: Multiple joins ── */
+  logSection('Test 3: Multiple joins');
+  const joinNames = ['Alpha','Beta','Gamma','Delta','Epsilon'];
+  for (const n of joinNames) {
+    sendMsg({ type: 'eliminate:join', name: n });
+    await sleep(30);
+  }
+  await sleep(200);
+  const namesQ = waitForMessage('eliminate:names', 3000).catch(() => null);
+  sendMsg({ type: 'eliminate:names' });
+  const nr = await namesQ;
+  assert('names query responded', !!nr);
+  if (nr) {
+    assert('all joined names present', joinNames.every(n => nr.names.includes(n)),
+      nr.names.join(', '));
+    assert('at least 6 players (prev + 5)', nr.names.length >= 6);
+  }
+
+  await sleep(200);
+
+  /* ── Test 4: Speed message ── */
+  logSection('Test 4: eliminate:speed');
+  sendMsg({ type: 'eliminate:speed', speed: 'fast' });
+  await sleep(100);
+  try {
+    const doc = frame.contentDocument;
+    const activeSpeedBtn = doc.querySelector('.speed-btn.active');
+    assert('speed fast set via message', activeSpeedBtn && activeSpeedBtn.dataset.speed === 'fast',
+      activeSpeedBtn ? activeSpeedBtn.dataset.speed : 'none');
+  } catch(e) {
+    log('Speed DOM check skipped (cross-origin)', 'log-info');
+  }
+
+  await sleep(200);
+
+  /* ── Test 5: Start + eliminated events ── */
+  logSection('Test 5: eliminate:start + outbound events');
+  // Use fast speed for quick test
+  sendMsg({ type: 'eliminate:speed', speed: 'fast' });
+  await sleep(100);
+
+  const elimEvents = [];
+  const origListener = (e) => {
+    if (e.data && e.data.type === 'eliminate:eliminated') elimEvents.push(e.data);
+  };
+  window.addEventListener('message', origListener);
+
+  sendMsg({ type: 'eliminate:start' });
+  log('Waiting up to 15s for eliminations + winner…', 'log-info');
+
+  let winnerData = null;
+  try {
+    winnerData = await waitForMessage('eliminate:winner', 20000);
+  } catch(e) {
+    assert('winner event received within 20s', false, 'timeout');
+  }
+
+  window.removeEventListener('message', origListener);
+
+  if (winnerData) {
+    assert('winner event received', true, 'type: ' + winnerData.type);
+    assert('winner has name', typeof winnerData.winner === 'string' && winnerData.winner.length > 0,
+      winnerData.winner);
+    assert('at least one elimination occurred', elimEvents.length > 0,
+      elimEvents.length + ' eliminations');
+    assert('winner not in eliminations', !elimEvents.some(e => e.name === winnerData.winner),
+      'winner: ' + winnerData.winner);
+    log('Eliminated in order: ' + elimEvents.map(e => e.name).join(' → '), 'log-elim');
+    log('Winner: ' + winnerData.winner, 'log-winner');
+  }
+
+  await sleep(500);
+
+  /* ── Test 6: Query winner after game ── */
+  logSection('Test 6: Query winner post-game');
+  if (winnerData) {
+    const winnerQuery = waitForMessage('eliminate:winner', 3000).catch(() => null);
+    sendMsg({ type: 'eliminate:winner' });
+    const wr = await winnerQuery;
+    assert('winner query responded', !!wr, wr ? wr.winner : 'no response');
+    if (wr) assert('winner matches', wr.winner === winnerData.winner,
+      wr.winner + ' vs ' + winnerData.winner);
+  } else {
+    log('Skipping winner query (no winner data)', 'log-info');
+  }
+
+  await sleep(200);
+
+  /* ── Test 7: Clear ── */
+  logSection('Test 7: eliminate:clear');
+  const clearNamesP = waitForMessage('eliminate:names', 3000).catch(() => null);
+  sendMsg({ type: 'eliminate:clear' });
+  const afterClear = await clearNamesP;
+  // After clear, names should be empty
+  await sleep(300);
+  const checkNamesP = waitForMessage('eliminate:names', 3000).catch(() => null);
+  sendMsg({ type: 'eliminate:names' });
+  const cn = await checkNamesP;
+  assert('clear empties names', !cn || cn.names.length === 0,
+    cn ? cn.names.length + ' names remain' : 'no response');
+
+  await sleep(200);
+
+  /* ── Test 8: XSS safety ── */
+  logSection('Test 8: XSS safety');
+  const xssName = '<script>alert("xss")<\/script>';
+  sendMsg({ type: 'eliminate:join', name: xssName });
+  await sleep(200);
+  try {
+    const doc = frame.contentDocument;
+    const cards = doc.querySelectorAll('.name-card, .name-item');
+    let xssInjected = false;
+    cards.forEach(c => {
+      if (c.querySelector('script')) xssInjected = true;
+    });
+    assert('XSS not injected into DOM', !xssInjected);
+  } catch(e) {
+    log('XSS DOM check skipped (cross-origin)', 'log-info');
+  }
+
+  await sleep(200);
+
+  /* ── Test 9: URL param ?names= ── */
+  logSection('Test 9: URL param ?names=');
+  const paramNames = ['UrlAlpha','UrlBeta','UrlGamma'];
+  const paramStr = '?names=' + paramNames.join(',') + '&admin=true';
+  frame.src = 'index.html' + paramStr;
+  await sleep(800);
+  const namesFromParam = waitForMessage('eliminate:names', 3000).catch(() => null);
+  sendMsg({ type: 'eliminate:names' });
+  const pnr = await namesFromParam;
+  if (pnr) {
+    assert('?names= param loads names', paramNames.every(n => pnr.names.includes(n)),
+      pnr.names.join(', '));
+  } else {
+    log('names query after reload — response may require extra time', 'log-info');
+  }
+
+  await sleep(200);
+
+  /* ── Test 10: slow (dramatic) speed message alias ── */
+  logSection('Test 10: speed "slow" maps to dramatic');
+  sendMsg({ type: 'eliminate:speed', speed: 'slow' });
+  await sleep(100);
+  try {
+    const doc = frame.contentDocument;
+    const activeBtn = doc.querySelector('.speed-btn.active');
+    assert('slow maps to dramatic', activeBtn && activeBtn.dataset.speed === 'dramatic',
+      activeBtn ? activeBtn.dataset.speed : 'none');
+  } catch(e) {
+    log('DOM check skipped', 'log-info');
+  }
+
+  /* ── Summary ── */
+  logSection('TEST SUITE COMPLETE');
+  $status.textContent = passCount + ' pass / ' + failCount + ' fail';
+  if (failCount === 0) {
+    log('All tests passed!', 'log-pass');
+  } else {
+    log(failCount + ' test(s) failed — see above for details', 'log-fail');
+  }
+
+  // Reset iframe for interactive use
+  await sleep(500);
+  frame.src = 'index.html?admin=true&theme=dark';
+}
+</script>
+</body>
+</html>

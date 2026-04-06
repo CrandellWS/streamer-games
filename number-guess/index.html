@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number Guess — Streamer Games</title>
+<style>
+/* ═══════════════════════════════════════════════
+   CSS RESET & VARIABLES
+   ═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d14;
+  --bg2: #14141f;
+  --surface: #1a1a2e;
+  --surface2: #22223a;
+  --border: #2a2a4a;
+  --text: #e8e8f0;
+  --text-dim: #8888aa;
+  --accent: #7c5cfc;
+  --accent-glow: rgba(124,92,252,0.4);
+  --gold: #ffd700;
+  --gold-glow: rgba(255,215,0,0.5);
+  --danger: #ff4466;
+  --success: #44ff88;
+  --panel-width: 360px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+[data-theme="light"] {
+  --bg: #f0f0f5;
+  --bg2: #e8e8f0;
+  --surface: #ffffff;
+  --surface2: #f5f5fa;
+  --border: #d0d0e0;
+  --text: #1a1a2e;
+  --text-dim: #666680;
+}
+
+[data-theme="neon"] {
+  --bg: #0a0a0a;
+  --bg2: #111111;
+  --surface: #1a1a1a;
+  --surface2: #222222;
+  --border: #333333;
+  --text: #ffffff;
+  --text-dim: #888888;
+  --accent: #00ffcc;
+  --accent-glow: rgba(0,255,204,0.4);
+  --gold: #ff00ff;
+  --gold-glow: rgba(255,0,255,0.5);
+}
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.transparent-bg { background: transparent !important; }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════ */
+#app {
+  display: flex;
+  width: 100%; height: 100%;
+  position: relative;
+}
+
+#main-area {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Left: central display */
+#game-display {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 32px;
+  position: relative;
+}
+
+/* Right: guess history */
+#history-col {
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+#history-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+#history-header h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+#history-header .history-count {
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+#history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.history-item {
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  animation: slideIn 0.25s ease-out;
+}
+.history-item.top-guess {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.history-item .guess-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-item .guess-num {
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.history-item .guess-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ═══════════════════════════════════════════════
+   NUMBER DISPLAY (big center piece)
+   ═══════════════════════════════════════════════ */
+#number-display-wrap {
+  perspective: 800px;
+  position: relative;
+}
+
+#number-display {
+  font-size: clamp(120px, 18vw, 220px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -4px;
+  color: var(--accent);
+  text-shadow: 0 0 60px var(--accent-glow), 0 0 120px var(--accent-glow);
+  transition: color 0.4s, text-shadow 0.4s;
+  transform-origin: center center;
+  display: block;
+  min-width: 300px;
+  text-align: center;
+}
+
+#number-display.flip-out {
+  animation: flipOut 0.25s ease-in forwards;
+}
+#number-display.flip-in {
+  animation: flipIn 0.25s ease-out forwards;
+}
+#number-display.gold-reveal {
+  color: var(--gold);
+  text-shadow: 0 0 60px var(--gold-glow), 0 0 120px var(--gold-glow);
+}
+
+@keyframes flipOut {
+  from { transform: rotateX(0deg); opacity: 1; }
+  to   { transform: rotateX(90deg); opacity: 0; }
+}
+@keyframes flipIn {
+  from { transform: rotateX(-90deg); opacity: 0; }
+  to   { transform: rotateX(0deg); opacity: 1; }
+}
+
+#range-label {
+  font-size: 14px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+#guess-count-display {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+#guess-count-display span {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════
+   STATUS BADGE
+   ═══════════════════════════════════════════════ */
+#status-badge {
+  padding: 6px 16px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 1px solid;
+  transition: all 0.3s;
+}
+#status-badge.open {
+  color: var(--success);
+  border-color: rgba(68,255,136,0.4);
+  background: rgba(68,255,136,0.1);
+  box-shadow: 0 0 16px rgba(68,255,136,0.2);
+}
+#status-badge.closed {
+  color: var(--danger);
+  border-color: rgba(255,68,102,0.4);
+  background: rgba(255,68,102,0.1);
+}
+#status-badge.winner {
+  color: var(--gold);
+  border-color: rgba(255,215,0,0.4);
+  background: rgba(255,215,0,0.1);
+  box-shadow: 0 0 24px var(--gold-glow);
+  animation: pulse 1s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 24px var(--gold-glow); }
+  50%       { box-shadow: 0 0 48px var(--gold-glow), 0 0 80px var(--gold-glow); }
+}
+
+/* ═══════════════════════════════════════════════
+   HEAT METER
+   ═══════════════════════════════════════════════ */
+#heat-section {
+  width: 100%;
+  max-width: 500px;
+}
+#heat-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-bottom: 8px;
+}
+#heat-bar-wrap {
+  position: relative;
+  height: 28px;
+  border-radius: 14px;
+  overflow: visible;
+  background: linear-gradient(90deg, #4488ff 0%, #44aaff 25%, #44ffcc 40%, #ffee00 60%, #ff8800 75%, #ff3333 100%);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+#heat-bar-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  position: relative;
+}
+#heat-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.6);
+  transition: left 0.6s cubic-bezier(0.4,0,0.2,1);
+  left: 0%;
+  z-index: 2;
+}
+#heat-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* ═══════════════════════════════════════════════
+   HINT INDICATOR
+   ═══════════════════════════════════════════════ */
+#hint-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  opacity: 0;
+  transition: opacity 0.4s;
+  height: 60px;
+}
+#hint-indicator.visible {
+  opacity: 1;
+  animation: hintPop 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+#hint-indicator.hint-higher {
+  color: var(--success);
+  text-shadow: 0 0 30px rgba(68,255,136,0.5);
+}
+#hint-indicator.hint-lower {
+  color: var(--danger);
+  text-shadow: 0 0 30px rgba(255,68,102,0.5);
+}
+@keyframes hintPop {
+  0%   { transform: scale(0.7) translateY(10px); opacity: 0; }
+  60%  { transform: scale(1.1); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════
+   WINNER BANNER
+   ═══════════════════════════════════════════════ */
+#winner-banner {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at center, rgba(255,215,0,0.15) 0%, transparent 70%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
+  z-index: 50;
+}
+#winner-banner.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+#winner-banner .winner-label {
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--gold);
+  text-shadow: 0 0 20px var(--gold-glow);
+}
+#winner-banner .winner-name {
+  font-size: 52px;
+  font-weight: 900;
+  color: var(--gold);
+  text-shadow: 0 0 40px var(--gold-glow), 0 0 80px var(--gold-glow);
+  animation: winnerPulse 1.5s ease-in-out infinite;
+}
+#winner-banner .winner-detail {
+  font-size: 18px;
+  color: var(--text-dim);
+}
+@keyframes winnerPulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.04); }
+}
+
+/* Confetti particles */
+.confetti {
+  position: absolute;
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  animation: confettiFall linear forwards;
+  pointer-events: none;
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════
+   ADMIN PANEL
+   ═══════════════════════════════════════════════ */
+#admin-panel {
+  width: var(--panel-width);
+  height: 100%;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease;
+  z-index: 100;
+  flex-shrink: 0;
+}
+#admin-panel.hidden {
+  transform: translateX(100%);
+  opacity: 0;
+  position: absolute;
+  right: 0; top: 0;
+  pointer-events: none;
+}
+
+#admin-toggle {
+  position: fixed;
+  top: 12px; right: 12px;
+  z-index: 200;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#admin-toggle:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.panel-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.panel-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.panel-header p {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.panel-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-section h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn:hover {
+  background: var(--surface2);
+  border-color: var(--accent);
+}
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.btn-primary:hover {
+  filter: brightness(1.15);
+  box-shadow: 0 6px 24px var(--accent-glow);
+}
+
+.btn-danger {
+  color: var(--danger);
+  border-color: rgba(255,68,102,0.3);
+}
+.btn-danger:hover {
+  background: rgba(255,68,102,0.1);
+  border-color: var(--danger);
+}
+
+.btn-success {
+  color: var(--success);
+  border-color: rgba(68,255,136,0.3);
+}
+.btn-success:hover {
+  background: rgba(68,255,136,0.1);
+  border-color: var(--success);
+}
+
+.btn-gold {
+  color: var(--gold);
+  border-color: rgba(255,215,0,0.3);
+}
+.btn-gold:hover {
+  background: rgba(255,215,0,0.1);
+  border-color: var(--gold);
+  box-shadow: 0 0 16px var(--gold-glow);
+}
+
+.btn-block { width: 100%; }
+.btn-group { display: flex; gap: 8px; }
+
+input[type="number"],
+input[type="text"] {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="number"]:focus,
+input[type="text"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.input-row label {
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  min-width: 32px;
+}
+
+/* Toggle switch */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.toggle-row label {
+  font-size: 13px;
+  color: var(--text);
+}
+.toggle-switch {
+  position: relative;
+  width: 44px; height: 24px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.toggle-switch input { display: none; }
+.toggle-track {
+  width: 100%; height: 100%;
+  border-radius: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  transition: background 0.2s;
+  display: block;
+}
+.toggle-switch input:checked + .toggle-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.2s;
+  pointer-events: none;
+}
+.toggle-switch input:checked ~ .toggle-thumb {
+  left: 23px;
+}
+
+/* Secret number preview box */
+#secret-preview {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-dim);
+  text-align: center;
+  letter-spacing: 1px;
+}
+#secret-preview .secret-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accent);
+  display: block;
+  margin-top: 2px;
+}
+
+/* Live log */
+#event-log {
+  max-height: 160px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--text-dim);
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+}
+.log-entry { display: block; }
+.log-entry.log-win { color: var(--gold); }
+.log-entry.log-hint { color: var(--accent); }
+.log-entry.log-err { color: var(--danger); }
+.log-entry.log-guess { color: var(--text); }
+</style>
+</head>
+<body>
+<button id="admin-toggle" title="Toggle admin panel">⚙</button>
+
+<div id="app">
+
+  <!-- ── MAIN AREA ── -->
+  <div id="main-area">
+
+    <!-- Centre game display -->
+    <div id="game-display">
+
+      <!-- Status badge -->
+      <div id="status-badge" class="open">Accepting Guesses</div>
+
+      <!-- Big number -->
+      <div id="number-display-wrap">
+        <span id="number-display">?</span>
+      </div>
+
+      <!-- Range + count -->
+      <div id="range-label">Guess a number from <span id="range-min">1</span> – <span id="range-max">100</span></div>
+      <div id="guess-count-display">Guesses: <span id="guess-count">0</span></div>
+
+      <!-- Hint indicator -->
+      <div id="hint-indicator">
+        <span id="hint-arrow"></span>
+        <span id="hint-text"></span>
+      </div>
+
+      <!-- Heat meter -->
+      <div id="heat-section">
+        <div id="heat-title">Heat Meter — closest guess</div>
+        <div id="heat-bar-wrap">
+          <div id="heat-bar-inner">
+            <div id="heat-marker"></div>
+          </div>
+        </div>
+        <div id="heat-labels">
+          <span>❄ Cold</span>
+          <span>~ Warm</span>
+          <span>🔥 Hot</span>
+        </div>
+      </div>
+
+      <!-- Winner overlay -->
+      <div id="winner-banner">
+        <div class="winner-label">🏆 Winner!</div>
+        <div class="winner-name" id="winner-name-text"></div>
+        <div class="winner-detail" id="winner-detail-text"></div>
+      </div>
+
+    </div><!-- /game-display -->
+
+    <!-- Guess history sidebar -->
+    <div id="history-col">
+      <div id="history-header">
+        <h3>Guess History</h3>
+        <div class="history-count">Closest first · <span id="hist-count">0</span> guesses</div>
+      </div>
+      <div id="history-list"></div>
+    </div>
+
+  </div><!-- /main-area -->
+
+  <!-- ── ADMIN PANEL ── -->
+  <div id="admin-panel">
+    <div class="panel-header">
+      <h2>🎯 Number Guess</h2>
+      <p>Manage game state and guesses</p>
+    </div>
+
+    <div class="panel-scroll">
+
+      <div class="panel-section">
+        <h3>Game</h3>
+        <button class="btn btn-primary btn-block" id="btn-new-game">🎲 New Game</button>
+        <div id="secret-preview">
+          Secret number:
+          <span class="secret-num" id="secret-display">—</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Range</h3>
+        <div class="input-row">
+          <label>Min</label>
+          <input type="number" id="input-min" value="1" min="0" max="9999">
+        </div>
+        <div class="input-row">
+          <label>Max</label>
+          <input type="number" id="input-max" value="100" min="1" max="99999">
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Controls</h3>
+        <div class="btn-group" style="margin-bottom:8px">
+          <button class="btn btn-success btn-block" id="btn-open-guesses">✅ Open Guesses</button>
+          <button class="btn btn-danger btn-block" id="btn-close-guesses">🔒 Close Guesses</button>
+        </div>
+        <button class="btn btn-block" id="btn-hint" style="margin-bottom:8px">💡 Show Hint</button>
+        <button class="btn btn-gold btn-block" id="btn-reveal" style="margin-bottom:8px">👁 Reveal Answer</button>
+        <button class="btn btn-danger btn-block" id="btn-reset">↺ Reset</button>
+      </div>
+
+      <div class="panel-section">
+        <h3>Options</h3>
+        <div class="toggle-row">
+          <label>Accept Guesses</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-accepting" checked>
+            <span class="toggle-track"></span>
+            <span class="toggle-thumb"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <label>Sound</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-sound" checked>
+            <span class="toggle-track"></span>
+            <span class="toggle-thumb"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <label>Allow re-guess same player</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-reguess">
+            <span class="toggle-track"></span>
+            <span class="toggle-thumb"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Theme</h3>
+        <div class="btn-group">
+          <button class="btn btn-block" onclick="setTheme('dark')">Dark</button>
+          <button class="btn btn-block" onclick="setTheme('light')">Light</button>
+          <button class="btn btn-block" onclick="setTheme('neon')">Neon</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Event Log</h3>
+        <div id="event-log"></div>
+      </div>
+
+    </div><!-- /panel-scroll -->
+  </div><!-- /admin-panel -->
+
+</div><!-- /app -->
+
+<script>
+(function() {
+'use strict';
+
+/* ═══════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════ */
+const state = {
+  secret: null,
+  min: 1,
+  max: 100,
+  accepting: true,
+  guesses: [],       // [{name, number, dist, ts}]
+  hintGiven: false,
+  revealed: false,
+  winner: null,
+  soundOn: true,
+  allowReguess: false,
+};
+
+/* ═══════════════════════════════════════════════
+   DOM REFS
+   ═══════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const adminPanel   = $('admin-panel');
+const adminToggle  = $('admin-toggle');
+const numDisplay   = $('number-display');
+const statusBadge  = $('status-badge');
+const rangeMin     = $('range-min');
+const rangeMax     = $('range-max');
+const guessCount   = $('guess-count');
+const histCount    = $('hist-count');
+const historyList  = $('history-list');
+const hintIndicator= $('hint-indicator');
+const hintArrow    = $('hint-arrow');
+const hintText     = $('hint-text');
+const heatMarker   = $('heat-marker');
+const winnerBanner = $('winner-banner');
+const winnerNameTxt= $('winner-name-text');
+const winnerDetail = $('winner-detail-text');
+const secretDisplay= $('secret-display');
+const eventLog     = $('event-log');
+
+/* ═══════════════════════════════════════════════
+   URL PARAMS
+   ═══════════════════════════════════════════════ */
+(function parseParams() {
+  const p = new URLSearchParams(location.search);
+  if (p.get('bg') === 'transparent') document.body.classList.add('transparent-bg');
+  if (p.get('theme')) setTheme(p.get('theme'));
+  if (p.get('admin') === 'false') {
+    adminPanel.classList.add('hidden');
+    adminToggle.style.display = 'none';
+  }
+  if (p.get('min')) state.min = parseInt(p.get('min')) || 1;
+  if (p.get('max')) state.max = parseInt(p.get('max')) || 100;
+  $('input-min').value = state.min;
+  $('input-max').value = state.max;
+})();
+
+/* ═══════════════════════════════════════════════
+   THEME
+   ═══════════════════════════════════════════════ */
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('guess_theme', t); } catch(e) {}
+}
+(function initTheme() {
+  const urlTheme = new URLSearchParams(location.search).get('theme');
+  if (urlTheme && ['dark','light','neon'].includes(urlTheme)) { setTheme(urlTheme); return; }
+  try {
+    const saved = localStorage.getItem('guess_theme');
+    if (saved) setTheme(saved);
+  } catch(e) {}
+})();
+window.setTheme = setTheme;
+
+/* ═══════════════════════════════════════════════
+   WEB AUDIO
+   ═══════════════════════════════════════════════ */
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+  return audioCtx;
+}
+
+function playBlip() {
+  if (!state.soundOn) return;
+  const ctx = getAudio(); if (!ctx) return;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination);
+  o.type = 'sine';
+  o.frequency.setValueAtTime(880, ctx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.08);
+  g.gain.setValueAtTime(0.18, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+  o.start(ctx.currentTime);
+  o.stop(ctx.currentTime + 0.12);
+}
+
+function playSwoosh() {
+  if (!state.soundOn) return;
+  const ctx = getAudio(); if (!ctx) return;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  const f = ctx.createBiquadFilter();
+  o.connect(f); f.connect(g); g.connect(ctx.destination);
+  o.type = 'sawtooth';
+  f.type = 'bandpass';
+  f.frequency.setValueAtTime(400, ctx.currentTime);
+  f.frequency.exponentialRampToValueAtTime(2000, ctx.currentTime + 0.25);
+  o.frequency.setValueAtTime(220, ctx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.25);
+  g.gain.setValueAtTime(0.15, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+  o.start(ctx.currentTime);
+  o.stop(ctx.currentTime + 0.3);
+}
+
+function playJackpot() {
+  if (!state.soundOn) return;
+  const ctx = getAudio(); if (!ctx) return;
+  const notes = [523, 659, 784, 1047, 1319];
+  notes.forEach((freq, i) => {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'triangle';
+    const t = ctx.currentTime + i * 0.12;
+    o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.22, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    o.start(t);
+    o.stop(t + 0.5);
+  });
+}
+
+function playReveal() {
+  if (!state.soundOn) return;
+  const ctx = getAudio(); if (!ctx) return;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination);
+  o.type = 'sine';
+  o.frequency.setValueAtTime(440, ctx.currentTime);
+  o.frequency.setValueAtTime(550, ctx.currentTime + 0.1);
+  o.frequency.setValueAtTime(660, ctx.currentTime + 0.2);
+  g.gain.setValueAtTime(0.15, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+  o.start(ctx.currentTime);
+  o.stop(ctx.currentTime + 0.5);
+}
+
+/* ═══════════════════════════════════════════════
+   PROXIMITY COLORS
+   ═══════════════════════════════════════════════ */
+function getHeatColor(dist) {
+  if (dist === 0) return 'var(--gold)';
+  if (dist <= 5)  return '#ff3333';
+  if (dist <= 15) return '#ff8800';
+  if (dist <= 30) return '#ffee00';
+  return '#4488ff';
+}
+
+function getHeatPct(dist) {
+  const range = state.max - state.min;
+  if (range <= 0) return 0;
+  // 0 dist = 100% hot (right), max dist = 0% hot (left)
+  const pct = Math.max(0, Math.min(1, 1 - (dist / range)));
+  return pct * 100;
+}
+
+/* ═══════════════════════════════════════════════
+   CORE GAME LOGIC
+   ═══════════════════════════════════════════════ */
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function logEvent(msg, cls) {
+  const el = document.createElement('span');
+  el.className = 'log-entry' + (cls ? ' '+cls : '');
+  el.textContent = new Date().toLocaleTimeString() + ' ' + msg;
+  eventLog.insertBefore(el, eventLog.firstChild);
+  while (eventLog.children.length > 50) eventLog.removeChild(eventLog.lastChild);
+}
+
+function newGame() {
+  state.min   = parseInt($('input-min').value) || 1;
+  state.max   = parseInt($('input-max').value) || 100;
+  if (state.min >= state.max) { state.max = state.min + 1; $('input-max').value = state.max; }
+  state.secret   = Math.floor(Math.random() * (state.max - state.min + 1)) + state.min;
+  state.guesses  = [];
+  state.hintGiven= false;
+  state.revealed = false;
+  state.winner   = null;
+  state.accepting= true;
+
+  secretDisplay.textContent = state.secret;
+  $('toggle-accepting').checked = true;
+  rangeMin.textContent = state.min;
+  rangeMax.textContent = state.max;
+  guessCount.textContent = '0';
+  histCount.textContent = '0';
+  historyList.innerHTML = '';
+  hintIndicator.className = '';
+  winnerBanner.classList.remove('show');
+
+  flipNumber('?', false);
+  updateHeatMarker(null);
+  updateStatusBadge();
+  logEvent('New game started. Range: '+state.min+'–'+state.max, 'log-hint');
+  saveState();
+}
+
+function openGuesses() {
+  state.accepting = true;
+  $('toggle-accepting').checked = true;
+  updateStatusBadge();
+  logEvent('Guesses opened', 'log-hint');
+}
+
+function closeGuesses() {
+  state.accepting = false;
+  $('toggle-accepting').checked = false;
+  updateStatusBadge();
+  logEvent('Guesses closed', 'log-hint');
+}
+
+function updateStatusBadge() {
+  if (state.winner) {
+    statusBadge.className = 'winner';
+    statusBadge.textContent = '🏆 Winner: ' + state.winner.name;
+  } else if (state.accepting) {
+    statusBadge.className = 'open';
+    statusBadge.textContent = 'Accepting Guesses';
+  } else {
+    statusBadge.className = 'closed';
+    statusBadge.textContent = 'Guesses Closed';
+  }
+}
+
+function submitGuess(name, number) {
+  if (!state.secret) {
+    logEvent('No active game', 'log-err');
+    return { error: 'no_game' };
+  }
+  const n = parseInt(number);
+  if (isNaN(n) || n < state.min || n > state.max) {
+    logEvent('Invalid guess from '+escapeHtml(name)+': '+escapeHtml(String(number)), 'log-err');
+    return { error: 'invalid_range' };
+  }
+  if (!state.accepting) {
+    return { error: 'closed' };
+  }
+  if (!state.allowReguess) {
+    const existing = state.guesses.findIndex(g => g.name.toLowerCase() === name.toLowerCase());
+    if (existing !== -1) {
+      // Update their guess
+      state.guesses.splice(existing, 1);
+    }
+  }
+
+  const dist = Math.abs(n - state.secret);
+  const guess = { name: String(name).slice(0,32), number: n, dist, ts: Date.now() };
+  state.guesses.push(guess);
+
+  playBlip();
+  guessCount.textContent = state.guesses.length;
+
+  // Check exact match
+  if (dist === 0) {
+    state.winner = guess;
+    state.accepting = false;
+    closeGuesses();
+    setTimeout(() => revealAnswer(true), 400);
+    logEvent('EXACT MATCH: ' + escapeHtml(name) + ' guessed ' + n + '!', 'log-win');
+    emit({ type: 'guess:winner', winner: name, guess: n, answer: state.secret });
+  } else {
+    logEvent('Guess: ' + escapeHtml(name) + ' → ' + n + ' (dist: '+dist+')', 'log-guess');
+  }
+
+  renderHistory();
+  updateHeatFromBest();
+  saveState();
+  return { ok: true, dist };
+}
+
+function showHint() {
+  if (!state.secret) return;
+  const best = getBestGuess();
+  let direction;
+  if (best) {
+    direction = best.number < state.secret ? 'higher' : 'lower';
+  } else {
+    // No guesses yet — mid-point hint
+    direction = 'higher';
+  }
+  state.hintGiven = true;
+
+  hintArrow.textContent = direction === 'higher' ? '↑' : '↓';
+  hintText.textContent  = direction === 'higher' ? 'HIGHER' : 'LOWER';
+  hintIndicator.className = 'visible hint-' + direction;
+  playSwoosh();
+  logEvent('Hint: guess ' + direction.toUpperCase(), 'log-hint');
+  emit({ type: 'guess:hint', direction });
+}
+
+function revealAnswer(isWinner) {
+  if (!state.secret) return;
+  state.revealed = true;
+  if (!isWinner) {
+    // Find closest winner
+    const sorted = getSortedGuesses();
+    if (sorted.length > 0) {
+      state.winner = sorted[0];
+    }
+  }
+
+  flipNumber(state.secret, true);
+  playReveal();
+
+  if (state.winner) {
+    setTimeout(() => {
+      winnerNameTxt.textContent = escapeHtml(state.winner.name);
+      winnerDetail.textContent  = 'Guessed ' + state.winner.number + ' — ' + (state.winner.dist === 0 ? 'Exact match!' : 'Closest guess!');
+      winnerBanner.classList.add('show');
+      playJackpot();
+      spawnConfetti();
+      logEvent('Winner: '+escapeHtml(state.winner.name)+' with '+state.winner.number, 'log-win');
+      emit({ type: 'guess:winner', winner: state.winner.name, guess: state.winner.number, answer: state.secret });
+    }, state.winner.dist === 0 ? 100 : 800);
+  }
+
+  updateStatusBadge();
+  saveState();
+}
+
+function getBestGuess() {
+  if (!state.guesses.length) return null;
+  return state.guesses.reduce((best, g) => g.dist < best.dist ? g : best);
+}
+
+function getSortedGuesses() {
+  return [...state.guesses].sort((a,b) => a.dist - b.dist || a.ts - b.ts);
+}
+
+/* ═══════════════════════════════════════════════
+   FLIP ANIMATION
+   ═══════════════════════════════════════════════ */
+function flipNumber(val, isReveal) {
+  numDisplay.classList.remove('flip-out','flip-in','gold-reveal');
+  numDisplay.classList.add('flip-out');
+  setTimeout(() => {
+    numDisplay.textContent = val;
+    numDisplay.classList.remove('flip-out');
+    numDisplay.classList.add('flip-in');
+    if (isReveal) numDisplay.classList.add('gold-reveal');
+  }, 250);
+  setTimeout(() => {
+    numDisplay.classList.remove('flip-in');
+  }, 500);
+}
+
+/* ═══════════════════════════════════════════════
+   HEAT METER
+   ═══════════════════════════════════════════════ */
+function updateHeatMarker(pct) {
+  if (pct === null) {
+    heatMarker.style.left = '0%';
+    return;
+  }
+  heatMarker.style.left = Math.max(0, Math.min(100, pct)) + '%';
+}
+
+function updateHeatFromBest() {
+  const best = getBestGuess();
+  if (!best) {
+    updateHeatMarker(null);
+    return;
+  }
+  const pct = getHeatPct(best.dist);
+  updateHeatMarker(pct);
+}
+
+/* ═══════════════════════════════════════════════
+   HISTORY RENDER
+   ═══════════════════════════════════════════════ */
+function renderHistory() {
+  const sorted = getSortedGuesses();
+  histCount.textContent = sorted.length;
+
+  // Build fragment
+  const frag = document.createDocumentFragment();
+  sorted.forEach((g, idx) => {
+    const el = document.createElement('div');
+    el.className = 'history-item' + (idx === 0 ? ' top-guess' : '');
+    const color = getHeatColor(g.dist);
+
+    const dot = document.createElement('div');
+    dot.className = 'guess-dot';
+    dot.style.background = color;
+    dot.style.boxShadow = '0 0 6px ' + color;
+
+    const name = document.createElement('div');
+    name.className = 'guess-name';
+    name.textContent = g.name;
+
+    const num = document.createElement('div');
+    num.className = 'guess-num';
+    num.style.color = color;
+    num.textContent = g.number;
+
+    el.appendChild(dot);
+    el.appendChild(name);
+    el.appendChild(num);
+    frag.appendChild(el);
+  });
+
+  historyList.innerHTML = '';
+  historyList.appendChild(frag);
+  historyList.scrollTop = 0;
+}
+
+/* ═══════════════════════════════════════════════
+   CONFETTI
+   ═══════════════════════════════════════════════ */
+function spawnConfetti() {
+  const colors = ['#ffd700','#ff3333','#44ff88','#7c5cfc','#00ffcc','#ff8800','#fff'];
+  const container = winnerBanner;
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = Math.random() * 100 + '%';
+      c.style.background = colors[Math.floor(Math.random()*colors.length)];
+      c.style.width  = (6 + Math.random()*10) + 'px';
+      c.style.height = (6 + Math.random()*10) + 'px';
+      c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      c.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+      c.style.animationDelay = '0s';
+      container.appendChild(c);
+      setTimeout(() => c.remove(), 4000);
+    }, i * 40);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   RESET
+   ═══════════════════════════════════════════════ */
+function resetGame() {
+  state.secret   = null;
+  state.guesses  = [];
+  state.hintGiven= false;
+  state.revealed = false;
+  state.winner   = null;
+  state.accepting= true;
+
+  secretDisplay.textContent = '—';
+  $('toggle-accepting').checked = true;
+  guessCount.textContent = '0';
+  histCount.textContent  = '0';
+  historyList.innerHTML  = '';
+  hintIndicator.className = '';
+  winnerBanner.classList.remove('show');
+  numDisplay.className   = '';
+  numDisplay.textContent = '?';
+  updateHeatMarker(null);
+  updateStatusBadge();
+  logEvent('Game reset', 'log-hint');
+  emit({ type: 'guess:reset' });
+  saveState();
+}
+
+/* ═══════════════════════════════════════════════
+   PERSIST
+   ═══════════════════════════════════════════════ */
+function saveState() {
+  try {
+    localStorage.setItem('guess_state', JSON.stringify({
+      secret: state.secret,
+      min: state.min,
+      max: state.max,
+      accepting: state.accepting,
+      guesses: state.guesses,
+      hintGiven: state.hintGiven,
+      revealed: state.revealed,
+      winner: state.winner,
+    }));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('guess_state');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    Object.assign(state, s);
+    $('input-min').value = state.min;
+    $('input-max').value = state.max;
+    rangeMin.textContent = state.min;
+    rangeMax.textContent = state.max;
+    guessCount.textContent = state.guesses.length;
+    secretDisplay.textContent = state.secret || '—';
+    $('toggle-accepting').checked = state.accepting;
+
+    if (state.revealed && state.secret) {
+      numDisplay.textContent = state.secret;
+      numDisplay.classList.add('gold-reveal');
+    }
+    if (state.winner) {
+      winnerNameTxt.textContent = escapeHtml(state.winner.name);
+      winnerDetail.textContent  = 'Guessed ' + state.winner.number + ' — ' + (state.winner.dist === 0 ? 'Exact match!' : 'Closest guess!');
+      winnerBanner.classList.add('show');
+    }
+    if (state.hintGiven && state.guesses.length) {
+      const best = getBestGuess();
+      const dir  = best.number < state.secret ? 'higher' : 'lower';
+      hintArrow.textContent = dir === 'higher' ? '↑' : '↓';
+      hintText.textContent  = dir === 'higher' ? 'HIGHER' : 'LOWER';
+      hintIndicator.className = 'visible hint-' + dir;
+    }
+    renderHistory();
+    updateHeatFromBest();
+    updateStatusBadge();
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════
+   postMessage API
+   ═══════════════════════════════════════════════ */
+function emit(data) {
+  try { window.parent.postMessage(data, '*'); } catch(e) {}
+}
+
+window.addEventListener('message', function(ev) {
+  const d = ev.data;
+  if (!d || typeof d.type !== 'string') return;
+
+  switch(d.type) {
+    case 'guess:submit': {
+      if (d.name !== undefined && d.number !== undefined) {
+        submitGuess(d.name, d.number);
+      }
+      break;
+    }
+    case 'guess:hint': {
+      showHint();
+      break;
+    }
+    case 'guess:reveal': {
+      revealAnswer(false);
+      break;
+    }
+    case 'guess:reset': {
+      resetGame();
+      break;
+    }
+  }
+});
+
+/* ═══════════════════════════════════════════════
+   ADMIN BUTTON WIRING
+   ═══════════════════════════════════════════════ */
+adminToggle.addEventListener('click', function() {
+  adminPanel.classList.toggle('hidden');
+});
+
+$('btn-new-game').addEventListener('click', newGame);
+$('btn-open-guesses').addEventListener('click', openGuesses);
+$('btn-close-guesses').addEventListener('click', closeGuesses);
+$('btn-hint').addEventListener('click', showHint);
+$('btn-reveal').addEventListener('click', () => revealAnswer(false));
+$('btn-reset').addEventListener('click', resetGame);
+
+$('toggle-accepting').addEventListener('change', function() {
+  if (this.checked) openGuesses(); else closeGuesses();
+});
+$('toggle-sound').addEventListener('change', function() {
+  state.soundOn = this.checked;
+});
+$('toggle-reguess').addEventListener('change', function() {
+  state.allowReguess = this.checked;
+});
+
+$('input-min').addEventListener('change', function() {
+  state.min = parseInt(this.value) || 1;
+  rangeMin.textContent = state.min;
+});
+$('input-max').addEventListener('change', function() {
+  state.max = parseInt(this.value) || 100;
+  rangeMax.textContent = state.max;
+});
+
+/* ═══════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════ */
+loadState();
+
+// Notify ready
+emit({ type: 'guess:ready' });
+
+})();
+</script>
+</body>
+</html>

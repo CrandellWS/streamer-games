@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivia — Test Harness</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0d0d14;color:#e8e8f0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+h1{font-size:15px;font-weight:700;color:#7c5cfc;letter-spacing:1px;text-transform:uppercase;padding:12px 16px 0;flex-shrink:0}
+#layout{display:flex;flex:1;overflow:hidden;gap:0}
+#iframe-wrap{flex:1;min-width:0;position:relative;border-right:1px solid #2a2a4a}
+#iframe-wrap iframe{width:100%;height:100%;border:none;display:block}
+#sidebar{width:340px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;background:#14141f}
+#controls{padding:12px;border-bottom:1px solid #2a2a4a;overflow-y:auto;flex-shrink:0;max-height:55%}
+#controls h2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#8888aa;margin-bottom:8px}
+.ctrl-group{margin-bottom:12px}
+.ctrl-group h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#8888aa;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #2a2a4a}
+.btn-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px}
+button{padding:6px 11px;border-radius:8px;border:1px solid #2a2a4a;background:#1a1a2e;color:#e8e8f0;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+button:hover{background:#22223a;border-color:#7c5cfc}
+button:active{transform:scale(0.96)}
+.btn-primary{background:#7c5cfc;border-color:#7c5cfc;color:#fff}
+.btn-primary:hover{filter:brightness(1.15)}
+.btn-success{background:rgba(68,255,136,0.15);border-color:#44ff88;color:#44ff88}
+.btn-danger{background:rgba(255,68,102,0.15);border-color:#ff4466;color:#ff4466}
+.btn-gold{background:rgba(255,215,0,0.15);border-color:#ffd700;color:#ffd700}
+.btn-neon{background:rgba(0,255,204,0.15);border-color:#00ffcc;color:#00ffcc}
+.input-row{display:flex;gap:5px;margin-bottom:5px;align-items:center}
+.input-row label{font-size:10px;color:#8888aa;min-width:60px}
+input[type="text"]{flex:1;padding:5px 9px;border-radius:7px;border:1px solid #2a2a4a;background:#1a1a2e;color:#e8e8f0;font-size:12px;outline:none}
+input[type="text"]:focus{border-color:#7c5cfc}
+select{padding:5px 8px;border-radius:7px;border:1px solid #2a2a4a;background:#1a1a2e;color:#e8e8f0;font-size:12px;outline:none}
+#tests-section{padding:12px;border-bottom:1px solid #2a2a4a;flex-shrink:0}
+#tests-section h2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#8888aa;margin-bottom:8px}
+#run-tests{width:100%;padding:8px;border-radius:8px;background:#7c5cfc;border:none;color:#fff;font-weight:700;font-size:12px;cursor:pointer;transition:all 0.2s;margin-bottom:6px}
+#run-tests:hover{filter:brightness(1.15)}
+#test-results{font-size:11px;display:flex;flex-direction:column;gap:3px;max-height:90px;overflow-y:auto}
+.test-pass{color:#44ff88}
+.test-fail{color:#ff4466}
+.test-skip{color:#8888aa}
+#log-section{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:10px 12px 12px}
+#log-section h2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#8888aa;margin-bottom:6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+#log-clear{font-size:9px;padding:2px 7px;border-radius:5px}
+#log{flex:1;overflow-y:auto;font-family:'Cascadia Code','Fira Code',monospace;font-size:10px;line-height:1.7;scrollbar-width:thin;scrollbar-color:#2a2a4a transparent}
+.log-in{color:#7c5cfc}
+.log-out{color:#44ff88}
+.log-test{color:#ffd700}
+.log-err{color:#ff4466}
+.log-info{color:#8888aa}
+.log-ts{color:#444;margin-right:6px}
+</style>
+</head>
+<body>
+
+<h1>🧪 Trivia — Test Harness</h1>
+
+<div id="layout">
+  <div id="iframe-wrap">
+    <iframe id="game-frame" src="index.html" title="Trivia Game"></iframe>
+  </div>
+
+  <div id="sidebar">
+
+    <div id="controls">
+      <h2>Controls</h2>
+
+      <div class="ctrl-group">
+        <h3>Load & Start</h3>
+        <div class="btn-row">
+          <button id="btn-load-samples" class="btn-primary">Load Sample Questions</button>
+          <button id="btn-start-q1">Start Q1</button>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <h3>Submit Answer</h3>
+        <div class="input-row">
+          <label>Name</label>
+          <input type="text" id="ans-name" value="Alice" placeholder="viewer name">
+        </div>
+        <div class="input-row">
+          <label>Choice</label>
+          <select id="ans-choice">
+            <option value="A">A</option>
+            <option value="B" selected>B (often correct)</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button id="btn-ans-correct" class="btn-success">Submit Correct (B)</button>
+          <button id="btn-ans-wrong" class="btn-danger">Submit Wrong (A)</button>
+          <button id="btn-ans-custom">Submit Custom</button>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <h3>Multi-Viewer Simulation</h3>
+        <div class="btn-row">
+          <button id="btn-spam-correct">5 Correct Answers</button>
+          <button id="btn-spam-mixed">10 Mixed Answers</button>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <h3>Question Controls</h3>
+        <div class="btn-row">
+          <button id="btn-reveal">🔍 Reveal Answer</button>
+          <button id="btn-next">⏭ Next Question</button>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <h3>Score Queries</h3>
+        <div class="btn-row">
+          <button id="btn-get-scores">Query Scores</button>
+          <button id="btn-reset" class="btn-danger">Reset All</button>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <h3>Theme / URL Params</h3>
+        <div class="btn-row">
+          <button id="btn-theme-dark">Dark</button>
+          <button id="btn-theme-light">Light</button>
+          <button id="btn-theme-neon" class="btn-neon">Neon</button>
+          <button id="btn-transparent">Transparent BG</button>
+          <button id="btn-no-admin">No Admin</button>
+        </div>
+      </div>
+
+    </div><!-- /controls -->
+
+    <div id="tests-section">
+      <h2>Automated Tests</h2>
+      <button id="run-tests">▶ Run All Tests</button>
+      <div id="test-results"></div>
+    </div>
+
+    <div id="log-section">
+      <h2>
+        Message Log
+        <button id="log-clear">Clear</button>
+      </h2>
+      <div id="log"></div>
+    </div>
+
+  </div><!-- /sidebar -->
+</div><!-- /layout -->
+
+<script>
+(function () {
+'use strict';
+
+const frame = document.getElementById('game-frame');
+const log = document.getElementById('log');
+
+/* ─── LOG ─── */
+function addLog(cls, msg) {
+  const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+  const line = document.createElement('div');
+  line.innerHTML = `<span class="log-ts">${ts}</span><span class="${cls}">${escHtml(msg)}</span>`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ─── SEND postMessage ─── */
+function send(msg) {
+  frame.contentWindow.postMessage(msg, '*');
+  addLog('log-in', '→ ' + JSON.stringify(msg));
+}
+
+/* ─── RECEIVE postMessage ─── */
+window.addEventListener('message', e => {
+  if (!e.data || typeof e.data.type !== 'string') return;
+  if (!e.data.type.startsWith('trivia:')) return;
+  addLog('log-out', '← ' + JSON.stringify(e.data));
+
+  // capture for tests
+  if (testCapture) testCapture(e.data);
+});
+
+/* ─── CONTROLS ─── */
+document.getElementById('btn-load-samples').addEventListener('click', () => {
+  // Click the button inside the iframe
+  const doc = frame.contentDocument || frame.contentWindow.document;
+  const btn = doc.getElementById('btn-load-samples');
+  if (btn) { btn.click(); addLog('log-info', '[admin] Clicked Load Sample Questions'); }
+  else addLog('log-err', 'Could not find btn-load-samples in iframe');
+});
+
+document.getElementById('btn-start-q1').addEventListener('click', () => {
+  const doc = frame.contentDocument || frame.contentWindow.document;
+  const btn = doc.getElementById('btn-start');
+  if (btn) { btn.click(); addLog('log-info', '[admin] Clicked Start Question'); }
+  else addLog('log-err', 'Could not find btn-start in iframe');
+});
+
+document.getElementById('btn-ans-correct').addEventListener('click', () => {
+  // Question 1: correct is index 1 = B (Jupiter)
+  send({ type: 'trivia:answer', name: document.getElementById('ans-name').value || 'Alice', choice: 'B' });
+});
+
+document.getElementById('btn-ans-wrong').addEventListener('click', () => {
+  send({ type: 'trivia:answer', name: document.getElementById('ans-name').value || 'Alice', choice: 'A' });
+});
+
+document.getElementById('btn-ans-custom').addEventListener('click', () => {
+  const name = document.getElementById('ans-name').value || 'Alice';
+  const choice = document.getElementById('ans-choice').value;
+  send({ type: 'trivia:answer', name, choice });
+});
+
+document.getElementById('btn-spam-correct').addEventListener('click', () => {
+  const names = ['Bob','Carol','Dave','Eve','Frank'];
+  names.forEach((name, i) => {
+    setTimeout(() => send({ type: 'trivia:answer', name, choice: 'B' }), i * 80);
+  });
+});
+
+document.getElementById('btn-spam-mixed').addEventListener('click', () => {
+  const viewers = ['Alice','Bob','Carol','Dave','Eve','Frank','Grace','Hank','Ivy','Jack'];
+  const choices = ['A','B','B','B','C','D','B','A','B','C'];
+  viewers.forEach((name, i) => {
+    setTimeout(() => send({ type: 'trivia:answer', name, choice: choices[i] }), i * 60);
+  });
+});
+
+document.getElementById('btn-reveal').addEventListener('click', () => {
+  const doc = frame.contentDocument || frame.contentWindow.document;
+  const btn = doc.getElementById('btn-reveal');
+  if (btn) { btn.click(); addLog('log-info', '[admin] Clicked Reveal Answer'); }
+});
+
+document.getElementById('btn-next').addEventListener('click', () => {
+  send({ type: 'trivia:next' });
+});
+
+document.getElementById('btn-get-scores').addEventListener('click', () => {
+  send({ type: 'trivia:scores' });
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  send({ type: 'trivia:reset' });
+});
+
+document.getElementById('log-clear').addEventListener('click', () => { log.innerHTML = ''; });
+
+/* ─── THEME / URL PARAM BUTTONS ─── */
+document.getElementById('btn-theme-dark').addEventListener('click', () => {
+  frame.src = 'index.html?theme=dark&admin=true';
+  addLog('log-info', 'Reloaded with ?theme=dark');
+});
+document.getElementById('btn-theme-light').addEventListener('click', () => {
+  frame.src = 'index.html?theme=light&admin=true';
+  addLog('log-info', 'Reloaded with ?theme=light');
+});
+document.getElementById('btn-theme-neon').addEventListener('click', () => {
+  frame.src = 'index.html?theme=neon&admin=true';
+  addLog('log-info', 'Reloaded with ?theme=neon');
+});
+document.getElementById('btn-transparent').addEventListener('click', () => {
+  frame.src = 'index.html?bg=transparent&admin=true';
+  addLog('log-info', 'Reloaded with ?bg=transparent');
+});
+document.getElementById('btn-no-admin').addEventListener('click', () => {
+  frame.src = 'index.html?admin=false';
+  addLog('log-info', 'Reloaded with ?admin=false');
+});
+
+/* ═══════════════════════════════════════════════
+   AUTOMATED TEST SUITE
+   ═══════════════════════════════════════════════ */
+let testCapture = null;
+
+function waitFor(predFn, timeout = 2000) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const iv = setInterval(() => {
+      if (predFn()) { clearInterval(iv); resolve(); }
+      else if (Date.now() - start > timeout) { clearInterval(iv); reject(new Error('Timeout')); }
+    }, 50);
+  });
+}
+
+function captureNext(type, timeout = 2000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      testCapture = null;
+      reject(new Error(`Timeout waiting for ${type}`));
+    }, timeout);
+    testCapture = msg => {
+      if (!type || msg.type === type) {
+        clearTimeout(timer);
+        testCapture = null;
+        resolve(msg);
+      }
+    };
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function reloadFrame(url = 'index.html') {
+  return new Promise(resolve => {
+    frame.onload = resolve;
+    frame.src = url;
+  });
+}
+
+async function iframeClick(id) {
+  await sleep(100);
+  const doc = frame.contentDocument || frame.contentWindow.document;
+  const el = doc.getElementById(id);
+  if (!el) throw new Error(`Element #${id} not found in iframe`);
+  el.click();
+}
+
+const tests = [
+  {
+    name: 'T1: iframe loads without errors',
+    async run() {
+      await reloadFrame('index.html');
+      await sleep(300);
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      const card = doc.getElementById('question-card');
+      if (!card) throw new Error('question-card not found');
+      const idle = doc.getElementById('idle-screen');
+      if (!idle) throw new Error('idle-screen not found');
+      const display = idle.style.display;
+      if (display === 'none') throw new Error('idle-screen should be visible initially');
+    }
+  },
+  {
+    name: 'T2: ?admin=false hides panel + toggle',
+    async run() {
+      await reloadFrame('index.html?admin=false');
+      await sleep(300);
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      const panel = doc.getElementById('admin-panel');
+      const toggle = doc.getElementById('admin-toggle');
+      if (!panel.classList.contains('hidden')) throw new Error('admin-panel should have hidden class');
+      if (toggle.style.display !== 'none') throw new Error('admin-toggle should be display:none');
+    }
+  },
+  {
+    name: 'T3: ?theme=neon applies neon theme',
+    async run() {
+      await reloadFrame('index.html?theme=neon');
+      await sleep(300);
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      const theme = doc.documentElement.getAttribute('data-theme');
+      if (theme !== 'neon') throw new Error(`Expected data-theme=neon, got ${theme}`);
+    }
+  },
+  {
+    name: 'T4: Load sample questions populates queue',
+    async run() {
+      await reloadFrame('index.html');
+      await sleep(300);
+      await iframeClick('btn-load-samples');
+      await sleep(200);
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      const items = doc.querySelectorAll('#queue-list .queue-item');
+      if (items.length < 5) throw new Error(`Expected >=5 queue items, got ${items.length}`);
+    }
+  },
+  {
+    name: 'T5: Start question transitions to active phase',
+    async run() {
+      // Frame already has samples from T4 — reload to be safe
+      await reloadFrame('index.html');
+      await sleep(300);
+      await iframeClick('btn-load-samples');
+      await sleep(150);
+      await iframeClick('btn-start');
+      await sleep(400);
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      const badge = doc.getElementById('game-status-badge');
+      if (!badge.textContent.includes('Live')) throw new Error(`Expected Live badge, got: ${badge.textContent}`);
+      const activeQ = doc.getElementById('active-question');
+      if (activeQ.style.display === 'none') throw new Error('active-question should be visible');
+    }
+  },
+  {
+    name: 'T6: trivia:answer accepted, emits trivia:answered',
+    async run() {
+      // Assumes Q1 is active from T5 — reload fresh
+      await reloadFrame('index.html');
+      await sleep(300);
+      await iframeClick('btn-load-samples');
+      await sleep(150);
+      await iframeClick('btn-start');
+      await sleep(300);
+
+      const capturePromise = captureNext('trivia:answered', 2000);
+      // Reveal triggers answered events
+      await iframeClick('btn-reveal');
+
+      // Send an answer before revealing on a fresh question
+      // Actually let's send then reveal
+      // For this test: reload, start, answer, reveal, capture
+      // Redo:
+      await reloadFrame('index.html');
+      await sleep(300);
+      await iframeClick('btn-load-samples');
+      await sleep(150);
+      await iframeClick('btn-start');
+      await sleep(300);
+
+      frame.contentWindow.postMessage({ type: 'trivia:answer', name: 'TestViewer', choice: 'B' }, '*');
+      await sleep(100);
+      const cap = captureNext('trivia:answered', 2000);
+      await iframeClick('btn-reveal');
+      const msg = await cap;
+      if (!msg.name) throw new Error('trivia:answered missing name');
+      if (!msg.choice) throw new Error('trivia:answered missing choice');
+      if (typeof msg.correct !== 'boolean') throw new Error('trivia:answered missing correct bool');
+    }
+  },
+  {
+    name: 'T7: Duplicate answer from same viewer ignored',
+    async run() {
+      await reloadFrame('index.html');
+      await sleep(300);
+      await iframeClick('btn-load-samples');
+      await sleep(150);
+      await iframeClick('btn-start');
+      await sleep(300);
+
+      frame.contentWindow.postMessage({ type: 'trivia:answer', name: 'DupTest', choice: 'A' }, '*');
+      frame.contentWindow.postMessage({ type: 'trivia:answer', name: 'DupTest', choice: 'B' }, '*');
+      frame.contentWindow.postMessage({ type: 'trivia:answer', name: 'DupTest', choice: 'C' }, '*');
+      await sleep(200);
+
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      // total answers should be 1 (only first counts)
+      const stat = doc.getElementById('stat-answers');
+      if (stat.textContent !== '1') throw new Error(`Expected 1 answer, got ${stat.textContent}`);
+    }
+  },
+  {
+    name: 'T8: trivia:scores query returns array',
+    async run() {
+      const cap = captureNext('trivia:scores', 2000);
+      frame.contentWindow.postMessage({ type: 'trivia:scores' }, '*');
+      const msg = await cap;
+      if (!Array.isArray(msg.scores)) throw new Error('scores must be array');
+    }
+  },
+  {
+    name: 'T9: trivia:next advances question',
+    async run() {
+      await reloadFrame('index.html');
+      await sleep(300);
+      await iframeClick('btn-load-samples');
+      await sleep(150);
+      await iframeClick('btn-start');
+      await sleep(300);
+      await iframeClick('btn-reveal');
+      await sleep(300);
+
+      frame.contentWindow.postMessage({ type: 'trivia:next' }, '*');
+      await sleep(500);
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      const counter = doc.getElementById('question-counter');
+      if (!counter.textContent.includes('2')) throw new Error(`Expected Q2, counter says: ${counter.textContent}`);
+    }
+  },
+  {
+    name: 'T10: trivia:reset clears scores',
+    async run() {
+      // Add a score first via a round
+      await reloadFrame('index.html');
+      await sleep(300);
+      await iframeClick('btn-load-samples');
+      await sleep(150);
+      await iframeClick('btn-start');
+      await sleep(300);
+      frame.contentWindow.postMessage({ type: 'trivia:answer', name: 'Scorer', choice: 'B' }, '*');
+      await sleep(100);
+      await iframeClick('btn-reveal');
+      await sleep(300);
+
+      frame.contentWindow.postMessage({ type: 'trivia:reset' }, '*');
+      await sleep(300);
+
+      const cap = captureNext('trivia:scores', 1500);
+      frame.contentWindow.postMessage({ type: 'trivia:scores' }, '*');
+      const msg = await cap;
+      if (msg.scores.length !== 0) throw new Error(`Expected 0 scores after reset, got ${msg.scores.length}`);
+    }
+  },
+  {
+    name: 'T11: Invalid answer choice rejected',
+    async run() {
+      await reloadFrame('index.html');
+      await sleep(300);
+      await iframeClick('btn-load-samples');
+      await sleep(150);
+      await iframeClick('btn-start');
+      await sleep(300);
+
+      frame.contentWindow.postMessage({ type: 'trivia:answer', name: 'Hacker', choice: 'Z' }, '*');
+      frame.contentWindow.postMessage({ type: 'trivia:answer', name: 'Hacker', choice: '<script>' }, '*');
+      await sleep(200);
+
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      const stat = doc.getElementById('stat-answers');
+      if (stat.textContent !== '0') throw new Error(`Invalid answers were accepted: count=${stat.textContent}`);
+    }
+  },
+  {
+    name: 'T12: ?bg=transparent sets transparent background',
+    async run() {
+      await reloadFrame('index.html?bg=transparent');
+      await sleep(300);
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      if (!doc.body.classList.contains('transparent-bg')) throw new Error('transparent-bg class not set');
+    }
+  },
+];
+
+document.getElementById('run-tests').addEventListener('click', async () => {
+  const resultsEl = document.getElementById('test-results');
+  resultsEl.innerHTML = '';
+  addLog('log-test', '════ Running test suite ════');
+
+  let pass = 0, fail = 0;
+  for (const test of tests) {
+    const row = document.createElement('div');
+    row.textContent = `⏳ ${test.name}`;
+    row.className = 'test-skip';
+    resultsEl.appendChild(row);
+    resultsEl.scrollTop = resultsEl.scrollHeight;
+
+    try {
+      await test.run();
+      row.textContent = `✓ ${test.name}`;
+      row.className = 'test-pass';
+      addLog('log-test', `PASS: ${test.name}`);
+      pass++;
+    } catch (e) {
+      row.textContent = `✗ ${test.name}: ${e.message}`;
+      row.className = 'test-fail';
+      addLog('log-err', `FAIL: ${test.name} — ${e.message}`);
+      fail++;
+    }
+
+    await sleep(200);
+  }
+
+  addLog('log-test', `════ Done: ${pass} passed, ${fail} failed ════`);
+  // Reload clean
+  frame.src = 'index.html';
+});
+
+/* init */
+addLog('log-info', 'Test harness ready. Use controls or run automated tests.');
+
+})();
+</script>
+</body>
+</html>

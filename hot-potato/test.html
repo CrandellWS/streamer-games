@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hot Potato — Test Harness</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0a0a12;
+  color: #e8e8f0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+#header {
+  padding: 12px 20px;
+  background: #14141f;
+  border-bottom: 1px solid #2a2a4a;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+#header h1 { font-size: 16px; font-weight: 700; color: #ff8c00; }
+#header span { font-size: 12px; color: #8888aa; }
+#main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+#iframe-wrap {
+  flex: 1;
+  position: relative;
+  background: #0d0d14;
+  overflow: hidden;
+}
+iframe {
+  width: 100%; height: 100%;
+  border: none;
+  display: block;
+}
+#sidebar {
+  width: 340px;
+  flex-shrink: 0;
+  background: #14141f;
+  border-left: 1px solid #2a2a4a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid #2a2a4a;
+}
+.sidebar-section h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #8888aa;
+  margin-bottom: 10px;
+}
+.btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #2a2a4a;
+  background: #1a1a2e;
+  color: #e8e8f0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.btn:hover { background: #22223a; border-color: #7c5cfc; }
+.btn:active { transform: scale(0.97); }
+.btn.primary { background: #7c5cfc; border-color: #7c5cfc; color: #fff; }
+.btn.primary:hover { filter: brightness(1.15); }
+.btn.danger { color: #ff4466; border-color: rgba(255,68,102,0.3); }
+.btn.danger:hover { background: rgba(255,68,102,0.1); border-color: #ff4466; }
+.btn.success { color: #44ff88; border-color: rgba(68,255,136,0.3); }
+.btn.success:hover { background: rgba(68,255,136,0.1); border-color: #44ff88; }
+.btn.orange { background: linear-gradient(135deg,#ff8c00,#ff3300); border-color: #ff6600; color:#fff; }
+.btn.orange:hover { filter: brightness(1.1); }
+.btn-full { grid-column: 1/-1; }
+
+/* Theme selector */
+.theme-row { display: flex; gap: 6px; }
+.theme-btn {
+  flex: 1;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #2a2a4a;
+  background: #1a1a2e;
+  color: #8888aa;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+.theme-btn:hover { border-color: #7c5cfc; color: #e8e8f0; }
+.theme-btn.active { background: #7c5cfc; border-color: #7c5cfc; color: #fff; }
+
+/* Log */
+#log-wrap {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+}
+#log-wrap h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #8888aa;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#log-wrap h3 button {
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #2a2a4a;
+  background: none;
+  color: #8888aa;
+  font-size: 10px;
+  cursor: pointer;
+}
+#log-wrap h3 button:hover { color: #e8e8f0; border-color: #7c5cfc; }
+#log {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 11px;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  line-height: 1.6;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a4a transparent;
+}
+.log-entry {
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(42,42,74,0.4);
+  display: flex;
+  gap: 8px;
+}
+.log-time { color: #444466; flex-shrink: 0; }
+.log-in  { color: #7c5cfc; }
+.log-out { color: #ff8c00; }
+.log-ok  { color: #44ff88; }
+.log-fail{ color: #ff4466; }
+.log-info{ color: #8888aa; }
+.log-msg { flex: 1; word-break: break-all; }
+
+/* Test results */
+#test-summary {
+  padding: 10px 16px;
+  border-top: 1px solid #2a2a4a;
+  font-size: 12px;
+  display: flex;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.test-pass { color: #44ff88; font-weight: 700; }
+.test-fail { color: #ff4466; font-weight: 700; }
+.test-skip { color: #8888aa; }
+
+/* Animate test run indicator */
+#run-tests-btn.running { animation: test-pulse 0.5s infinite alternate; }
+@keyframes test-pulse {
+  from { opacity: 0.6; }
+  to   { opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <span style="font-size:22px">🥔</span>
+  <h1>Hot Potato — Test Harness</h1>
+  <span>postMessage API · iframe integration · automated tests</span>
+</div>
+
+<div id="main">
+  <div id="iframe-wrap">
+    <iframe id="game-frame" src="index.html" title="Hot Potato game"></iframe>
+  </div>
+
+  <div id="sidebar">
+
+    <!-- Quick Actions -->
+    <div class="sidebar-section">
+      <h3>Quick Actions</h3>
+      <div class="btn-grid">
+        <button class="btn orange btn-full" onclick="sendMsg({type:'potato:start'})">🥔 Start Game</button>
+        <button class="btn primary" onclick="add8Players()">👥 Add 8 Players</button>
+        <button class="btn" onclick="add3Players()">👥 Add 3 Players</button>
+        <button class="btn success" onclick="sendMsg({type:'potato:join',name:'TestUser'})">➕ Join TestUser</button>
+        <button class="btn" onclick="sendMsg({type:'potato:names'})">📋 Query Names</button>
+        <button class="btn danger" onclick="sendMsg({type:'potato:clear'})">🗑 Clear All</button>
+      </div>
+    </div>
+
+    <!-- Targeted Commands -->
+    <div class="sidebar-section">
+      <h3>Targeted Commands</h3>
+      <div class="btn-grid">
+        <button class="btn" onclick="sendEliminate()">💥 Eliminate P1</button>
+        <button class="btn" onclick="sendMsg({type:'potato:winner'})">🏆 Force Winner</button>
+        <button class="btn btn-full" onclick="fastModeDemo()">🔥 Fast Mode Demo (3 players)</button>
+      </div>
+    </div>
+
+    <!-- Theme & URL params -->
+    <div class="sidebar-section">
+      <h3>Theme / URL Params</h3>
+      <div class="theme-row">
+        <button class="theme-btn active" onclick="setTheme('dark')">Dark</button>
+        <button class="theme-btn" onclick="setTheme('light')">Light</button>
+        <button class="theme-btn" onclick="setTheme('neon')">Neon</button>
+      </div>
+      <div class="btn-grid" style="margin-top:8px">
+        <button class="btn" onclick="reloadWith('?bg=transparent&admin=true')">Transparent BG</button>
+        <button class="btn" onclick="reloadWith('?names=Alice,Bob,Carol,Dave&admin=true')">Pre-load Names</button>
+        <button class="btn" onclick="reloadWith('?admin=false')">Admin Hidden</button>
+        <button class="btn" onclick="reloadWith('?theme=neon&names=A,B,C,D,E')">Neon + 5 names</button>
+      </div>
+    </div>
+
+    <!-- Automated tests -->
+    <div class="sidebar-section">
+      <h3>Automated Tests</h3>
+      <div class="btn-grid">
+        <button class="btn primary btn-full" id="run-tests-btn" onclick="runTests()">▶ Run All Tests</button>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div id="log-wrap">
+      <h3>
+        Message Log
+        <button onclick="clearLog()">Clear</button>
+      </h3>
+      <div id="log"></div>
+    </div>
+
+    <!-- Test summary -->
+    <div id="test-summary">
+      <span class="test-pass" id="pass-count">✓ 0</span>
+      <span class="test-fail" id="fail-count">✗ 0</span>
+      <span class="test-skip" id="skip-count">— 0 pending</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+const frame = document.getElementById('game-frame');
+let testPasses = 0, testFails = 0, testPending = 0;
+let receivedMessages = [];
+
+/* ════════════════════════
+   LOGGING
+   ════════════════════════ */
+function log(text, cls) {
+  const el = document.getElementById('log');
+  const now = new Date();
+  const ts = now.toTimeString().slice(0,8) + '.' + String(now.getMilliseconds()).padStart(3,'0');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${ts}</span><span class="log-msg ${cls}">${escapeHtml(text)}</span>`;
+  el.appendChild(entry);
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('log').innerHTML = '';
+  receivedMessages = [];
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+/* ════════════════════════
+   MESSAGING
+   ════════════════════════ */
+function sendMsg(msg) {
+  frame.contentWindow.postMessage(msg, '*');
+  log('→ ' + JSON.stringify(msg), 'log-in');
+}
+
+window.addEventListener('message', e => {
+  if (e.source !== frame.contentWindow) return;
+  const d = e.data;
+  receivedMessages.push({ time: Date.now(), data: d });
+  log('← ' + JSON.stringify(d), 'log-out');
+});
+
+/* ════════════════════════
+   QUICK ACTIONS
+   ════════════════════════ */
+const DEMO_NAMES = ['Alice','Bob','Carol','Dave','Eve','Frank','Grace','Heidi'];
+
+window.add8Players = function() {
+  DEMO_NAMES.forEach(n => sendMsg({ type: 'potato:join', name: n }));
+  log('ℹ Added 8 demo players', 'log-info');
+};
+
+window.add3Players = function() {
+  ['Alpha','Beta','Gamma'].forEach(n => sendMsg({ type: 'potato:join', name: n }));
+  log('ℹ Added 3 players', 'log-info');
+};
+
+window.sendEliminate = function() {
+  sendMsg({ type: 'potato:eliminated', name: 'Alice' });
+};
+
+window.fastModeDemo = function() {
+  sendMsg({ type: 'potato:clear' });
+  setTimeout(() => {
+    ['Red','Blue','Green'].forEach(n => sendMsg({ type: 'potato:join', name: n }));
+    log('ℹ Fast mode demo: 3 players, starting…', 'log-info');
+    setTimeout(() => sendMsg({ type: 'potato:start' }), 300);
+  }, 200);
+};
+
+window.sendMsg = sendMsg;
+
+/* ════════════════════════
+   THEME & URL PARAMS
+   ════════════════════════ */
+window.setTheme = function(theme) {
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  reloadWith('?theme=' + theme);
+};
+
+window.reloadWith = function(query) {
+  log('ℹ Reloading iframe: ' + query, 'log-info');
+  frame.src = 'index.html' + query;
+};
+
+/* ════════════════════════
+   TEST FRAMEWORK
+   ════════════════════════ */
+let passCount = 0, failCount = 0;
+
+function updateSummary() {
+  document.getElementById('pass-count').textContent = '✓ ' + passCount;
+  document.getElementById('fail-count').textContent = '✗ ' + failCount;
+}
+
+function assert(condition, description) {
+  if (condition) {
+    passCount++;
+    log('  ✓ ' + description, 'log-ok');
+  } else {
+    failCount++;
+    log('  ✗ FAIL: ' + description, 'log-fail');
+  }
+  updateSummary();
+}
+
+function waitFor(condFn, timeout) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const poll = setInterval(() => {
+      if (condFn()) { clearInterval(poll); resolve(true); return; }
+      if (Date.now() - start > timeout) { clearInterval(poll); resolve(false); }
+    }, 50);
+  });
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+window.runTests = async function() {
+  const btn = document.getElementById('run-tests-btn');
+  btn.classList.add('running');
+  btn.textContent = '⟳ Running…';
+  passCount = 0; failCount = 0;
+  updateSummary();
+  clearLog();
+
+  log('━━━ HOT POTATO TEST SUITE ━━━', 'log-info');
+  log('', 'log-info');
+
+  // ── TEST 1: Iframe loads ──────────────────────────
+  log('Test 1: Iframe loads correctly', 'log-info');
+  await delay(600);
+  try {
+    const doc = frame.contentDocument || frame.contentWindow.document;
+    assert(!!doc && doc.readyState === 'complete', 'Document fully loaded');
+    assert(!!doc.getElementById('game-area'), 'game-area element exists');
+    assert(!!doc.getElementById('admin-panel'), 'admin-panel element exists');
+    assert(!!doc.getElementById('potato'), 'potato element exists');
+    assert(!!doc.getElementById('ring-container'), 'ring-container element exists');
+  } catch(e) {
+    assert(false, 'Document access: ' + e.message);
+  }
+
+  // ── TEST 2: potato:join ───────────────────────────
+  log('', 'log-info');
+  log('Test 2: potato:join — add players via postMessage', 'log-info');
+  receivedMessages = [];
+  sendMsg({ type: 'potato:clear' });
+  await delay(200);
+  sendMsg({ type: 'potato:join', name: 'Alice' });
+  sendMsg({ type: 'potato:join', name: 'Bob' });
+  sendMsg({ type: 'potato:join', name: 'Carol' });
+  await delay(300);
+  try {
+    const doc = frame.contentWindow.document;
+    const cards = doc.querySelectorAll('.player-card');
+    assert(cards.length === 3, 'Three player cards rendered (' + cards.length + ' found)');
+    const names = Array.from(cards).map(c => c.dataset.name);
+    assert(names.includes('Alice'), 'Alice card present');
+    assert(names.includes('Bob'), 'Bob card present');
+    assert(names.includes('Carol'), 'Carol card present');
+  } catch(e) {
+    assert(false, 'DOM check failed: ' + e.message);
+  }
+
+  // ── TEST 3: potato:names query ────────────────────
+  log('', 'log-info');
+  log('Test 3: potato:names — query current players', 'log-info');
+  receivedMessages = [];
+  sendMsg({ type: 'potato:names' });
+  const gotNames = await waitFor(() => receivedMessages.some(m => m.data.type === 'potato:names'), 2000);
+  assert(gotNames, 'Received potato:names response');
+  if (gotNames) {
+    const resp = receivedMessages.find(m => m.data.type === 'potato:names');
+    assert(Array.isArray(resp.data.names), 'names is an array');
+    assert(resp.data.names.length === 3, 'names array has 3 entries (got ' + resp.data.names.length + ')');
+    assert(resp.data.names.includes('Alice'), 'Alice in names array');
+  }
+
+  // ── TEST 4: Duplicate rejection ───────────────────
+  log('', 'log-info');
+  log('Test 4: Duplicate name rejection', 'log-info');
+  sendMsg({ type: 'potato:join', name: 'Alice' }); // duplicate
+  await delay(200);
+  try {
+    const doc = frame.contentWindow.document;
+    const cards = doc.querySelectorAll('.player-card');
+    assert(cards.length === 3, 'Still 3 cards after duplicate join (got ' + cards.length + ')');
+  } catch(e) {
+    assert(false, 'DOM check: ' + e.message);
+  }
+
+  // ── TEST 5: potato:start ──────────────────────────
+  log('', 'log-info');
+  log('Test 5: potato:start — game launches', 'log-info');
+  sendMsg({ type: 'potato:clear' });
+  await delay(200);
+  ['P1','P2','P3','P4'].forEach(n => sendMsg({ type: 'potato:join', name: n }));
+  await delay(300);
+  receivedMessages = [];
+  sendMsg({ type: 'potato:start' });
+  await delay(500);
+  try {
+    const doc = frame.contentWindow.document;
+    const potato = doc.getElementById('potato');
+    assert(!potato.classList.contains('hidden'), 'Potato is visible after start');
+    const heatMeter = doc.getElementById('heat-meter');
+    assert(heatMeter.classList.contains('show'), 'Heat meter shown');
+    const roundBadge = doc.getElementById('round-badge');
+    assert(roundBadge.classList.contains('show'), 'Round badge shown');
+    const idleOverlay = doc.getElementById('idle-overlay');
+    assert(idleOverlay.style.display === 'none', 'Idle overlay hidden');
+  } catch(e) {
+    assert(false, 'DOM check: ' + e.message);
+  }
+
+  // ── TEST 6: potato:eliminated outbound ───────────
+  log('', 'log-info');
+  log('Test 6: potato:eliminated — outbound event when player eliminated', 'log-info');
+  // Wait for natural or forced elimination
+  receivedMessages = [];
+  // Force an elimination
+  await delay(200);
+  sendMsg({ type: 'potato:eliminated', name: 'P1' });
+  const gotElim = await waitFor(() =>
+    receivedMessages.some(m => m.data.type === 'potato:eliminated'), 3000);
+  assert(gotElim, 'Received potato:eliminated outbound event');
+  if (gotElim) {
+    const msg = receivedMessages.find(m => m.data.type === 'potato:eliminated');
+    assert(typeof msg.data.name === 'string', 'Eliminated event has name field');
+    assert(msg.data.name === 'P1', 'Correct player name in event (got: ' + msg.data.name + ')');
+  }
+
+  // ── TEST 7: Eliminated card UI ────────────────────
+  log('', 'log-info');
+  log('Test 7: Eliminated player card styling', 'log-info');
+  await delay(600);
+  try {
+    const doc = frame.contentWindow.document;
+    const card = doc.querySelector('[data-name="P1"]');
+    assert(!!card, 'P1 card still exists in DOM');
+    if (card) {
+      assert(card.classList.contains('eliminated'), 'P1 card has eliminated class');
+    }
+  } catch(e) {
+    assert(false, 'DOM check: ' + e.message);
+  }
+
+  // ── TEST 8: potato:winner outbound ───────────────
+  log('', 'log-info');
+  log('Test 8: potato:winner — game ends with winner event', 'log-info');
+  receivedMessages = [];
+  // Force winner by eliminating remaining players
+  await delay(400);
+  sendMsg({ type: 'potato:eliminated', name: 'P2' });
+  await delay(400);
+  sendMsg({ type: 'potato:eliminated', name: 'P3' });
+  const gotWinner = await waitFor(() =>
+    receivedMessages.some(m => m.data.type === 'potato:winner'), 5000);
+  assert(gotWinner, 'Received potato:winner outbound event');
+  if (gotWinner) {
+    const msg = receivedMessages.find(m => m.data.type === 'potato:winner');
+    assert(typeof msg.data.winner === 'string' && msg.data.winner.length > 0,
+      'Winner event has non-empty winner field (got: "' + msg.data.winner + '")');
+  }
+
+  // ── TEST 9: Winner UI ─────────────────────────────
+  log('', 'log-info');
+  log('Test 9: Winner overlay appears', 'log-info');
+  await delay(1200);
+  try {
+    const doc = frame.contentWindow.document;
+    const overlay = doc.getElementById('winner-overlay');
+    assert(overlay.classList.contains('show'), 'Winner overlay is visible');
+    const nameEl = doc.getElementById('winner-name-display');
+    assert(nameEl.textContent.length > 0, 'Winner name displayed: "' + nameEl.textContent + '"');
+  } catch(e) {
+    assert(false, 'DOM check: ' + e.message);
+  }
+
+  // ── TEST 10: potato:clear ─────────────────────────
+  log('', 'log-info');
+  log('Test 10: potato:clear — resets game and players', 'log-info');
+  sendMsg({ type: 'potato:clear' });
+  await delay(400);
+  try {
+    const doc = frame.contentWindow.document;
+    const cards = doc.querySelectorAll('.player-card');
+    assert(cards.length === 0, 'All player cards removed (' + cards.length + ' remain)');
+    const potato = doc.getElementById('potato');
+    assert(potato.classList.contains('hidden'), 'Potato hidden after clear');
+    const overlay = doc.getElementById('winner-overlay');
+    assert(!overlay.classList.contains('show'), 'Winner overlay hidden after clear');
+    const idleOverlay = doc.getElementById('idle-overlay');
+    assert(idleOverlay.style.display !== 'none', 'Idle overlay shown after clear');
+  } catch(e) {
+    assert(false, 'DOM check: ' + e.message);
+  }
+
+  // ── TEST 11: XSS safety ───────────────────────────
+  log('', 'log-info');
+  log('Test 11: XSS-safe name rendering', 'log-info');
+  const xssPayload = '<script>window._xss=1<\/script>';
+  sendMsg({ type: 'potato:join', name: xssPayload });
+  await delay(300);
+  try {
+    assert(typeof window._xss === 'undefined', 'XSS payload not executed');
+    const doc = frame.contentWindow.document;
+    assert(typeof doc.defaultView._xss === 'undefined', 'XSS payload not executed in frame');
+    const cards = doc.querySelectorAll('.player-card');
+    const card = Array.from(cards).find(c => c.dataset.name && c.dataset.name.includes('<'));
+    assert(!!card, 'XSS name card rendered in DOM');
+    if (card) {
+      const inner = card.innerHTML;
+      assert(!inner.includes('<script>'), 'Script tag not present in card HTML');
+    }
+  } catch(e) {
+    assert(false, 'XSS check: ' + e.message);
+  }
+
+  // ── TEST 12: URL param — names ────────────────────
+  log('', 'log-info');
+  log('Test 12: URL param ?names= pre-loads players', 'log-info');
+  frame.src = 'index.html?names=URL_A,URL_B,URL_C';
+  const loaded = await waitFor(() => {
+    try {
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      return doc.readyState === 'complete' && !!doc.getElementById('ring-container');
+    } catch(e) { return false; }
+  }, 4000);
+  assert(loaded, 'Iframe reloaded with URL params');
+  if (loaded) {
+    await delay(300);
+    try {
+      const doc = frame.contentWindow.document;
+      const cards = doc.querySelectorAll('.player-card');
+      assert(cards.length === 3, '3 players from URL param (' + cards.length + ' found)');
+      const names = Array.from(cards).map(c => c.dataset.name);
+      assert(names.includes('URL_A'), 'URL_A present');
+      assert(names.includes('URL_B'), 'URL_B present');
+      assert(names.includes('URL_C'), 'URL_C present');
+    } catch(e) {
+      assert(false, 'DOM check: ' + e.message);
+    }
+  }
+
+  // ── DONE ─────────────────────────────────────────
+  log('', 'log-info');
+  log('━━━ DONE: ' + passCount + ' passed, ' + failCount + ' failed ━━━', failCount > 0 ? 'log-fail' : 'log-ok');
+  btn.classList.remove('running');
+  btn.textContent = '▶ Run All Tests';
+
+  // Restore default state
+  setTimeout(() => {
+    frame.src = 'index.html';
+  }, 2000);
+};
+
+})();
+</script>
+</body>
+</html>

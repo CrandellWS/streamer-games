@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scratch Card — Test Harness</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0d0d14; color: #e8e8f0;
+  height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* Layout */
+#top-bar {
+  background: #14141f; border-bottom: 1px solid #2a2a4a;
+  padding: 12px 20px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+#top-bar h1 { font-size: 16px; font-weight: 700; color: #7c5cfc; }
+#top-bar .subtitle { font-size: 12px; color: #8888aa; }
+
+#main { flex: 1; display: flex; overflow: hidden; }
+
+#game-frame-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  border-right: 1px solid #2a2a4a;
+  min-width: 0;
+}
+#frame-url-bar {
+  background: #14141f; border-bottom: 1px solid #2a2a4a;
+  padding: 8px 16px; font-size: 11px; color: #8888aa;
+  display: flex; align-items: center; gap: 8px;
+}
+#frame-url-bar input {
+  flex: 1; background: #1a1a2e; border: 1px solid #2a2a4a;
+  color: #e8e8f0; padding: 4px 10px; border-radius: 6px;
+  font-size: 11px; outline: none;
+}
+#game-iframe {
+  flex: 1; border: none; width: 100%; height: 100%;
+  display: block;
+}
+
+#sidebar {
+  width: 380px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* Controls panel */
+#controls {
+  background: #14141f; border-bottom: 1px solid #2a2a4a;
+  padding: 16px;
+  overflow-y: auto;
+  max-height: 50%;
+  scrollbar-width: thin; scrollbar-color: #2a2a4a transparent;
+}
+
+h2 {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: #8888aa; margin-bottom: 10px;
+}
+
+.btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
+.btn {
+  padding: 9px 12px; border-radius: 8px;
+  border: 1px solid #2a2a4a; background: #1a1a2e; color: #e8e8f0;
+  font-family: inherit; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.btn:hover { background: #22223a; border-color: #7c5cfc; }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: #7c5cfc; border-color: #7c5cfc; color: #fff; }
+.btn-primary:hover { filter: brightness(1.15); }
+.btn-gold { background: linear-gradient(135deg, #ffd700, #ffaa00); border-color: #ffd700; color: #1a1000; font-weight: 700; }
+.btn-gold:hover { filter: brightness(1.08); }
+.btn-danger { color: #ff4466; border-color: rgba(255,68,102,0.3); }
+.btn-danger:hover { background: rgba(255,68,102,0.1); border-color: #ff4466; }
+.btn-success { color: #44ff88; border-color: rgba(68,255,136,0.3); }
+.btn-success:hover { background: rgba(68,255,136,0.05); border-color: #44ff88; }
+.btn-full { grid-column: 1 / -1; }
+
+/* Theme switcher */
+.theme-row { display: flex; gap: 6px; margin-bottom: 14px; }
+.theme-btn {
+  flex: 1; padding: 7px; border-radius: 8px; cursor: pointer;
+  border: 1px solid #2a2a4a; background: #1a1a2e; color: #8888aa;
+  font-size: 11px; font-weight: 600; text-align: center; transition: all 0.2s;
+}
+.theme-btn:hover { border-color: #7c5cfc; color: #e8e8f0; }
+.theme-btn.active { border-color: #7c5cfc; color: #7c5cfc; background: #22223a; }
+
+/* Custom payload */
+.payload-section { margin-bottom: 14px; }
+.payload-label { font-size: 11px; color: #8888aa; margin-bottom: 4px; }
+textarea {
+  width: 100%; min-height: 70px; padding: 8px; border-radius: 8px;
+  border: 1px solid #2a2a4a; background: #1a1a2e; color: #e8e8f0;
+  font-family: 'Cascadia Code','Fira Code',monospace; font-size: 11px;
+  resize: vertical; outline: none; line-height: 1.5;
+}
+textarea:focus { border-color: #7c5cfc; }
+
+/* Auto-test panel */
+#test-panel { flex: 1; overflow-y: auto; padding: 16px; background: #0d0d14; }
+
+.test-suite-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.test-suite-header h2 { margin: 0; }
+.test-run-btn {
+  padding: 6px 14px; border-radius: 8px;
+  border: 1px solid #7c5cfc; background: #7c5cfc; color: #fff;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: all 0.2s;
+}
+.test-run-btn:hover { filter: brightness(1.15); }
+
+/* Log */
+#log {
+  background: #0a0a10; border: 1px solid #2a2a4a;
+  border-radius: 10px; padding: 12px;
+  font-family: 'Cascadia Code','Fira Code',monospace;
+  font-size: 11px; height: 180px; overflow-y: auto;
+  margin-bottom: 12px;
+  scrollbar-width: thin; scrollbar-color: #2a2a4a transparent;
+}
+.log-entry { margin-bottom: 4px; line-height: 1.5; }
+.log-entry.info  { color: #8888aa; }
+.log-entry.send  { color: #7c5cfc; }
+.log-entry.recv  { color: #44ff88; }
+.log-entry.warn  { color: #ffd700; }
+.log-entry.error { color: #ff4466; }
+
+/* Test results */
+.test-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 8px; margin-bottom: 4px;
+  border: 1px solid #2a2a4a; background: #1a1a2e;
+  font-size: 12px;
+}
+.test-icon { font-size: 14px; width: 18px; text-align: center; }
+.test-name { flex: 1; }
+.test-status {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; padding: 2px 8px; border-radius: 10px;
+}
+.test-status.pass { background: rgba(68,255,136,0.15); color: #44ff88; border: 1px solid rgba(68,255,136,0.3); }
+.test-status.fail { background: rgba(255,68,102,0.1); color: #ff4466; border: 1px solid rgba(255,68,102,0.3); }
+.test-status.pending { background: rgba(136,136,170,0.1); color: #8888aa; border: 1px solid rgba(136,136,170,0.2); }
+.test-status.running { background: rgba(255,215,0,0.1); color: #ffd700; border: 1px solid rgba(255,215,0,0.3); }
+
+#test-summary {
+  font-size: 12px; color: #8888aa;
+  padding: 8px; text-align: center;
+}
+</style>
+</head>
+<body>
+<div id="top-bar">
+  <div>
+    <div>Scratch Card — Test Harness</div>
+    <div class="subtitle">postMessage API + Automated Test Suite</div>
+  </div>
+  <div class="subtitle" id="iframe-status">Loading…</div>
+</div>
+
+<div id="main">
+  <!-- Game iframe -->
+  <div id="game-frame-wrap">
+    <div id="frame-url-bar">
+      <span>URL:</span>
+      <input type="text" id="frame-url" value="./index.html?admin=true&theme=dark" readonly>
+      <button class="btn" style="padding:4px 10px;font-size:11px;" onclick="reloadFrame()">↺ Reload</button>
+    </div>
+    <iframe id="game-iframe" src="./index.html?admin=true&theme=dark" title="Scratch Card Game"></iframe>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="controls">
+      <h2>Manual Controls</h2>
+
+      <!-- Action buttons -->
+      <div class="btn-grid">
+        <button class="btn btn-gold btn-full" onclick="sendCmd('scratch:reveal')">
+          ✨ Reveal Card
+        </button>
+        <button class="btn" onclick="sendCmd('scratch:reset')">↺ Reset Card</button>
+        <button class="btn btn-success" onclick="setFruitsSymbols()">🍒 Fruits Set</button>
+        <button class="btn btn-success" onclick="setGemsSymbols()">💎 Gems Set</button>
+        <button class="btn btn-success" onclick="setLuckySymbols()">🍀 Lucky Set</button>
+        <button class="btn btn-primary" onclick="addNames()">👥 Add Names</button>
+        <button class="btn btn-danger" onclick="forceWin()">🏆 Force Win</button>
+        <button class="btn btn-danger" onclick="forceLose()">💀 Force Lose</button>
+        <button class="btn" onclick="queryNames()">📋 Query Names</button>
+        <button class="btn" onclick="clearLog()">🗑 Clear Log</button>
+      </div>
+
+      <!-- Theme switcher -->
+      <h2>Theme</h2>
+      <div class="theme-row">
+        <div class="theme-btn active" onclick="switchTheme('dark')">🌙 Dark</div>
+        <div class="theme-btn" onclick="switchTheme('light')">☀️ Light</div>
+        <div class="theme-btn" onclick="switchTheme('neon')">⚡ Neon</div>
+      </div>
+
+      <!-- Custom payload -->
+      <div class="payload-section">
+        <div class="payload-label">Custom postMessage payload (JSON):</div>
+        <textarea id="custom-payload">{ "type": "scratch:set", "symbols": ["🎃","🦄","🌈"], "prizes": ["Alice","Bob","Carol"] }</textarea>
+        <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="sendCustom()">▶ Send Custom</button>
+      </div>
+    </div>
+
+    <!-- Log + Tests -->
+    <div id="test-panel">
+      <div class="test-suite-header">
+        <h2>Message Log</h2>
+        <button class="test-run-btn" onclick="runAllTests()">▶ Run All Tests</button>
+      </div>
+
+      <div id="log"></div>
+
+      <h2 style="margin-bottom:10px;">Automated Tests</h2>
+      <div id="test-list">
+        <!-- Populated by JS -->
+      </div>
+      <div id="test-summary">Click "Run All Tests" to start</div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const iframe = document.getElementById('game-iframe');
+const logEl  = document.getElementById('log');
+
+/* ═══════════════════════════════════════════════
+   LOGGING
+   ═══════════════════════════════════════════════ */
+function log(msg, type) {
+  const entry = document.createElement('div');
+  entry.className = 'log-entry ' + (type || 'info');
+  const ts = new Date().toLocaleTimeString('en-US', {hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  entry.textContent = `[${ts}] ${msg}`;
+  logEl.appendChild(entry);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function clearLog() { logEl.innerHTML = ''; }
+
+/* ═══════════════════════════════════════════════
+   SEND postMessage
+   ═══════════════════════════════════════════════ */
+function send(msg) {
+  iframe.contentWindow.postMessage(msg, '*');
+  log('→ SEND: ' + JSON.stringify(msg), 'send');
+}
+
+function sendCmd(type) { send({ type }); }
+
+function sendCustom() {
+  try {
+    const payload = JSON.parse(document.getElementById('custom-payload').value);
+    send(payload);
+  } catch(e) {
+    log('✗ Invalid JSON: ' + e.message, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   RECEIVE postMessage
+   ═══════════════════════════════════════════════ */
+window.addEventListener('message', (e) => {
+  if (!e.data || !e.data.type) return;
+  log('← RECV: ' + JSON.stringify(e.data), 'recv');
+  handleIncoming(e.data);
+});
+
+function handleIncoming(msg) {
+  // Used by tests
+  if (typeof window._testCallback === 'function') {
+    window._testCallback(msg);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   HELPER ACTIONS
+   ═══════════════════════════════════════════════ */
+function setFruitsSymbols() {
+  send({ type: 'scratch:set', symbols: ['🍒','🍋','🍇','🍊','⭐'], prizes: [] });
+}
+
+function setGemsSymbols() {
+  send({ type: 'scratch:set', symbols: ['💎','💍','🔮','💠','⭐'], prizes: [] });
+}
+
+function setLuckySymbols() {
+  send({ type: 'scratch:set', symbols: ['🍀','🌟','🎰','7️⃣','💰'], prizes: [] });
+}
+
+function addNames() {
+  send({ type: 'scratch:set', symbols: ['🍒','🍋','🍇','🍊','⭐'], prizes: ['Alice','Bob','Carol','Dave','Eve'] });
+  log('ℹ Added prize names: Alice, Bob, Carol, Dave, Eve', 'info');
+}
+
+function forceWin() {
+  // Set 3 identical symbols then reveal
+  send({ type: 'scratch:set', symbols: ['🏆','🏆','🏆'], prizes: ['WINNER'] });
+  setTimeout(() => {
+    send({ type: 'scratch:reset' });
+    setTimeout(() => send({ type: 'scratch:reveal' }), 500);
+  }, 200);
+  log('ℹ Forcing a win (all same symbol)', 'warn');
+}
+
+function forceLose() {
+  send({ type: 'scratch:set', symbols: ['🍒','🍋','🍇','🍊','⭐'], prizes: [] });
+  setTimeout(() => {
+    send({ type: 'scratch:reset' });
+    setTimeout(() => send({ type: 'scratch:reveal' }), 500);
+  }, 200);
+  log('ℹ Forcing a reveal (result depends on random)', 'warn');
+}
+
+function queryNames() {
+  send({ type: 'scratch:names' });
+}
+
+/* ═══════════════════════════════════════════════
+   THEME SWITCHER
+   ═══════════════════════════════════════════════ */
+function switchTheme(theme) {
+  document.querySelectorAll('.theme-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.toLowerCase().includes(theme.slice(0,4)));
+  });
+  const url = new URL(iframe.src);
+  url.searchParams.set('theme', theme);
+  iframe.src = url.toString();
+  document.getElementById('frame-url').value = url.toString();
+  log('ℹ Theme switched to: ' + theme, 'info');
+}
+
+/* ═══════════════════════════════════════════════
+   RELOAD
+   ═══════════════════════════════════════════════ */
+function reloadFrame() {
+  const url = document.getElementById('frame-url').value;
+  iframe.src = url;
+  log('ℹ Frame reloaded: ' + url, 'info');
+}
+
+iframe.addEventListener('load', () => {
+  document.getElementById('iframe-status').textContent = 'Loaded ✓';
+  log('ℹ Game iframe loaded', 'info');
+});
+
+/* ═══════════════════════════════════════════════
+   AUTOMATED TEST SUITE
+   ═══════════════════════════════════════════════ */
+const TESTS = [
+  {
+    id: 'test-load',
+    name: 'Game iframe loads without errors',
+    desc: 'iframe loads and contentWindow is accessible',
+    run: () => Promise.resolve({
+      pass: !!(iframe.contentWindow && iframe.contentDocument),
+      detail: 'contentWindow accessible',
+    }),
+  },
+  {
+    id: 'test-set-symbols',
+    name: 'scratch:set — sets custom symbols',
+    desc: 'Send set message with custom symbols array',
+    run: () => new Promise(resolve => {
+      send({ type: 'scratch:set', symbols: ['🎃','🦄','🌈','🔥','💥'], prizes: ['TestUser'] });
+      setTimeout(() => resolve({ pass: true, detail: 'Message sent without error' }), 300);
+    }),
+  },
+  {
+    id: 'test-names-query',
+    name: 'scratch:names — response received',
+    desc: 'Querying names returns scratch:names response',
+    run: () => new Promise(resolve => {
+      const timeout = setTimeout(() => resolve({ pass: false, detail: 'No response within 2s' }), 2000);
+      window._testCallback = (msg) => {
+        if (msg.type === 'scratch:names') {
+          clearTimeout(timeout);
+          window._testCallback = null;
+          resolve({ pass: Array.isArray(msg.names), detail: 'names: ' + JSON.stringify(msg.names) });
+        }
+      };
+      send({ type: 'scratch:names' });
+    }),
+  },
+  {
+    id: 'test-reset',
+    name: 'scratch:reset — card resets',
+    desc: 'Reset message is accepted and processed',
+    run: () => new Promise(resolve => {
+      send({ type: 'scratch:reset' });
+      setTimeout(() => resolve({ pass: true, detail: 'Reset message sent' }), 300);
+    }),
+  },
+  {
+    id: 'test-reveal-response',
+    name: 'scratch:reveal — fires scratch:winner',
+    desc: 'Reveal triggers outbound scratch:winner message',
+    run: () => new Promise(resolve => {
+      send({ type: 'scratch:reset' });
+      setTimeout(() => {
+        const timeout = setTimeout(() => resolve({ pass: false, detail: 'No scratch:winner within 6s' }), 6000);
+        window._testCallback = (msg) => {
+          if (msg.type === 'scratch:winner') {
+            clearTimeout(timeout);
+            window._testCallback = null;
+            const hasMatched = typeof msg.matched === 'boolean';
+            const hasSymbols = Array.isArray(msg.symbols) && msg.symbols.length === 3;
+            resolve({
+              pass: hasMatched && hasSymbols,
+              detail: `matched:${msg.matched}, symbols:${JSON.stringify(msg.symbols)}, prize:${msg.prize}`,
+            });
+          }
+        };
+        send({ type: 'scratch:reveal' });
+      }, 400);
+    }),
+  },
+  {
+    id: 'test-winner-structure',
+    name: 'scratch:winner — correct payload shape',
+    desc: 'Winner message has matched (bool), symbols (array[3]), prize (string|null)',
+    run: () => new Promise(resolve => {
+      // Uses result from previous test if already fired, otherwise triggers again
+      send({ type: 'scratch:reset' });
+      setTimeout(() => {
+        const timeout = setTimeout(() => resolve({ pass: false, detail: 'Timeout' }), 7000);
+        window._testCallback = (msg) => {
+          if (msg.type === 'scratch:winner') {
+            clearTimeout(timeout);
+            window._testCallback = null;
+            const checks = [
+              ['matched is boolean', typeof msg.matched === 'boolean'],
+              ['symbols is array', Array.isArray(msg.symbols)],
+              ['symbols.length === 3', msg.symbols && msg.symbols.length === 3],
+              ['prize is string or null', msg.prize === null || typeof msg.prize === 'string' || msg.prize === undefined],
+            ];
+            const failed = checks.filter(c => !c[1]).map(c => c[0]);
+            resolve({ pass: failed.length === 0, detail: failed.length ? 'Failed: ' + failed.join(', ') : 'All checks passed' });
+          }
+        };
+        send({ type: 'scratch:reveal' });
+      }, 400);
+    }),
+  },
+  {
+    id: 'test-set-prizes',
+    name: 'scratch:set — prizes array accepted',
+    desc: 'Setting prizes via scratch:set, then names query returns them',
+    run: () => new Promise(resolve => {
+      const testNames = ['TestAlpha','TestBeta','TestGamma'];
+      send({ type: 'scratch:set', symbols: ['🍒','🍋','🍇','🍊','⭐'], prizes: testNames });
+      setTimeout(() => {
+        const timeout = setTimeout(() => resolve({ pass: false, detail: 'No names response' }), 2000);
+        window._testCallback = (msg) => {
+          if (msg.type === 'scratch:names') {
+            clearTimeout(timeout);
+            window._testCallback = null;
+            const hasAll = testNames.every(n => msg.names.includes(n));
+            resolve({ pass: hasAll, detail: 'received names: ' + JSON.stringify(msg.names) });
+          }
+        };
+        send({ type: 'scratch:names' });
+      }, 300);
+    }),
+  },
+  {
+    id: 'test-invalid-msg',
+    name: 'Unknown message — no crash',
+    desc: 'Sending an unknown message type does not break the game',
+    run: () => new Promise(resolve => {
+      send({ type: 'scratch:unknown_action_xyz', data: 'ignored' });
+      setTimeout(() => {
+        // If game is still responsive (reset works), it's fine
+        send({ type: 'scratch:reset' });
+        setTimeout(() => resolve({ pass: true, detail: 'No crash after unknown message' }), 300);
+      }, 300);
+    }),
+  },
+  {
+    id: 'test-rapid-reset',
+    name: 'Rapid reset — stable after 3 resets',
+    desc: 'Multiple rapid resets do not corrupt state',
+    run: () => new Promise(resolve => {
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => send({ type: 'scratch:reset' }), i * 100);
+      }
+      setTimeout(() => {
+        const timeout = setTimeout(() => resolve({ pass: false, detail: 'Game not responsive after rapid resets' }), 3000);
+        window._testCallback = (msg) => {
+          if (msg.type === 'scratch:winner') {
+            clearTimeout(timeout);
+            window._testCallback = null;
+            resolve({ pass: true, detail: 'Game responded after rapid resets' });
+          }
+        };
+        send({ type: 'scratch:reveal' });
+      }, 500);
+    }),
+  },
+];
+
+/* Render test list */
+function renderTests() {
+  const list = document.getElementById('test-list');
+  list.innerHTML = TESTS.map(t => `
+    <div class="test-item" id="${t.id}">
+      <span class="test-icon">○</span>
+      <span class="test-name" title="${t.desc}">${t.name}</span>
+      <span class="test-status pending">pending</span>
+    </div>
+  `).join('');
+}
+
+function setTestState(id, icon, statusText, statusClass) {
+  const item = document.getElementById(id);
+  if (!item) return;
+  item.querySelector('.test-icon').textContent = icon;
+  const statusEl = item.querySelector('.test-status');
+  statusEl.textContent = statusText;
+  statusEl.className = 'test-status ' + statusClass;
+}
+
+async function runAllTests() {
+  clearLog();
+  log('▶ Starting automated test suite…', 'info');
+  renderTests();
+  document.getElementById('test-summary').textContent = 'Running…';
+
+  let passed = 0, failed = 0;
+
+  for (const test of TESTS) {
+    setTestState(test.id, '…', 'running', 'running');
+    log(`  Testing: ${test.name}`, 'info');
+    try {
+      const result = await test.run();
+      if (result.pass) {
+        passed++;
+        setTestState(test.id, '✓', 'pass', 'pass');
+        log(`  ✓ PASS — ${result.detail || ''}`, 'recv');
+      } else {
+        failed++;
+        setTestState(test.id, '✗', 'fail', 'fail');
+        log(`  ✗ FAIL — ${result.detail || ''}`, 'error');
+      }
+    } catch(e) {
+      failed++;
+      setTestState(test.id, '✗', 'fail', 'fail');
+      log(`  ✗ ERROR — ${e.message}`, 'error');
+    }
+
+    // Small gap between tests
+    await new Promise(r => setTimeout(r, 150));
+  }
+
+  const total = passed + failed;
+  const summary = `${passed}/${total} tests passed`;
+  document.getElementById('test-summary').textContent = summary + (failed === 0 ? ' 🎉' : ` — ${failed} failed`);
+  log(`\n══ Test suite complete: ${summary} ══`, failed === 0 ? 'recv' : 'warn');
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════ */
+renderTests();
+log('ℹ Test harness ready. Use the buttons or run automated tests.', 'info');
+</script>
+</body>
+</html>

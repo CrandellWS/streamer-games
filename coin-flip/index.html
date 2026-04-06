@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coin Flip — Streamer Games</title>
+<style>
+/* ═══════════════════════════════════════════════
+   CSS RESET & VARIABLES
+   ═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:#0d0d14;--bg2:#14141f;--surface:#1a1a2e;--surface2:#22223a;
+  --border:#2a2a4a;--text:#e8e8f0;--text-dim:#8888aa;
+  --accent:#7c5cfc;--accent-glow:rgba(124,92,252,0.4);
+  --gold:#ffd700;--gold-glow:rgba(255,215,0,0.5);
+  --danger:#ff4466;--success:#44ff88;
+  --panel-width:360px;--font:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --silver:#c0c0c0;--silver-glow:rgba(192,192,192,0.4);
+}
+[data-theme="light"]{--bg:#f0f0f5;--bg2:#e8e8f0;--surface:#ffffff;--surface2:#f5f5fa;--border:#d0d0e0;--text:#1a1a2e;--text-dim:#666680;}
+[data-theme="neon"]{--bg:#0a0a0a;--bg2:#111111;--surface:#1a1a1a;--surface2:#222222;--border:#333333;--text:#ffffff;--text-dim:#888888;--accent:#00ffcc;--accent-glow:rgba(0,255,204,0.4);--gold:#ff00ff;--gold-glow:rgba(255,0,255,0.5);}
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+body.transparent-bg { background: transparent !important; }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════ */
+#app {
+  display: flex;
+  width: 100%; height: 100%;
+  position: relative;
+}
+
+#main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  gap: 24px;
+}
+
+/* ═══════════════════════════════════════════════
+   ADMIN PANEL
+   ═══════════════════════════════════════════════ */
+#admin-panel {
+  width: var(--panel-width);
+  height: 100%;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease;
+  z-index: 100;
+  flex-shrink: 0;
+}
+#admin-panel.hidden {
+  transform: translateX(100%);
+  opacity: 0;
+  position: absolute;
+  right: 0; top: 0;
+  pointer-events: none;
+}
+
+#admin-toggle {
+  position: fixed;
+  top: 12px; right: 12px;
+  z-index: 200;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#admin-toggle:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.panel-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.panel-header h2 {
+  font-size: 16px; font-weight: 700;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 4px;
+}
+.panel-header p { font-size: 12px; color: var(--text-dim); }
+
+.panel-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-section h3 {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-dim); margin-bottom: 12px;
+}
+
+.panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* ─── Form Elements ─── */
+.input-group { display: flex; gap: 8px; margin-bottom: 8px; }
+
+input[type="text"] {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="text"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn:hover { background: var(--surface2); border-color: var(--accent); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+.btn-primary {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.btn-primary:hover { filter: brightness(1.15); box-shadow: 0 6px 24px var(--accent-glow); }
+
+.btn-gold {
+  background: linear-gradient(135deg, #b8860b, var(--gold));
+  border-color: var(--gold); color: #1a1000; font-weight: 700;
+  box-shadow: 0 4px 16px var(--gold-glow);
+}
+.btn-gold:hover { filter: brightness(1.1); box-shadow: 0 6px 24px var(--gold-glow); }
+
+.btn-silver {
+  background: linear-gradient(135deg, #888, var(--silver));
+  border-color: var(--silver); color: #111; font-weight: 700;
+  box-shadow: 0 4px 16px var(--silver-glow);
+}
+.btn-silver:hover { filter: brightness(1.1); }
+
+.btn-danger { color: var(--danger); border-color: rgba(255,68,102,0.3); }
+.btn-danger:hover { background: rgba(255,68,102,0.1); border-color: var(--danger); }
+
+.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.btn-block { width: 100%; }
+.btn-group { display: flex; gap: 8px; }
+
+/* ─── Flip Button ─── */
+#flip-btn {
+  padding: 14px 24px;
+  font-size: 16px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), #9b7cfc);
+  border: none; color: #fff;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 6px 30px var(--accent-glow);
+  width: 100%;
+  position: relative; overflow: hidden;
+}
+#flip-btn::before {
+  content: '';
+  position: absolute; top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+#flip-btn:hover::before { left: 100%; }
+#flip-btn:hover { box-shadow: 0 8px 40px var(--accent-glow); transform: translateY(-1px); }
+#flip-btn:active { transform: translateY(1px); box-shadow: 0 3px 15px var(--accent-glow); }
+#flip-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* ─── Team Lists in Panel ─── */
+.team-list {
+  list-style: none;
+  max-height: 120px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  margin-bottom: 10px;
+}
+.team-list li {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 10px; border-radius: 8px;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+.team-list li:hover { background: var(--surface2); }
+.team-list li .remove-btn {
+  background: none; border: none; color: var(--text-dim);
+  cursor: pointer; font-size: 15px; padding: 0 4px;
+  line-height: 1; transition: color 0.15s;
+}
+.team-list li .remove-btn:hover { color: var(--danger); }
+.team-list-empty {
+  font-size: 12px; color: var(--text-dim);
+  text-align: center; padding: 12px 0; font-style: italic;
+}
+
+/* Team label badges */
+.badge {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 6px;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.badge-heads {
+  background: rgba(255,215,0,0.2); color: var(--gold);
+  border: 1px solid rgba(255,215,0,0.4);
+}
+.badge-tails {
+  background: rgba(192,192,192,0.2); color: var(--silver);
+  border: 1px solid rgba(192,192,192,0.4);
+}
+
+/* Status line */
+#status-line {
+  font-size: 12px; color: var(--text-dim);
+  text-align: center; padding: 8px 0;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Sound toggle */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0;
+}
+.toggle-label { font-size: 13px; color: var(--text-dim); }
+.toggle-switch {
+  width: 40px; height: 22px;
+  background: var(--surface2); border-radius: 11px;
+  border: 1px solid var(--border);
+  position: relative; cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.toggle-switch.on {
+  background: var(--accent); border-color: var(--accent);
+}
+.toggle-switch::after {
+  content: '';
+  position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  border-radius: 50%; background: #fff;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.toggle-switch.on::after { transform: translateX(18px); }
+
+/* ═══════════════════════════════════════════════
+   COIN STAGE
+   ═══════════════════════════════════════════════ */
+#coin-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  position: relative;
+}
+
+#coin-container {
+  perspective: 1000px;
+  width: 300px; height: 300px;
+  position: relative;
+}
+
+#coin {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateY(0deg);
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  /* Idle bob set via JS animation */
+}
+
+/* Coin faces */
+.coin-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 100px; font-weight: 900;
+  box-shadow: inset 0 8px 24px rgba(255,255,255,0.25),
+              inset 0 -8px 24px rgba(0,0,0,0.4),
+              0 8px 40px rgba(0,0,0,0.6);
+}
+
+#coin-heads {
+  background: radial-gradient(ellipse at 35% 30%, #ffe066, #d4a017 45%, #8b6000 100%);
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 30px rgba(255,230,100,0.8);
+}
+
+#coin-tails {
+  background: radial-gradient(ellipse at 35% 30%, #f0f0f0, #a8a8a8 45%, #555 100%);
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 20px rgba(200,200,200,0.6);
+  transform: rotateY(180deg);
+}
+
+/* Coin edge ring */
+#coin::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #c8a000, #ffe066, #c8a000, #ffe066, #c8a000, #ffe066,
+    #c8a000, #ffe066, #c8a000, #ffe066, #c8a000, #ffe066,
+    #c8a000
+  );
+  z-index: -1;
+  opacity: 0.8;
+  transition: opacity 0.3s;
+}
+
+/* Coin glow ring */
+#coin-glow {
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, var(--gold-glow) 0%, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
+  z-index: -2;
+}
+
+#coin-container:hover #coin-glow { opacity: 0.6; }
+
+/* Idle animation (JS-driven via CSS custom property) */
+@keyframes coin-bob {
+  0%, 100% { transform: translateY(0px) rotateY(0deg); }
+  50% { transform: translateY(-8px) rotateY(5deg); }
+}
+
+#coin.idle { animation: coin-bob 3s ease-in-out infinite; }
+#coin.flipping { animation: none; }
+#coin.result { animation: none; }
+
+/* Flip keyframes (JS applies via style.animation) */
+@keyframes coin-flip-anim {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(1800deg); }
+}
+@keyframes coin-flip-anim-tails {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(1980deg); }
+}
+
+/* Shadow under coin */
+#coin-shadow {
+  width: 260px; height: 30px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%);
+  border-radius: 50%;
+  position: absolute;
+  bottom: -24px;
+  left: 50%; transform: translateX(-50%);
+  transition: all 0.3s;
+}
+
+/* ─── Toss label ─── */
+#toss-label {
+  font-size: 14px; font-weight: 600;
+  color: var(--text-dim); letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: color 0.4s;
+}
+
+/* ═══════════════════════════════════════════════
+   TEAM SPLIT COLUMNS
+   ═══════════════════════════════════════════════ */
+#teams-display {
+  display: flex;
+  gap: 0;
+  width: 100%;
+  max-width: 700px;
+  flex: 0 0 auto;
+  position: relative;
+}
+
+.team-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px;
+  transition: opacity 0.5s, transform 0.5s;
+}
+
+.team-col-divider {
+  width: 1px;
+  background: var(--border);
+  align-self: stretch;
+  flex-shrink: 0;
+}
+
+.team-col-header {
+  font-size: 13px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  display: flex; align-items: center; gap: 8px;
+}
+.team-col-header .coin-mini {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 900;
+}
+.heads-mini {
+  background: radial-gradient(#ffe066, #c8a000);
+  color: rgba(255,255,255,0.9);
+  box-shadow: 0 2px 8px var(--gold-glow);
+}
+.tails-mini {
+  background: radial-gradient(#e0e0e0, #888);
+  color: rgba(255,255,255,0.85);
+  box-shadow: 0 2px 8px var(--silver-glow);
+}
+
+.team-names {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  min-height: 30px;
+}
+
+.team-name-chip {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Win/loss states */
+.team-col.winner .team-name-chip {
+  background: rgba(255,215,0,0.15);
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 16px var(--gold-glow);
+  transform: scale(1.05);
+}
+.team-col.loser {
+  opacity: 0.35;
+}
+.team-col.loser .team-name-chip {
+  transform: scale(0.95);
+}
+
+.team-count {
+  font-size: 11px; color: var(--text-dim);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════
+   WINNER BANNER
+   ═══════════════════════════════════════════════ */
+#winner-banner {
+  position: absolute;
+  bottom: -120px;
+  left: 50%; transform: translateX(-50%);
+  background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,215,0,0.05));
+  border: 1px solid var(--gold);
+  border-radius: 18px;
+  padding: 16px 36px;
+  text-align: center;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 40px var(--gold-glow), 0 0 80px rgba(255,215,0,0.15);
+  white-space: nowrap;
+  z-index: 50;
+  transition: bottom 0.6s cubic-bezier(0.34,1.2,0.64,1), opacity 0.4s;
+  opacity: 0;
+  pointer-events: none;
+}
+#winner-banner.visible {
+  bottom: 30px;
+  opacity: 1;
+}
+#winner-banner .winner-label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 2px;
+  color: var(--gold); margin-bottom: 6px;
+}
+#winner-banner .winner-side {
+  font-size: 28px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 3px;
+  color: var(--gold);
+  text-shadow: 0 0 30px var(--gold-glow);
+}
+#winner-banner .winner-names {
+  font-size: 13px; color: rgba(255,215,0,0.7);
+  margin-top: 4px;
+}
+
+/* ─── Confetti ─── */
+.confetti-piece {
+  position: fixed;
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 999;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall {
+  0%   { transform: translateY(-20px) rotateZ(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotateZ(720deg); opacity: 0; }
+}
+
+/* ─── Side highlight rings on coin stage ─── */
+.side-glow {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.side-glow.heads-glow {
+  box-shadow: 0 0 40px var(--gold-glow), 0 0 80px var(--gold-glow);
+}
+.side-glow.tails-glow {
+  box-shadow: 0 0 40px var(--silver-glow), 0 0 80px var(--silver-glow);
+}
+
+/* ─── Particle burst ─── */
+.particle {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 998;
+  animation: particle-burst ease-out forwards;
+}
+@keyframes particle-burst {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+</style>
+</head>
+<body>
+<button id="admin-toggle" title="Toggle Admin Panel" aria-label="Toggle admin panel">⚙</button>
+
+<div id="app">
+  <!-- ══ MAIN AREA ══ -->
+  <div id="main-area">
+
+    <div id="coin-stage">
+      <div id="toss-label">Waiting for flip…</div>
+
+      <div id="coin-container">
+        <div id="coin-glow"></div>
+        <div id="coin" class="idle" role="button" aria-label="Coin" tabindex="0">
+          <div id="coin-heads" class="coin-face">₪</div>
+          <div id="coin-tails" class="coin-face">₮</div>
+          <div class="side-glow heads-glow" id="heads-glow-ring"></div>
+          <div class="side-glow tails-glow" id="tails-glow-ring"></div>
+        </div>
+        <div id="coin-shadow"></div>
+      </div>
+    </div>
+
+    <!-- Team Columns -->
+    <div id="teams-display">
+      <div class="team-col" id="heads-col">
+        <div class="team-col-header">
+          <div class="coin-mini heads-mini">H</div>
+          <span style="color:var(--gold)">Heads</span>
+          <span class="team-count" id="heads-count">0</span>
+        </div>
+        <div class="team-names" id="heads-names"></div>
+      </div>
+      <div class="team-col-divider"></div>
+      <div class="team-col" id="tails-col">
+        <div class="team-col-header">
+          <div class="coin-mini tails-mini">T</div>
+          <span style="color:var(--silver)">Tails</span>
+          <span class="team-count" id="tails-count">0</span>
+        </div>
+        <div class="team-names" id="tails-names"></div>
+      </div>
+    </div>
+
+    <!-- Winner Banner -->
+    <div id="winner-banner" role="status" aria-live="polite">
+      <div class="winner-label">Winner!</div>
+      <div class="winner-side" id="banner-side"></div>
+      <div class="winner-names" id="banner-names"></div>
+    </div>
+  </div>
+
+  <!-- ══ ADMIN PANEL ══ -->
+  <div id="admin-panel">
+    <div class="panel-header">
+      <h2>🪙 Coin Flip</h2>
+      <p>Space or button to flip • Chat picks heads/tails</p>
+    </div>
+
+    <div class="panel-scroll">
+
+      <!-- Add Name -->
+      <div class="panel-section">
+        <h3>Add Picker</h3>
+        <div class="input-group">
+          <input type="text" id="name-input" placeholder="Viewer name…" maxlength="32" autocomplete="off">
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-gold btn-block" id="pick-heads-btn" title="Add to Heads">
+            ₪ Heads
+          </button>
+          <button class="btn btn-silver btn-block" id="pick-tails-btn" title="Add to Tails">
+            ₮ Tails
+          </button>
+        </div>
+      </div>
+
+      <!-- Heads Team -->
+      <div class="panel-section">
+        <h3>Team Heads <span class="badge badge-heads" id="heads-panel-count">0</span></h3>
+        <ul class="team-list" id="heads-panel-list">
+          <li class="team-list-empty" id="heads-empty">No pickers yet</li>
+        </ul>
+      </div>
+
+      <!-- Tails Team -->
+      <div class="panel-section">
+        <h3>Team Tails <span class="badge badge-tails" id="tails-panel-count">0</span></h3>
+        <ul class="team-list" id="tails-panel-list">
+          <li class="team-list-empty" id="tails-empty">No pickers yet</li>
+        </ul>
+      </div>
+
+      <!-- Actions -->
+      <div class="panel-section">
+        <h3>Actions</h3>
+        <button class="btn btn-primary btn-block" id="flip-btn" style="margin-bottom:10px">
+          🪙 Flip Coin <kbd style="font-size:10px;opacity:0.7;margin-left:4px">Space</kbd>
+        </button>
+        <div class="btn-group">
+          <button class="btn btn-danger btn-block" id="clear-btn">🗑 Clear All</button>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="panel-section">
+        <h3>Settings</h3>
+        <div class="toggle-row">
+          <span class="toggle-label">Sound effects</span>
+          <div class="toggle-switch on" id="sound-toggle" role="switch" aria-checked="true" tabindex="0"></div>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">Theme</span>
+          <select id="theme-select" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-family:var(--font);font-size:13px;cursor:pointer;outline:none;">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="neon">Neon</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="status-line" aria-live="polite">Ready</div>
+  </div>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+/* ═══════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════ */
+const state = {
+  heads: [],    // {name: string}
+  tails: [],
+  flipping: false,
+  lastResult: null,   // 'heads' | 'tails' | null
+  soundOn: true,
+};
+
+/* ═══════════════════════════════════════════════
+   URL PARAMS
+   ═══════════════════════════════════════════════ */
+const params = new URLSearchParams(location.search);
+const adminMode = params.get('admin') !== 'false';
+const transparentBg = params.get('bg') === 'transparent';
+const themeParam = params.get('theme');
+const namesParam = params.get('names');
+
+/* ═══════════════════════════════════════════════
+   DOM REFS
+   ═══════════════════════════════════════════════ */
+const coin = document.getElementById('coin');
+const coinHeads = document.getElementById('coin-heads');
+const coinTails = document.getElementById('coin-tails');
+const headsGlowRing = document.getElementById('heads-glow-ring');
+const tailsGlowRing = document.getElementById('tails-glow-ring');
+const coinGlow = document.getElementById('coin-glow');
+const coinShadow = document.getElementById('coin-shadow');
+const tossLabel = document.getElementById('toss-label');
+const headsCol = document.getElementById('heads-col');
+const tailsCol = document.getElementById('tails-col');
+const headsNames = document.getElementById('heads-names');
+const tailsNames = document.getElementById('tails-names');
+const headsCount = document.getElementById('heads-count');
+const tailsCount = document.getElementById('tails-count');
+const winnerBanner = document.getElementById('winner-banner');
+const bannerSide = document.getElementById('banner-side');
+const bannerNames = document.getElementById('banner-names');
+const adminPanel = document.getElementById('admin-panel');
+const adminToggle = document.getElementById('admin-toggle');
+const nameInput = document.getElementById('name-input');
+const pickHeadsBtn = document.getElementById('pick-heads-btn');
+const pickTailsBtn = document.getElementById('pick-tails-btn');
+const flipBtn = document.getElementById('flip-btn');
+const clearBtn = document.getElementById('clear-btn');
+const soundToggle = document.getElementById('sound-toggle');
+const themeSelect = document.getElementById('theme-select');
+const statusLine = document.getElementById('status-line');
+const headsPanelList = document.getElementById('heads-panel-list');
+const tailsPanelList = document.getElementById('tails-panel-list');
+const headsPanelCount = document.getElementById('heads-panel-count');
+const tailsPanelCount = document.getElementById('tails-panel-count');
+const headsEmpty = document.getElementById('heads-empty');
+const tailsEmpty = document.getElementById('tails-empty');
+
+/* ═══════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════ */
+function init() {
+  if (transparentBg) document.body.classList.add('transparent-bg');
+  if (!adminMode) {
+    adminPanel.classList.add('hidden');
+    adminToggle.style.display = 'none';
+  }
+
+  // Theme
+  const savedTheme = themeParam || localStorage.getItem('coinflip_theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Sound pref
+  const savedSound = localStorage.getItem('coinflip_sound');
+  if (savedSound === 'false') {
+    state.soundOn = false;
+    soundToggle.classList.remove('on');
+    soundToggle.setAttribute('aria-checked', 'false');
+  }
+
+  // Pre-load names from URL
+  if (namesParam) {
+    namesParam.split(',').forEach(n => {
+      const name = n.trim();
+      if (name) addPick(name, Math.random() < 0.5 ? 'heads' : 'tails', true);
+    });
+    renderTeams();
+  }
+
+  setStatus('Ready — Space or click Flip Coin');
+}
+
+/* ═══════════════════════════════════════════════
+   THEME
+   ═══════════════════════════════════════════════ */
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  themeSelect.value = t;
+  localStorage.setItem('coinflip_theme', t);
+}
+
+/* ═══════════════════════════════════════════════
+   STATUS
+   ═══════════════════════════════════════════════ */
+function setStatus(msg) {
+  statusLine.textContent = msg;
+}
+
+/* ═══════════════════════════════════════════════
+   TEAM MANAGEMENT
+   ═══════════════════════════════════════════════ */
+function sanitize(str) {
+  const d = document.createElement('div');
+  d.textContent = String(str).slice(0, 32);
+  return d.innerHTML;
+}
+
+function addPick(name, side, silent) {
+  name = String(name).trim().slice(0, 32);
+  if (!name) return false;
+  // Prevent duplicates across both teams
+  const allNames = [...state.heads.map(x=>x.name), ...state.tails.map(x=>x.name)];
+  if (allNames.some(n => n.toLowerCase() === name.toLowerCase())) {
+    if (!silent) setStatus(`${name} already picked`);
+    return false;
+  }
+  if (side === 'heads') state.heads.push({name});
+  else state.tails.push({name});
+  if (!silent) {
+    renderTeams();
+    setStatus(`${name} → ${side}`);
+  }
+  return true;
+}
+
+function removePick(name) {
+  state.heads = state.heads.filter(x => x.name !== name);
+  state.tails = state.tails.filter(x => x.name !== name);
+  renderTeams();
+  setStatus(`Removed ${name}`);
+}
+
+function clearAll() {
+  state.heads = [];
+  state.tails = [];
+  state.lastResult = null;
+  state.flipping = false;
+  renderTeams();
+  resetCoinVisual();
+  hideBanner();
+  headsCol.classList.remove('winner','loser');
+  tailsCol.classList.remove('winner','loser');
+  setStatus('Cleared — Ready');
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER TEAMS
+   ═══════════════════════════════════════════════ */
+function renderTeams() {
+  // Counts
+  headsCount.textContent = state.heads.length;
+  tailsCount.textContent = state.tails.length;
+  headsPanelCount.textContent = state.heads.length;
+  tailsPanelCount.textContent = state.tails.length;
+
+  // Main display columns
+  renderNameChips(headsNames, state.heads);
+  renderNameChips(tailsNames, state.tails);
+
+  // Panel lists
+  renderPanelList(headsPanelList, state.heads, headsEmpty);
+  renderPanelList(tailsPanelList, state.tails, tailsEmpty);
+}
+
+function renderNameChips(container, list) {
+  container.innerHTML = '';
+  list.forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'team-name-chip';
+    chip.textContent = p.name;
+    container.appendChild(chip);
+  });
+}
+
+function renderPanelList(listEl, arr, emptyEl) {
+  // Remove all non-empty items
+  Array.from(listEl.querySelectorAll('li:not(.team-list-empty)')).forEach(li => li.remove());
+  emptyEl.style.display = arr.length ? 'none' : 'block';
+  arr.forEach(p => {
+    const li = document.createElement('li');
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = p.name;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.innerHTML = '×';
+    removeBtn.setAttribute('aria-label', `Remove ${p.name}`);
+    removeBtn.addEventListener('click', () => removePick(p.name));
+    li.appendChild(nameSpan);
+    li.appendChild(removeBtn);
+    listEl.appendChild(li);
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   COIN VISUAL
+   ═══════════════════════════════════════════════ */
+function resetCoinVisual() {
+  coin.style.animation = '';
+  coin.style.transform = 'rotateY(0deg)';
+  coin.classList.remove('flipping', 'result');
+  coin.classList.add('idle');
+  headsGlowRing.style.opacity = '0';
+  tailsGlowRing.style.opacity = '0';
+  tossLabel.textContent = 'Waiting for flip…';
+  tossLabel.style.color = '';
+  coinShadow.style.width = '260px';
+  coinShadow.style.opacity = '0.5';
+}
+
+/* ═══════════════════════════════════════════════
+   FLIP LOGIC
+   ═══════════════════════════════════════════════ */
+function doFlip(forcedResult) {
+  if (state.flipping) return;
+  state.flipping = true;
+
+  // Determine result
+  const result = forcedResult || (Math.random() < 0.5 ? 'heads' : 'tails');
+  state.lastResult = result;
+
+  // Hide banner if visible
+  hideBanner();
+  headsCol.classList.remove('winner','loser');
+  tailsCol.classList.remove('winner','loser');
+
+  // Stop idle, start flip
+  coin.classList.remove('idle', 'result');
+  coin.classList.add('flipping');
+  tossLabel.textContent = 'Flipping…';
+  tossLabel.style.color = 'var(--accent)';
+
+  if (state.soundOn) playWhoosh();
+  if (state.soundOn) playCoinRing();
+
+  // Shadow squish during flip
+  let shadowAnim = null;
+  let shadowProgress = 0;
+  const shadowInterval = setInterval(() => {
+    shadowProgress += 0.05;
+    const scale = 0.6 + 0.4 * Math.abs(Math.sin(shadowProgress * Math.PI * 3));
+    coinShadow.style.width = (260 * scale) + 'px';
+    coinShadow.style.opacity = String(0.3 + 0.3 * scale);
+  }, 30);
+
+  // Build final rotation: always land on the correct face
+  // heads = rotateY(N * 360) where N is even → front face
+  // tails = rotateY(N * 360 + 180) → back face
+  const spins = 5; // 5 full rotations
+  let finalDeg;
+  if (result === 'heads') {
+    finalDeg = spins * 360; // 1800
+  } else {
+    finalDeg = spins * 360 + 180; // 1980
+  }
+
+  // Apply flip via Web Animations API for precise control
+  const flipAnim = coin.animate(
+    [
+      { transform: 'rotateY(0deg)', easing: 'cubic-bezier(0.23,1,0.32,1)' },
+      { transform: `rotateY(${finalDeg}deg)` }
+    ],
+    { duration: 2500, fill: 'forwards' }
+  );
+
+  flipAnim.addEventListener('finish', () => {
+    clearInterval(shadowInterval);
+    coinShadow.style.width = '260px';
+    coinShadow.style.opacity = '0.5';
+
+    // Lock coin to final face
+    coin.style.transform = `rotateY(${finalDeg}deg)`;
+    coin.classList.remove('flipping');
+    coin.classList.add('result');
+
+    if (state.soundOn) playClink();
+
+    // Glow ring for winning side
+    setTimeout(() => {
+      if (result === 'heads') {
+        headsGlowRing.style.opacity = '1';
+      } else {
+        tailsGlowRing.style.opacity = '1';
+      }
+    }, 80);
+
+    // Toss label
+    tossLabel.textContent = result === 'heads' ? '₪ HEADS ₪' : '₮ TAILS ₮';
+    tossLabel.style.color = result === 'heads' ? 'var(--gold)' : 'var(--silver)';
+
+    // Team highlights
+    const winnerTeam = result === 'heads' ? state.heads : state.tails;
+    const loserCol  = result === 'heads' ? tailsCol  : headsCol;
+    const winnerCol = result === 'heads' ? headsCol  : tailsCol;
+
+    setTimeout(() => {
+      winnerCol.classList.add('winner');
+      if ((result === 'heads' ? state.tails : state.heads).length > 0) {
+        loserCol.classList.add('loser');
+      }
+    }, 200);
+
+    // Winner banner
+    const winnerNames = winnerTeam.map(p => p.name);
+    setTimeout(() => {
+      showBanner(result, winnerNames);
+    }, 400);
+
+    // Confetti
+    if (winnerNames.length > 0) {
+      setTimeout(() => spawnConfetti(), 350);
+    }
+
+    // Outbound postMessage
+    window.parent.postMessage({
+      type: 'coin:winner',
+      winner: result,
+      names: winnerNames,
+    }, '*');
+
+    state.flipping = false;
+    setStatus(`Result: ${result.toUpperCase()} wins!`);
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   WINNER BANNER
+   ═══════════════════════════════════════════════ */
+function showBanner(side, names) {
+  bannerSide.textContent = side === 'heads' ? '₪ HEADS ₪' : '₮ TAILS ₮';
+  bannerSide.style.color = side === 'heads' ? 'var(--gold)' : 'var(--silver)';
+  if (names.length > 0) {
+    bannerNames.textContent = names.slice(0, 6).join(' · ') + (names.length > 6 ? ` +${names.length - 6} more` : '');
+  } else {
+    bannerNames.textContent = 'No pickers on this team';
+  }
+  winnerBanner.classList.add('visible');
+}
+
+function hideBanner() {
+  winnerBanner.classList.remove('visible');
+}
+
+/* ═══════════════════════════════════════════════
+   CONFETTI
+   ═══════════════════════════════════════════════ */
+const CONFETTI_COLORS = ['#ffd700','#ff4466','#7c5cfc','#44ff88','#00e5ff','#ff8c00','#c0c0c0'];
+
+function spawnConfetti() {
+  const count = 60;
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.cssText = `
+        left:${20 + Math.random() * 60}%;
+        top:-20px;
+        background:${CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]};
+        width:${6 + Math.random() * 8}px;
+        height:${6 + Math.random() * 8}px;
+        border-radius:${Math.random() > 0.5 ? '50%' : '2px'};
+        animation-duration:${1.5 + Math.random() * 2}s;
+        animation-delay:0s;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }, i * 20);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   PARTICLE BURST (on coin click during idle)
+   ═══════════════════════════════════════════════ */
+function spawnParticles(x, y, color) {
+  for (let i = 0; i < 12; i++) {
+    const el = document.createElement('div');
+    const angle = (i / 12) * Math.PI * 2;
+    const dist = 40 + Math.random() * 60;
+    el.className = 'particle';
+    el.style.cssText = `
+      left:${x}px; top:${y}px;
+      width:${4 + Math.random() * 4}px; height:${4 + Math.random() * 4}px;
+      background:${color};
+      --tx:${Math.cos(angle) * dist}px;
+      --ty:${Math.sin(angle) * dist}px;
+      animation-duration:${0.4 + Math.random() * 0.3}s;
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 800);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   WEB AUDIO
+   ═══════════════════════════════════════════════ */
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+// Coin ring: short sine burst at 800 Hz fading quickly
+function playCoinRing() {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+  } catch(e) { /* audio unavailable */ }
+}
+
+// Whoosh: noise filtered through bandpass sweeping 200→2000 Hz
+function playWhoosh() {
+  try {
+    const ctx = getAudioCtx();
+    const bufferSize = ctx.sampleRate * 0.6;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+
+    const bpf = ctx.createBiquadFilter();
+    bpf.type = 'bandpass';
+    bpf.frequency.setValueAtTime(200, ctx.currentTime);
+    bpf.frequency.exponentialRampToValueAtTime(2000, ctx.currentTime + 0.5);
+    bpf.Q.value = 3;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+
+    source.connect(bpf);
+    bpf.connect(gain);
+    gain.connect(ctx.destination);
+    source.start(ctx.currentTime);
+    source.stop(ctx.currentTime + 0.65);
+  } catch(e) { /* audio unavailable */ }
+}
+
+// Metallic clink: short transient at 1200 Hz + 600 Hz
+function playClink() {
+  try {
+    const ctx = getAudioCtx();
+
+    // High partial
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(1200, ctx.currentTime);
+    osc1.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.25);
+    gain1.gain.setValueAtTime(0.5, ctx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(ctx.currentTime);
+    osc1.stop(ctx.currentTime + 0.3);
+
+    // Low partial
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(600, ctx.currentTime);
+    osc2.frequency.exponentialRampToValueAtTime(480, ctx.currentTime + 0.4);
+    gain2.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(ctx.currentTime);
+    osc2.stop(ctx.currentTime + 0.5);
+
+    // Transient noise click
+    const bufSize = Math.floor(ctx.sampleRate * 0.01);
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / bufSize);
+    const click = ctx.createBufferSource();
+    click.buffer = buf;
+    const clickGain = ctx.createGain();
+    clickGain.gain.value = 0.6;
+    click.connect(clickGain);
+    clickGain.connect(ctx.destination);
+    click.start(ctx.currentTime);
+  } catch(e) { /* audio unavailable */ }
+}
+
+/* ═══════════════════════════════════════════════
+   POSTMESSAGE API
+   ═══════════════════════════════════════════════ */
+window.addEventListener('message', function(e) {
+  if (!e.data || typeof e.data.type !== 'string') return;
+  const {type, name, names, side, winner} = e.data;
+
+  switch (type) {
+    case 'coin:pick': {
+      // e.data.name + e.data.side = 'heads'/'tails'
+      if (!name || !side) return;
+      const s = String(side).toLowerCase();
+      if (s !== 'heads' && s !== 'tails') return;
+      addPick(String(name), s);
+      break;
+    }
+    case 'coin:flip': {
+      if (!state.flipping) doFlip();
+      break;
+    }
+    case 'coin:result': {
+      // Force a specific result
+      if (!state.flipping && (winner === 'heads' || winner === 'tails')) {
+        doFlip(winner);
+      }
+      break;
+    }
+    case 'coin:clear': {
+      clearAll();
+      break;
+    }
+    case 'coin:names': {
+      // Respond with current state
+      window.parent.postMessage({
+        type: 'coin:names',
+        heads: state.heads.map(p => p.name),
+        tails: state.tails.map(p => p.name),
+      }, '*');
+      break;
+    }
+  }
+});
+
+/* ═══════════════════════════════════════════════
+   EVENT LISTENERS
+   ═══════════════════════════════════════════════ */
+
+// Admin toggle
+adminToggle.addEventListener('click', () => {
+  adminPanel.classList.toggle('hidden');
+});
+
+// Pick buttons
+pickHeadsBtn.addEventListener('click', () => {
+  const name = nameInput.value.trim();
+  if (!name) { nameInput.focus(); return; }
+  if (addPick(name, 'heads')) {
+    nameInput.value = '';
+    nameInput.focus();
+  }
+});
+
+pickTailsBtn.addEventListener('click', () => {
+  const name = nameInput.value.trim();
+  if (!name) { nameInput.focus(); return; }
+  if (addPick(name, 'tails')) {
+    nameInput.value = '';
+    nameInput.focus();
+  }
+});
+
+// Enter in name input → default to heads
+nameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const name = nameInput.value.trim();
+    if (!name) return;
+    if (addPick(name, 'heads')) {
+      nameInput.value = '';
+    }
+  }
+});
+
+// Flip button
+flipBtn.addEventListener('click', () => {
+  if (!state.flipping) doFlip();
+});
+
+// Spacebar flip (when not typing)
+document.addEventListener('keydown', e => {
+  if (e.target === nameInput) return;
+  if (e.code === 'Space' || e.key === ' ') {
+    e.preventDefault();
+    if (!state.flipping) doFlip();
+  }
+});
+
+// Coin click → flip or particle burst
+coin.addEventListener('click', e => {
+  if (state.flipping) return;
+  const rect = coin.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  spawnParticles(cx, cy, 'var(--gold)');
+  doFlip();
+});
+coin.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    if (!state.flipping) doFlip();
+  }
+});
+
+// Clear
+clearBtn.addEventListener('click', clearAll);
+
+// Sound toggle
+soundToggle.addEventListener('click', toggleSound);
+soundToggle.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSound(); }
+});
+
+function toggleSound() {
+  state.soundOn = !state.soundOn;
+  soundToggle.classList.toggle('on', state.soundOn);
+  soundToggle.setAttribute('aria-checked', String(state.soundOn));
+  localStorage.setItem('coinflip_sound', String(state.soundOn));
+  setStatus(`Sound ${state.soundOn ? 'on' : 'off'}`);
+}
+
+// Theme select
+themeSelect.addEventListener('change', () => setTheme(themeSelect.value));
+
+/* ═══════════════════════════════════════════════
+   START
+   ═══════════════════════════════════════════════ */
+init();
+renderTeams();
+
+})();
+</script>
+</body>
+</html>

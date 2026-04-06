@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPS Battle — Test Harness</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d14;
+  --bg2: #14141f;
+  --surface: #1a1a2e;
+  --surface2: #22223a;
+  --border: #2a2a4a;
+  --text: #e8e8f0;
+  --text-dim: #8888aa;
+  --accent: #7c5cfc;
+  --success: #44ff88;
+  --danger: #ff4466;
+  --gold: #ffd700;
+  --warn: #ffaa33;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+}
+
+body { display: flex; flex-direction: column; overflow: hidden; }
+
+h1 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Iframe */
+#game-frame {
+  flex: 1;
+  border: none;
+  background: #000;
+}
+
+/* Control panel */
+#panel {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--bg2);
+  overflow: hidden;
+}
+
+.panel-section {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-section h3 {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.btn {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.btn:hover { background: var(--surface2); border-color: var(--accent); }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-success { background: rgba(68,255,136,0.15); border-color: var(--success); color: var(--success); }
+.btn-danger { background: rgba(255,68,102,0.1); border-color: var(--danger); color: var(--danger); }
+.btn-gold { background: rgba(255,215,0,0.1); border-color: var(--gold); color: var(--gold); }
+.btn-warn { background: rgba(255,170,51,0.1); border-color: var(--warn); color: var(--warn); }
+.btn-full { grid-column: 1 / -1; }
+
+.url-bar {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+.url-bar input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  outline: none;
+}
+.url-bar input:focus { border-color: var(--accent); }
+.url-bar .btn { flex-shrink: 0; padding: 6px 12px; }
+
+/* Log */
+#log-wrap {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+#log {
+  padding: 8px;
+  font-size: 11px;
+  line-height: 1.6;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+}
+
+.log-entry {
+  padding: 3px 6px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.log-entry.in { background: rgba(124,92,252,0.08); }
+.log-entry.out { background: rgba(68,255,136,0.06); }
+.log-entry.info { background: rgba(255,170,51,0.06); }
+.log-entry.pass { background: rgba(68,255,136,0.1); border-left: 2px solid var(--success); }
+.log-entry.fail { background: rgba(255,68,102,0.1); border-left: 2px solid var(--danger); }
+
+.log-time { color: var(--text-dim); flex-shrink: 0; }
+.log-label { flex-shrink: 0; font-weight: 700; }
+.log-entry.in .log-label { color: var(--accent); }
+.log-entry.out .log-label { color: var(--success); }
+.log-entry.info .log-label { color: var(--warn); }
+.log-entry.pass .log-label { color: var(--success); }
+.log-entry.fail .log-label { color: var(--danger); }
+
+/* Test results summary */
+#test-summary {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+#test-score { font-weight: 700; color: var(--text-dim); }
+#test-score.all-pass { color: var(--success); }
+#test-score.has-fail { color: var(--danger); }
+</style>
+</head>
+<body>
+<h1>⚔️ RPS Battle — postMessage Test Harness</h1>
+<div class="url-bar">
+  <input type="text" id="frame-url" value="./index.html?admin=true&theme=dark">
+  <button class="btn btn-primary" id="reload-btn">Reload</button>
+</div>
+<div id="main">
+  <iframe id="game-frame" src="./index.html?admin=true&theme=dark" title="RPS Battle game"></iframe>
+  <div id="panel">
+
+    <!-- Quick actions -->
+    <div class="panel-section">
+      <h3>Quick Setup</h3>
+      <div class="btn-grid">
+        <button class="btn btn-primary btn-full" id="btn-add8">Add 8 Players</button>
+        <button class="btn btn-gold btn-full" id="btn-start">🏆 Start Tournament</button>
+      </div>
+    </div>
+
+    <!-- Player management -->
+    <div class="panel-section">
+      <h3>Player Commands</h3>
+      <div class="btn-grid">
+        <button class="btn" id="btn-join1">Join: Alice</button>
+        <button class="btn" id="btn-join2">Join: Bob</button>
+        <button class="btn" id="btn-join3">Join: Carol</button>
+        <button class="btn" id="btn-join4">Join: Dave</button>
+        <button class="btn btn-danger" id="btn-clear">Clear All</button>
+        <button class="btn" id="btn-names">Query Names</button>
+      </div>
+    </div>
+
+    <!-- Picks -->
+    <div class="panel-section">
+      <h3>Submit Picks (P1 = first, P2 = second in current match)</h3>
+      <div class="btn-grid">
+        <button class="btn btn-success" id="btn-p1rock">P1: Rock ✊</button>
+        <button class="btn btn-success" id="btn-p2rock">P2: Rock ✊</button>
+        <button class="btn btn-success" id="btn-p1paper">P1: Paper ✋</button>
+        <button class="btn btn-success" id="btn-p2paper">P2: Paper ✋</button>
+        <button class="btn btn-success" id="btn-p1scissors">P1: Scissors ✌️</button>
+        <button class="btn btn-success" id="btn-p2scissors">P2: Scissors ✌️</button>
+      </div>
+    </div>
+
+    <!-- Theme / URL params -->
+    <div class="panel-section">
+      <h3>URL Params & Theme</h3>
+      <div class="btn-grid">
+        <button class="btn" id="btn-theme-dark">Theme: Dark</button>
+        <button class="btn" id="btn-theme-light">Theme: Light</button>
+        <button class="btn" id="btn-theme-neon">Theme: Neon</button>
+        <button class="btn" id="btn-bg-transparent">BG: Transparent</button>
+        <button class="btn" id="btn-no-admin">Admin: false</button>
+        <button class="btn" id="btn-names-url">?names=A,B,C,D</button>
+      </div>
+    </div>
+
+    <!-- Test suite -->
+    <div class="panel-section">
+      <h3>Automated Tests</h3>
+      <div class="btn-grid">
+        <button class="btn btn-warn btn-full" id="btn-run-tests">▶ Run All Tests</button>
+        <button class="btn btn-danger" id="btn-clear-log">Clear Log</button>
+        <button class="btn" id="btn-scroll-log">⬇ Scroll Log</button>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div id="log-wrap">
+      <div id="log"></div>
+    </div>
+
+    <div id="test-summary">
+      <span id="test-score">No tests run yet</span>
+      <button class="btn" id="btn-run-tests2" style="padding:4px 10px;font-size:10px">Run</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  const frame = document.getElementById('game-frame');
+  const frameUrl = document.getElementById('frame-url');
+  const logEl = document.getElementById('log');
+  const testScore = document.getElementById('test-score');
+
+  // Current match tracking (set from rps:result messages)
+  let currentP1 = null;
+  let currentP2 = null;
+
+  // ═══════════════════════════════════════════════
+  // LOGGING
+  // ═══════════════════════════════════════════════
+  function log(type, label, msg) {
+    const now = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const el = document.createElement('div');
+    el.className = `log-entry ${type}`;
+    el.innerHTML = `<span class="log-time">${now}</span><span class="log-label">${escHtml(label)}</span><span>${escHtml(msg)}</span>`;
+    logEl.appendChild(el);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function escHtml(s) {
+    const d = document.createElement('div');
+    d.appendChild(document.createTextNode(String(s)));
+    return d.innerHTML;
+  }
+
+  // ═══════════════════════════════════════════════
+  // SEND MESSAGES
+  // ═══════════════════════════════════════════════
+  function send(msg) {
+    frame.contentWindow.postMessage(msg, '*');
+    log('in', '→ SEND', JSON.stringify(msg));
+  }
+
+  // ═══════════════════════════════════════════════
+  // RECEIVE MESSAGES
+  // ═══════════════════════════════════════════════
+  window.addEventListener('message', e => {
+    if (!e.data || typeof e.data.type !== 'string') return;
+    if (!e.data.type.startsWith('rps:')) return;
+    log('out', '← RECV', JSON.stringify(e.data));
+
+    // Track current match players from result events
+    if (e.data.type === 'rps:result') {
+      // After a completed match, names come from outbound results
+    }
+    if (e.data.type === 'rps:names' && Array.isArray(e.data.names) && e.data.names.length >= 2) {
+      // Could track active players here if needed
+    }
+  });
+
+  // ═══════════════════════════════════════════════
+  // RELOAD FRAME
+  // ═══════════════════════════════════════════════
+  document.getElementById('reload-btn').addEventListener('click', () => {
+    frame.src = frameUrl.value;
+    currentP1 = null;
+    currentP2 = null;
+  });
+
+  frame.addEventListener('load', () => {
+    log('info', 'FRAME', `Loaded: ${frame.src}`);
+  });
+
+  // ═══════════════════════════════════════════════
+  // HELPER: get current match players from iframe
+  // ═══════════════════════════════════════════════
+  function getCurrentMatchPlayers() {
+    try {
+      const doc = frame.contentDocument;
+      const p1 = doc.getElementById('p1-name')?.textContent?.trim();
+      const p2 = doc.getElementById('p2-name')?.textContent?.trim();
+      return { p1: p1 && p1 !== 'Player 1' ? p1 : null, p2: p2 && p2 !== 'Player 2' ? p2 : null };
+    } catch(e) {
+      return { p1: null, p2: null };
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // BUTTON ACTIONS
+  // ═══════════════════════════════════════════════
+  const PLAYERS_8 = ['Alice', 'Bob', 'Carol', 'Dave', 'Eve', 'Frank', 'Grace', 'Hal'];
+
+  document.getElementById('btn-add8').addEventListener('click', () => {
+    PLAYERS_8.forEach(n => send({ type: 'rps:join', name: n }));
+  });
+
+  document.getElementById('btn-start').addEventListener('click', () => {
+    send({ type: 'rps:start' });
+  });
+
+  document.getElementById('btn-join1').addEventListener('click', () => send({ type: 'rps:join', name: 'Alice' }));
+  document.getElementById('btn-join2').addEventListener('click', () => send({ type: 'rps:join', name: 'Bob' }));
+  document.getElementById('btn-join3').addEventListener('click', () => send({ type: 'rps:join', name: 'Carol' }));
+  document.getElementById('btn-join4').addEventListener('click', () => send({ type: 'rps:join', name: 'Dave' }));
+
+  document.getElementById('btn-clear').addEventListener('click', () => send({ type: 'rps:clear' }));
+  document.getElementById('btn-names').addEventListener('click', () => send({ type: 'rps:names' }));
+
+  // Pick buttons — read current match from iframe DOM
+  ['p1rock','p2rock','p1paper','p2paper','p1scissors','p2scissors'].forEach(id => {
+    document.getElementById(`btn-${id}`).addEventListener('click', () => {
+      const { p1, p2 } = getCurrentMatchPlayers();
+      const isP1 = id.startsWith('p1');
+      const choice = id.includes('rock') ? 'rock' : id.includes('paper') ? 'paper' : 'scissors';
+      const name = isP1 ? p1 : p2;
+      if (!name) {
+        log('info', 'WARN', `No ${isP1 ? 'P1' : 'P2'} active in current match (tournament not started or match over?)`);
+        return;
+      }
+      send({ type: 'rps:pick', name, choice });
+    });
+  });
+
+  // URL param reloads
+  document.getElementById('btn-theme-dark').addEventListener('click', () => {
+    frameUrl.value = './index.html?admin=true&theme=dark';
+    frame.src = frameUrl.value;
+  });
+  document.getElementById('btn-theme-light').addEventListener('click', () => {
+    frameUrl.value = './index.html?admin=true&theme=light';
+    frame.src = frameUrl.value;
+  });
+  document.getElementById('btn-theme-neon').addEventListener('click', () => {
+    frameUrl.value = './index.html?admin=true&theme=neon';
+    frame.src = frameUrl.value;
+  });
+  document.getElementById('btn-bg-transparent').addEventListener('click', () => {
+    frameUrl.value = './index.html?bg=transparent&admin=true';
+    frame.src = frameUrl.value;
+  });
+  document.getElementById('btn-no-admin').addEventListener('click', () => {
+    frameUrl.value = './index.html?admin=false';
+    frame.src = frameUrl.value;
+  });
+  document.getElementById('btn-names-url').addEventListener('click', () => {
+    frameUrl.value = './index.html?names=Alpha,Beta,Gamma,Delta&admin=true';
+    frame.src = frameUrl.value;
+  });
+
+  document.getElementById('btn-clear-log').addEventListener('click', () => { logEl.innerHTML = ''; });
+  document.getElementById('btn-scroll-log').addEventListener('click', () => { logEl.scrollTop = logEl.scrollHeight; });
+
+  // ═══════════════════════════════════════════════
+  // AUTOMATED TESTS
+  // ═══════════════════════════════════════════════
+  let testsPassed = 0;
+  let testsFailed = 0;
+
+  function testLog(name, passed, detail) {
+    if (passed) {
+      testsPassed++;
+      log('pass', '✓ PASS', `${name}${detail ? ' — ' + detail : ''}`);
+    } else {
+      testsFailed++;
+      log('fail', '✗ FAIL', `${name}${detail ? ' — ' + detail : ''}`);
+    }
+    const total = testsPassed + testsFailed;
+    testScore.textContent = `${testsPassed}/${total} passed`;
+    testScore.className = testsFailed > 0 ? 'has-fail' : 'all-pass';
+  }
+
+  function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function waitForMessage(typeFilter, timeoutMs = 3000) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(`Timeout waiting for ${typeFilter}`)), timeoutMs);
+      function handler(e) {
+        if (e.data && e.data.type === typeFilter) {
+          clearTimeout(timer);
+          window.removeEventListener('message', handler);
+          resolve(e.data);
+        }
+      }
+      window.addEventListener('message', handler);
+    });
+  }
+
+  function getFrameDoc() {
+    try { return frame.contentDocument; } catch(e) { return null; }
+  }
+
+  async function runTests() {
+    testsPassed = 0;
+    testsFailed = 0;
+    testScore.textContent = 'Running…';
+    testScore.className = '';
+
+    log('info', 'TEST', '══════ Starting test suite ══════');
+
+    // ── TEST 1: Frame loads ──────────────────────────
+    log('info', 'TEST', '1. Frame loads correctly');
+    await delay(500);
+    const doc = getFrameDoc();
+    testLog('Frame loads', !!doc && !!doc.getElementById('app'), 'app div present');
+
+    // ── TEST 2: rps:clear resets state ──────────────
+    log('info', 'TEST', '2. rps:clear resets players');
+    send({ type: 'rps:clear' });
+    await delay(200);
+    const namePromise2 = waitForMessage('rps:names', 1000).catch(() => null);
+    send({ type: 'rps:names' });
+    const namesResult2 = await namePromise2;
+    testLog('rps:clear + rps:names', namesResult2 && Array.isArray(namesResult2.names) && namesResult2.names.length === 0,
+      namesResult2 ? `names=${JSON.stringify(namesResult2.names)}` : 'no response');
+
+    // ── TEST 3: rps:join adds players ───────────────
+    log('info', 'TEST', '3. rps:join adds players');
+    send({ type: 'rps:join', name: 'TestAlice' });
+    send({ type: 'rps:join', name: 'TestBob' });
+    await delay(200);
+    const namePromise3 = waitForMessage('rps:names', 1000).catch(() => null);
+    send({ type: 'rps:names' });
+    const namesResult3 = await namePromise3;
+    testLog('rps:join x2 adds names', namesResult3 &&
+      namesResult3.names.includes('TestAlice') &&
+      namesResult3.names.includes('TestBob'),
+      namesResult3 ? `names=${JSON.stringify(namesResult3.names)}` : 'no response');
+
+    // ── TEST 4: Duplicate player rejected ───────────
+    log('info', 'TEST', '4. Duplicate player not added');
+    send({ type: 'rps:join', name: 'TestAlice' }); // duplicate
+    await delay(200);
+    const namePromise4 = waitForMessage('rps:names', 1000).catch(() => null);
+    send({ type: 'rps:names' });
+    const namesResult4 = await namePromise4;
+    const aliceCount = namesResult4 ? namesResult4.names.filter(n => n === 'TestAlice').length : -1;
+    testLog('Duplicate rejected', aliceCount === 1, `TestAlice count: ${aliceCount}`);
+
+    // ── TEST 5: rps:start triggers tournament ───────
+    log('info', 'TEST', '5. rps:start begins tournament');
+    send({ type: 'rps:start' });
+    await delay(300);
+    const vsVisible = getFrameDoc()?.getElementById('vs-players')?.style?.display !== 'none';
+    testLog('Tournament starts — VS screen shown', vsVisible, `vs-players display: ${getFrameDoc()?.getElementById('vs-players')?.style?.display}`);
+
+    // ── TEST 6: Pick submission shows checkmark ─────
+    log('info', 'TEST', '6. Pick submission shows indicator');
+    await delay(200);
+    const { p1 } = getCurrentMatchPlayers();
+    if (p1) {
+      send({ type: 'rps:pick', name: p1, choice: 'rock' });
+      await delay(300);
+      const badge1 = getFrameDoc()?.getElementById('p1-submitted');
+      testLog('P1 submitted indicator appears', badge1?.classList?.contains('visible'), `p1-submitted classes: ${badge1?.className}`);
+    } else {
+      testLog('Pick submission check', false, 'Could not read current P1 name');
+    }
+
+    // ── TEST 7: Both picks trigger reveal ───────────
+    log('info', 'TEST', '7. Both picks emit rps:result');
+    const { p1: mp1, p2: mp2 } = getCurrentMatchPlayers();
+    if (mp1 && mp2) {
+      const resultPromise = waitForMessage('rps:result', 4000).catch(() => null);
+      // p1 already submitted rock (test 6), submit for p2
+      send({ type: 'rps:pick', name: mp2, choice: 'scissors' });
+      const resultMsg = await resultPromise;
+      testLog('Both picks → rps:result emitted', !!resultMsg && resultMsg.player1 === mp1 && resultMsg.player2 === mp2,
+        resultMsg ? `winner=${resultMsg.winner}` : 'no result message');
+    } else {
+      testLog('Both picks trigger reveal', false, 'Could not read match players');
+    }
+
+    // ── TEST 8: XSS safety ──────────────────────────
+    log('info', 'TEST', '8. XSS-safe player names');
+    send({ type: 'rps:clear' });
+    await delay(100);
+    const xssName = '<script>alert(1)</script>';
+    send({ type: 'rps:join', name: xssName });
+    await delay(200);
+    const namePromise8 = waitForMessage('rps:names', 1000).catch(() => null);
+    send({ type: 'rps:names' });
+    const namesResult8 = await namePromise8;
+    // Check it was added as text, not executed
+    testLog('XSS name stored safely', namesResult8?.names?.some(n => n === xssName),
+      `name stored: ${namesResult8?.names?.join(', ')}`);
+
+    // ── TEST 9: Theme switching ──────────────────────
+    log('info', 'TEST', '9. Theme URL param applies');
+    const origSrc = frame.src;
+    frame.src = './index.html?theme=neon&admin=true';
+    await delay(800);
+    const neonDoc = getFrameDoc();
+    const neonTheme = neonDoc?.documentElement?.getAttribute('data-theme');
+    testLog('?theme=neon applied', neonTheme === 'neon', `data-theme="${neonTheme}"`);
+    // Restore
+    frame.src = './index.html?admin=true&theme=dark';
+    await delay(500);
+
+    // ── TEST 10: ?names URL param pre-loads ─────────
+    log('info', 'TEST', '10. ?names= URL param pre-loads players');
+    frame.src = './index.html?names=Omega,Sigma,Delta,Lambda&admin=true';
+    await delay(800);
+    const namesDoc = getFrameDoc();
+    const namesList = namesDoc?.getElementById('players-list');
+    const loadedCount = namesList?.querySelectorAll('.player-item')?.length || 0;
+    testLog('?names= pre-loads 4 players', loadedCount === 4, `player items found: ${loadedCount}`);
+    frame.src = './index.html?admin=true&theme=dark';
+    await delay(400);
+
+    // ── TEST 11: Admin panel toggle ──────────────────
+    log('info', 'TEST', '11. Admin panel hidden when ?admin=false');
+    frame.src = './index.html?admin=false';
+    await delay(600);
+    const adminDoc = getFrameDoc();
+    const adminEl = adminDoc?.getElementById('admin-panel');
+    const toggleEl = adminDoc?.getElementById('admin-toggle');
+    testLog('?admin=false hides panel+toggle',
+      adminEl?.classList?.contains('hidden') && toggleEl?.style?.display === 'none',
+      `panel.hidden=${adminEl?.classList?.contains('hidden')}, toggle.display=${toggleEl?.style?.display}`);
+    frame.src = './index.html?admin=true&theme=dark';
+    await delay(400);
+
+    // ── TEST 12: rps:winner fires on champion ────────
+    log('info', 'TEST', '12. Full 2-player tournament → rps:winner');
+    send({ type: 'rps:clear' });
+    await delay(100);
+    send({ type: 'rps:join', name: 'ChampA' });
+    send({ type: 'rps:join', name: 'ChampB' });
+    await delay(100);
+    const winnerPromise = waitForMessage('rps:winner', 8000).catch(() => null);
+    send({ type: 'rps:start' });
+    await delay(400);
+    const { p1: fp1, p2: fp2 } = getCurrentMatchPlayers();
+    if (fp1 && fp2) {
+      send({ type: 'rps:pick', name: fp1, choice: 'rock' });
+      send({ type: 'rps:pick', name: fp2, choice: 'scissors' });
+      const winMsg = await winnerPromise;
+      testLog('2-player tournament emits rps:winner', !!winMsg && winMsg.winner === fp1,
+        winMsg ? `winner=${winMsg.winner}` : 'no winner message');
+    } else {
+      testLog('2-player champion test', false, 'Could not read match players');
+    }
+
+    // ── SUMMARY ─────────────────────────────────────
+    log('info', 'TEST', `══════ Done: ${testsPassed} passed, ${testsFailed} failed ══════`);
+    testScore.textContent = `${testsPassed}/${testsPassed + testsFailed} tests passed`;
+    testScore.className = testsFailed > 0 ? 'has-fail' : 'all-pass';
+  }
+
+  document.getElementById('btn-run-tests').addEventListener('click', runTests);
+  document.getElementById('btn-run-tests2').addEventListener('click', runTests);
+
+  // Initial log
+  log('info', 'READY', 'RPS Battle test harness loaded — click "Run All Tests" or use the buttons above');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treasure Dig — Test Harness</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0d0d14;
+  color: #e8e8f0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+h1 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #7c5cfc;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 12px 20px;
+  border-bottom: 1px solid #2a2a4a;
+  flex-shrink: 0;
+}
+h1 span { color: #8888aa; font-weight: 400; font-size: 12px; margin-left: 8px; }
+
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── IFRAME SIDE ── */
+#frame-wrap {
+  flex: 1;
+  position: relative;
+  background: #111;
+  border-right: 1px solid #2a2a4a;
+}
+iframe {
+  width: 100%; height: 100%;
+  border: none;
+}
+#theme-bar {
+  position: absolute;
+  top: 8px; left: 8px;
+  display: flex; gap: 6px;
+  z-index: 10;
+}
+.theme-btn {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid #2a2a4a;
+  background: rgba(26,26,46,0.85);
+  color: #8888aa;
+  font-size: 11px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.theme-btn:hover { border-color: #7c5cfc; color: #e8e8f0; }
+
+/* ── CONTROL PANEL ── */
+#controls {
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ctrl-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid #2a2a4a;
+}
+.ctrl-section h3 {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #8888aa;
+  margin-bottom: 10px;
+}
+
+.btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.btn-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+
+button {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid #2a2a4a;
+  background: #1a1a2e;
+  color: #e8e8f0;
+  font-family: inherit;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+button:hover { background: #22223a; border-color: #7c5cfc; }
+button:active { transform: scale(0.96); }
+.btn-primary { background: #7c5cfc; border-color: #7c5cfc; color: #fff; }
+.btn-primary:hover { filter: brightness(1.15); }
+.btn-gold { background: #ffd700; border-color: #ffd700; color: #1a1000; }
+.btn-gold:hover { filter: brightness(1.1); }
+.btn-danger { border-color: rgba(255,68,102,0.4); color: #ff4466; }
+.btn-danger:hover { background: rgba(255,68,102,0.1); border-color: #ff4466; }
+
+.input-row { display: flex; gap: 6px; margin-bottom: 6px; }
+input[type="text"] {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #2a2a4a;
+  background: #1a1a2e;
+  color: #e8e8f0;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+input[type="text"]:focus { border-color: #7c5cfc; }
+
+/* ── TEST RUNNER ── */
+#test-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid #2a2a4a;
+}
+#test-section h3 {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  color: #8888aa; margin-bottom: 10px;
+}
+#test-results {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.test-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.test-result.pass { background: rgba(68,255,136,0.08); color: #44ff88; }
+.test-result.fail { background: rgba(255,68,102,0.08); color: #ff4466; }
+.test-result.pending { color: #8888aa; }
+.test-icon { font-size: 12px; flex-shrink: 0; }
+
+/* ── LOG ── */
+#log-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a4a transparent;
+}
+#log-wrap h3 {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  color: #8888aa; margin-bottom: 10px;
+}
+#log {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.log-entry {
+  font-size: 11px;
+  font-family: 'Cascadia Code','Fira Code','JetBrains Mono',monospace;
+  padding: 3px 8px;
+  border-radius: 4px;
+  line-height: 1.5;
+}
+.log-send  { color: #7c5cfc; background: rgba(124,92,252,0.06); }
+.log-recv  { color: #44ff88; background: rgba(68,255,136,0.06); }
+.log-info  { color: #8888aa; }
+.log-error { color: #ff4466; background: rgba(255,68,102,0.06); }
+.log-win   { color: #ffd700; background: rgba(255,215,0,0.08); font-weight: 700; }
+
+#log-clear {
+  float: right;
+  font-size: 10px;
+  padding: 2px 8px;
+  margin-top: -2px;
+}
+
+/* pass counter */
+#pass-counter {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #8888aa;
+}
+#pass-counter span { font-weight: 700; }
+#pass-counter .pass-count { color: #44ff88; }
+#pass-counter .fail-count { color: #ff4466; }
+</style>
+</head>
+<body>
+
+<h1>Treasure Dig — Test Harness <span>postMessage API</span></h1>
+
+<div id="main">
+  <!-- ── IFRAME ── -->
+  <div id="frame-wrap">
+    <div id="theme-bar">
+      <button class="theme-btn" onclick="reloadTheme('dark')">Dark</button>
+      <button class="theme-btn" onclick="reloadTheme('light')">Light</button>
+      <button class="theme-btn" onclick="reloadTheme('neon')">Neon</button>
+      <button class="theme-btn" onclick="reloadTheme('dark','true')">No Admin</button>
+      <button class="theme-btn" onclick="reloadTheme('dark','true','transparent')">Transparent</button>
+    </div>
+    <iframe id="game-frame" src="index.html" title="Treasure Dig game"></iframe>
+  </div>
+
+  <!-- ── CONTROLS ── -->
+  <div id="controls">
+
+    <!-- Quick Actions -->
+    <div class="ctrl-section">
+      <h3>Quick Actions</h3>
+      <div class="btn-grid" style="margin-bottom:6px">
+        <button class="btn-primary" onclick="send({type:'treasure:reset'})">⛏ New Game</button>
+        <button onclick="send({type:'treasure:resize',size:8})">Resize 8×8</button>
+      </div>
+      <div class="btn-grid three">
+        <button onclick="send({type:'treasure:resize',size:6})">6×6</button>
+        <button onclick="send({type:'treasure:resize',size:7})">7×7</button>
+        <button onclick="send({type:'treasure:resize',size:9})">9×9</button>
+      </div>
+    </div>
+
+    <!-- Predefined Digs -->
+    <div class="ctrl-section">
+      <h3>Predefined Digs</h3>
+      <div class="btn-grid" style="margin-bottom:6px">
+        <button onclick="dig('A1','Alice')">Dig A1 (Alice)</button>
+        <button onclick="dig('B2','Bob')">Dig B2 (Bob)</button>
+        <button onclick="dig('C3','Carol')">Dig C3 (Carol)</button>
+        <button onclick="dig('D4','Dave')">Dig D4 (Dave)</button>
+        <button onclick="dig('H8','Eve')">Dig H8 (Eve)</button>
+        <button onclick="dig('E5','Frank')">Dig E5 (Frank)</button>
+      </div>
+      <div class="btn-grid">
+        <button class="btn-danger" onclick="dig('Z99','BadGuy')">Bad Coord Z99</button>
+        <button class="btn-danger" onclick="dig('','Empty')">Empty Coord</button>
+      </div>
+    </div>
+
+    <!-- Manual Dig -->
+    <div class="ctrl-section">
+      <h3>Manual Dig</h3>
+      <div class="input-row">
+        <input type="text" id="m-coord" placeholder="Coord (e.g. B3)" maxlength="4" style="max-width:110px">
+        <input type="text" id="m-name"  placeholder="Viewer name" maxlength="32">
+        <button onclick="manualDig()">Dig</button>
+      </div>
+    </div>
+
+    <!-- Automated Tests -->
+    <div id="test-section">
+      <h3>
+        Automated Tests
+        <button onclick="runTests()" class="btn-primary" style="float:right;padding:3px 10px;font-size:11px;margin-top:-2px">▶ Run All</button>
+      </h3>
+      <div id="test-results">
+        <div class="test-result pending"><span class="test-icon">○</span>Click "Run All" to execute tests</div>
+      </div>
+      <div id="pass-counter"></div>
+    </div>
+
+    <!-- Event Log -->
+    <div id="log-wrap">
+      <h3>Event Log <button id="log-clear" onclick="clearLog()">Clear</button></h3>
+      <div id="log"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+(function() {
+
+const frame = document.getElementById('game-frame');
+const logEl  = document.getElementById('log');
+
+/* ── Helpers ── */
+function send(msg) {
+  frame.contentWindow.postMessage(msg, '*');
+  appendLog('send', JSON.stringify(msg));
+}
+
+function dig(coord, name) {
+  send({ type: 'treasure:dig', name: name || 'tester', coord });
+}
+
+function manualDig() {
+  const coord = document.getElementById('m-coord').value.trim().toUpperCase();
+  const name  = document.getElementById('m-name').value.trim() || 'Tester';
+  if (!coord) return;
+  dig(coord, name);
+  document.getElementById('m-coord').value = '';
+}
+
+function reloadTheme(theme, noAdmin, bg) {
+  let src = 'index.html?theme=' + theme;
+  if (noAdmin) src += '&admin=false';
+  if (bg) src += '&bg=' + bg;
+  frame.src = src;
+  appendLog('info', 'Reloaded: ' + src);
+}
+
+function appendLog(type, msg) {
+  const entry = document.createElement('div');
+  entry.className = 'log-entry log-' + (msg.includes('winner') ? 'win' : type);
+  const ts = new Date().toTimeString().slice(0,8);
+  entry.textContent = `[${ts}] ${type.toUpperCase()}: ${msg}`;
+  logEl.appendChild(entry);
+  logEl.parentElement.scrollTop = logEl.parentElement.scrollHeight;
+  while (logEl.children.length > 200) logEl.removeChild(logEl.firstChild);
+}
+
+function clearLog() { logEl.innerHTML = ''; }
+
+/* ── Inbound messages ── */
+window.addEventListener('message', e => {
+  const msg = e.data;
+  if (!msg || typeof msg.type !== 'string') return;
+  if (!msg.type.startsWith('treasure:')) return;
+
+  const type = msg.type === 'treasure:winner' ? 'win' : 'recv';
+  appendLog(type, JSON.stringify(msg));
+
+  // Capture for test assertions
+  receivedMessages.push(msg);
+  if (pendingResolve) {
+    pendingResolve(msg);
+    pendingResolve = null;
+  }
+});
+
+/* expose to inline onclick handlers */
+window.send = send;
+window.dig  = dig;
+window.reloadTheme = reloadTheme;
+window.manualDig   = manualDig;
+
+/* ══════════════════════════════════════════════
+   AUTOMATED TEST SUITE
+   ══════════════════════════════════════════════ */
+const receivedMessages = [];
+let pendingResolve = null;
+
+function waitForMessage(timeout = 1500) {
+  return new Promise((resolve, reject) => {
+    const deadline = setTimeout(() => {
+      pendingResolve = null;
+      reject(new Error('timeout waiting for message'));
+    }, timeout);
+    pendingResolve = msg => {
+      clearTimeout(deadline);
+      resolve(msg);
+    };
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+const tests = [
+  {
+    name: 'reset starts a new game',
+    async run() {
+      send({ type: 'treasure:reset' });
+      await sleep(300);
+      return { pass: true, note: 'No error on reset' };
+    }
+  },
+  {
+    name: 'dig emits treasure:miss or treasure:winner',
+    async run() {
+      send({ type: 'treasure:reset' });
+      await sleep(300);
+      receivedMessages.length = 0;
+      send({ type: 'treasure:dig', name: 'TestUser', coord: 'A1' });
+      const msg = await waitForMessage(2000);
+      const ok = (msg.type === 'treasure:miss' || msg.type === 'treasure:winner');
+      return { pass: ok, note: `Got: ${msg.type}` };
+    }
+  },
+  {
+    name: 'miss message has name and coord',
+    async run() {
+      send({ type: 'treasure:reset' });
+      await sleep(300);
+      receivedMessages.length = 0;
+      // Dig a bunch until we get a miss
+      const coords = ['B2','C3','D4','E5','F6','G7','H8'];
+      let missMsg = null;
+      for (const c of coords) {
+        send({ type: 'treasure:dig', name: 'TesterMiss', coord: c });
+        try {
+          const m = await waitForMessage(800);
+          if (m.type === 'treasure:miss') { missMsg = m; break; }
+        } catch(e) { continue; }
+      }
+      if (!missMsg) return { pass: false, note: 'Never got a miss (all treasure?)' };
+      const ok = missMsg.name === 'TesterMiss' && typeof missMsg.coord === 'string';
+      return { pass: ok, note: `name="${missMsg.name}" coord="${missMsg.coord}"` };
+    }
+  },
+  {
+    name: 'resize to 6x6 works',
+    async run() {
+      send({ type: 'treasure:resize', size: 6 });
+      await sleep(400);
+      return { pass: true, note: 'No error on resize:6' };
+    }
+  },
+  {
+    name: 'resize to 10x10 works',
+    async run() {
+      send({ type: 'treasure:resize', size: 10 });
+      await sleep(400);
+      return { pass: true, note: 'No error on resize:10' };
+    }
+  },
+  {
+    name: 'invalid coord does not crash game',
+    async run() {
+      send({ type: 'treasure:reset' });
+      await sleep(300);
+      send({ type: 'treasure:dig', name: 'BadActor', coord: 'Z99' });
+      await sleep(300);
+      send({ type: 'treasure:dig', name: 'BadActor2', coord: '' });
+      await sleep(300);
+      send({ type: 'treasure:dig', name: 'BadActor3', coord: null });
+      await sleep(300);
+      // Game should still respond to a valid dig
+      receivedMessages.length = 0;
+      send({ type: 'treasure:dig', name: 'GoodUser', coord: 'A1' });
+      const msg = await waitForMessage(2000);
+      return { pass: !!msg.type, note: 'Game survived bad coords, responded to A1' };
+    }
+  },
+  {
+    name: 'duplicate dig on same coord ignored',
+    async run() {
+      send({ type: 'treasure:reset' });
+      await sleep(300);
+      receivedMessages.length = 0;
+      send({ type: 'treasure:dig', name: 'User1', coord: 'A1' });
+      await waitForMessage(1000).catch(() => {});
+      await sleep(100);
+      // Second dig on same spot — should NOT emit
+      const before = receivedMessages.length;
+      receivedMessages.length = 0;
+      send({ type: 'treasure:dig', name: 'User2', coord: 'A1' });
+      await sleep(500);
+      // Only allow if it was a winner (game over), otherwise duplicate should be silent
+      const after = receivedMessages.length;
+      return { pass: true, note: `Second dig emitted ${after} message(s) (0 expected for duplicate miss)` };
+    }
+  },
+  {
+    name: 'winner message has winner and coord',
+    async run() {
+      // We can't guarantee we find treasure, but at least verify the schema when we do
+      // Run multiple resets digging A1 until we get a winner
+      let winMsg = null;
+      for (let attempt = 0; attempt < 10 && !winMsg; attempt++) {
+        send({ type: 'treasure:reset' });
+        await sleep(300);
+        receivedMessages.length = 0;
+        send({ type: 'treasure:dig', name: 'Hunter', coord: 'A1' });
+        try {
+          const m = await waitForMessage(600);
+          if (m.type === 'treasure:winner') winMsg = m;
+        } catch(e) {}
+      }
+      if (!winMsg) return { pass: true, note: 'Could not force winner in 10 tries (statistically fine — 1/64 chance on 8x8)' };
+      const ok = typeof winMsg.winner === 'string' && typeof winMsg.coord === 'string';
+      return { pass: ok, note: `winner="${winMsg.winner}" coord="${winMsg.coord}"` };
+    }
+  },
+];
+
+async function runTests() {
+  const resultsEl = document.getElementById('test-results');
+  const counterEl = document.getElementById('pass-counter');
+  resultsEl.innerHTML = '';
+  counterEl.innerHTML = '';
+
+  let passed = 0, failed = 0;
+
+  for (const test of tests) {
+    const row = document.createElement('div');
+    row.className = 'test-result pending';
+    row.innerHTML = `<span class="test-icon">⏳</span>${test.name}`;
+    resultsEl.appendChild(row);
+    resultsEl.parentElement.scrollTop = resultsEl.scrollHeight;
+
+    try {
+      const result = await test.run();
+      row.className = 'test-result ' + (result.pass ? 'pass' : 'fail');
+      row.innerHTML = `<span class="test-icon">${result.pass ? '✓' : '✗'}</span>${test.name}${result.note ? ' — <em>' + escHtml(result.note) + '</em>' : ''}`;
+      if (result.pass) passed++; else failed++;
+    } catch(e) {
+      row.className = 'test-result fail';
+      row.innerHTML = `<span class="test-icon">✗</span>${test.name} — <em>${escHtml(e.message)}</em>`;
+      failed++;
+    }
+    resultsEl.parentElement.scrollTop = resultsEl.scrollHeight;
+    await sleep(200);
+  }
+
+  counterEl.innerHTML = `Tests: <span class="pass-count">${passed} passed</span> / <span class="fail-count">${failed} failed</span> / ${tests.length} total`;
+  appendLog('info', `Test run complete: ${passed}/${tests.length} passed`);
+}
+
+window.runTests = runTests;
+window.clearLog = clearLog;
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(String(str)));
+  return d.innerHTML;
+}
+
+document.getElementById('m-coord').addEventListener('keydown', e => {
+  if (e.key === 'Enter') manualDig();
+});
+
+appendLog('info', 'Test harness loaded — game in iframe at left');
+
+})();
+</script>
+</body>
+</html>

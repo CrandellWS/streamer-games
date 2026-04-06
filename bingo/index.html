@@ -1,0 +1,1955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bingo — Streamer Games</title>
+<style>
+/* ═══════════════════════════════════════════════
+   CSS RESET & VARIABLES
+   ═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d14;
+  --bg2: #14141f;
+  --surface: #1a1a2e;
+  --surface2: #22223a;
+  --border: #2a2a4a;
+  --text: #e8e8f0;
+  --text-dim: #8888aa;
+  --accent: #7c5cfc;
+  --accent-glow: rgba(124,92,252,0.4);
+  --gold: #ffd700;
+  --gold-glow: rgba(255,215,0,0.5);
+  --danger: #ff4466;
+  --success: #44ff88;
+  --panel-width: 360px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  /* Ball colors */
+  --ball-b: #3a8fff;
+  --ball-i: #ff4466;
+  --ball-n: #e8e8f0;
+  --ball-g: #44cc66;
+  --ball-o: #ff8833;
+}
+
+[data-theme="light"] {
+  --bg: #f0f0f5;
+  --bg2: #e8e8f0;
+  --surface: #ffffff;
+  --surface2: #f5f5fa;
+  --border: #d0d0e0;
+  --text: #1a1a2e;
+  --text-dim: #666680;
+}
+
+[data-theme="neon"] {
+  --bg: #0a0a0a;
+  --bg2: #111111;
+  --surface: #1a1a1a;
+  --surface2: #222222;
+  --border: #333333;
+  --text: #ffffff;
+  --text-dim: #888888;
+  --accent: #00ffcc;
+  --accent-glow: rgba(0,255,204,0.4);
+  --gold: #ff00ff;
+  --gold-glow: rgba(255,0,255,0.5);
+  --ball-b: #00ccff;
+  --ball-i: #ff44aa;
+  --ball-n: #ffffff;
+  --ball-g: #00ff88;
+  --ball-o: #ffaa00;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.transparent-bg { background: transparent !important; }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════ */
+#app {
+  display: flex;
+  width: 100%; height: 100%;
+  position: relative;
+}
+
+#main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   ADMIN PANEL
+   ═══════════════════════════════════════════════ */
+#admin-panel {
+  width: var(--panel-width);
+  height: 100%;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+#admin-panel.hidden {
+  transform: translateX(100%);
+  opacity: 0;
+  position: absolute;
+  right: 0; top: 0;
+  pointer-events: none;
+}
+
+#admin-toggle {
+  position: fixed;
+  top: 12px; right: 12px;
+  z-index: 200;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(12px);
+}
+#admin-toggle:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.panel-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.panel-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.panel-header p {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.panel-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-section h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+input[type="text"], textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="text"]:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 70px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn:hover { background: var(--surface2); border-color: var(--accent); }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.btn-primary:hover { filter: brightness(1.15); box-shadow: 0 6px 24px var(--accent-glow); }
+
+.btn-success {
+  background: var(--success);
+  border-color: var(--success);
+  color: #000;
+  box-shadow: 0 4px 16px rgba(68,255,136,0.3);
+}
+.btn-success:hover { filter: brightness(1.1); }
+
+.btn-gold {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000;
+  font-weight: 800;
+  box-shadow: 0 4px 16px var(--gold-glow);
+}
+.btn-gold:hover { filter: brightness(1.1); }
+
+.btn-danger { color: var(--danger); border-color: rgba(255,68,102,0.3); }
+.btn-danger:hover { background: rgba(255,68,102,0.1); border-color: var(--danger); }
+
+.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.btn-block { width: 100%; }
+
+.btn-group { display: flex; gap: 8px; }
+
+/* Player list */
+.player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  max-height: 180px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.player-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.player-item:hover { border-color: var(--accent); }
+
+.player-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(124,92,252,0.15);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.player-status.bingo {
+  background: rgba(255,215,0,0.2);
+  color: var(--gold);
+  animation: pulse-gold 1s ease-in-out infinite;
+}
+
+@keyframes pulse-gold {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.player-remove {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+.player-remove:hover { color: var(--danger); }
+
+/* Auto-draw toggle */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+.toggle-label { font-size: 13px; }
+
+.toggle {
+  position: relative;
+  width: 44px; height: 24px;
+  cursor: pointer;
+}
+.toggle input { display: none; }
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: var(--border);
+  transition: background 0.2s;
+}
+.toggle input:checked ~ .toggle-track {
+  background: var(--accent);
+}
+.toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.toggle input:checked ~ .toggle-track ~ .toggle-thumb,
+.toggle input:checked + .toggle-track + .toggle-thumb {
+  transform: translateX(20px);
+}
+
+/* Status bar */
+#status-bar {
+  padding: 10px 20px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#status-bar .status-ball-count {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════
+   BALL DISPLAY AREA
+   ═══════════════════════════════════════════════ */
+#ball-display-area {
+  padding: 16px 24px 12px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  min-height: 130px;
+}
+
+/* Hopper / machine */
+#hopper {
+  width: 100px;
+  height: 100px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.hopper-body {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 30% 30%, var(--surface2), var(--surface));
+  border: 2px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 30px rgba(0,0,0,0.5), inset 0 2px 6px rgba(255,255,255,0.05);
+}
+
+.hopper-balls-anim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  opacity: 0.15;
+}
+
+.hopper-label {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.hopper-body .spin-balls {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  animation: spin-idle 8s linear infinite;
+}
+@keyframes spin-idle {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.mini-ball-orbit {
+  position: absolute;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform-origin: -16px 0;
+  opacity: 0.7;
+}
+
+/* Current ball */
+#current-ball-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+#current-ball {
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  position: relative;
+  overflow: visible;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+#current-ball.has-ball {
+  animation: ball-drop 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+@keyframes ball-drop {
+  0% { transform: translateY(-80px) scale(0.6); opacity: 0; }
+  60% { transform: translateY(6px) scale(1.08); opacity: 1; }
+  80% { transform: translateY(-4px) scale(0.97); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+#current-ball .ball-letter {
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+#current-ball .ball-number {
+  font-size: 32px;
+  line-height: 1;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+#current-ball .ball-shine {
+  position: absolute;
+  top: 12px; left: 20px;
+  width: 28px; height: 18px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  transform: rotate(-30deg);
+  pointer-events: none;
+}
+
+.ball-color-b { background: radial-gradient(ellipse at 35% 30%, #6aafff, var(--ball-b)); border-color: var(--ball-b); box-shadow: 0 0 30px rgba(58,143,255,0.5), 0 0 60px rgba(58,143,255,0.2); color: #fff; }
+.ball-color-i { background: radial-gradient(ellipse at 35% 30%, #ff7790, var(--ball-i)); border-color: var(--ball-i); box-shadow: 0 0 30px rgba(255,68,102,0.5), 0 0 60px rgba(255,68,102,0.2); color: #fff; }
+.ball-color-n { background: radial-gradient(ellipse at 35% 30%, #ffffff, #cccccc); border-color: #aaa; box-shadow: 0 0 30px rgba(232,232,240,0.4), 0 0 60px rgba(232,232,240,0.1); color: #1a1a2e; }
+.ball-color-g { background: radial-gradient(ellipse at 35% 30%, #77ee99, var(--ball-g)); border-color: var(--ball-g); box-shadow: 0 0 30px rgba(68,204,102,0.5), 0 0 60px rgba(68,204,102,0.2); color: #fff; }
+.ball-color-o { background: radial-gradient(ellipse at 35% 30%, #ffbb66, var(--ball-o)); border-color: var(--ball-o); box-shadow: 0 0 30px rgba(255,136,51,0.5), 0 0 60px rgba(255,136,51,0.2); color: #fff; }
+
+#current-ball-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Called numbers board */
+#called-board {
+  flex: 1;
+  min-width: 0;
+}
+
+.called-board-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.called-board-columns {
+  display: flex;
+  gap: 4px;
+}
+
+.called-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.called-col-header {
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+  padding: 3px 0;
+  border-radius: 5px 5px 0 0;
+  margin-bottom: 2px;
+}
+
+.called-col-header.ltr-b { background: rgba(58,143,255,0.25); color: var(--ball-b); }
+.called-col-header.ltr-i { background: rgba(255,68,102,0.25); color: var(--ball-i); }
+.called-col-header.ltr-n { background: rgba(232,232,240,0.15); color: var(--text-dim); }
+.called-col-header.ltr-g { background: rgba(68,204,102,0.25); color: var(--ball-g); }
+.called-col-header.ltr-o { background: rgba(255,136,51,0.25); color: var(--ball-o); }
+
+.called-col-balls {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mini-called-ball {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  transition: all 0.3s;
+  max-width: 28px;
+  margin: 0 auto;
+}
+
+.mini-called-ball.called {
+  animation: mini-pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.mini-called-ball.called.ltr-b { background: var(--ball-b); border-color: var(--ball-b); color: #fff; }
+.mini-called-ball.called.ltr-i { background: var(--ball-i); border-color: var(--ball-i); color: #fff; }
+.mini-called-ball.called.ltr-n { background: #cccccc; border-color: #aaa; color: #1a1a2e; }
+.mini-called-ball.called.ltr-g { background: var(--ball-g); border-color: var(--ball-g); color: #fff; }
+.mini-called-ball.called.ltr-o { background: var(--ball-o); border-color: var(--ball-o); color: #fff; }
+
+@keyframes mini-pop {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════
+   CARDS AREA
+   ═══════════════════════════════════════════════ */
+#cards-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+#cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+/* Bingo Card */
+.bingo-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.bingo-card.winner {
+  border-color: var(--gold);
+  box-shadow: 0 0 30px var(--gold-glow), 0 0 60px rgba(255,215,0,0.1);
+  animation: winner-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes winner-glow {
+  from { box-shadow: 0 0 20px var(--gold-glow), 0 0 40px rgba(255,215,0,0.1); }
+  to { box-shadow: 0 0 40px var(--gold-glow), 0 0 80px rgba(255,215,0,0.2); }
+}
+
+.card-header {
+  background: var(--surface2);
+  padding: 8px 12px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-player-name {
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+.card-winner-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--gold);
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: none;
+}
+.bingo-card.winner .card-winner-badge { display: block; }
+
+.bingo-grid {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bingo-col-headers {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  margin-bottom: 1px;
+}
+
+.bingo-col-header {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 4px 0;
+  border-radius: 5px;
+}
+.bingo-col-header.ltr-b { color: var(--ball-b); }
+.bingo-col-header.ltr-i { color: var(--ball-i); }
+.bingo-col-header.ltr-n { color: var(--text-dim); }
+.bingo-col-header.ltr-g { color: var(--ball-g); }
+.bingo-col-header.ltr-o { color: var(--ball-o); }
+
+.bingo-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+}
+
+.bingo-cell {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.bingo-cell.free {
+  background: linear-gradient(135deg, var(--accent), rgba(124,92,252,0.5));
+  border-color: var(--accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.bingo-cell.marked:not(.free) {
+  border-color: transparent;
+}
+
+.cell-stamp {
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(2) rotate(15deg);
+  transition: none;
+}
+
+.bingo-cell.marked .cell-stamp {
+  animation: stamp-in 0.35s cubic-bezier(0.25,1.5,0.5,1) forwards;
+}
+
+@keyframes stamp-in {
+  0% { opacity: 0; transform: scale(2) rotate(15deg); }
+  60% { opacity: 1; transform: scale(0.9) rotate(-3deg); }
+  80% { transform: scale(1.05) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.cell-stamp-inner {
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  opacity: 0.85;
+}
+
+.cell-win-highlight {
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  background: rgba(255,215,0,0.35);
+  border: 2px solid var(--gold);
+  display: none;
+}
+.bingo-cell.winning-line .cell-win-highlight { display: block; }
+
+/* ═══════════════════════════════════════════════
+   EMPTY STATE
+   ═══════════════════════════════════════════════ */
+#empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  opacity: 0.5;
+}
+#empty-state .empty-icon { font-size: 64px; }
+#empty-state .empty-title { font-size: 18px; font-weight: 700; }
+#empty-state .empty-sub { font-size: 13px; color: var(--text-dim); }
+
+/* ═══════════════════════════════════════════════
+   WINNER OVERLAY
+   ═══════════════════════════════════════════════ */
+#winner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+  backdrop-filter: blur(8px);
+}
+#winner-overlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#winner-card {
+  background: var(--surface);
+  border: 2px solid var(--gold);
+  border-radius: 24px;
+  padding: 48px 64px;
+  text-align: center;
+  box-shadow: 0 0 80px var(--gold-glow), 0 24px 80px rgba(0,0,0,0.5);
+  animation: winner-card-in 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  max-width: 90vw;
+}
+
+@keyframes winner-card-in {
+  0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.winner-title {
+  font-size: 64px;
+  font-weight: 900;
+  color: var(--gold);
+  text-shadow: 0 0 30px var(--gold-glow);
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.winner-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.winner-pattern {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 32px;
+}
+.winner-dismiss {
+  font-size: 13px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.winner-dismiss:hover { color: var(--text); }
+
+/* Confetti */
+.confetti-piece {
+  position: fixed;
+  width: 10px; height: 14px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 600;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════
+   MISC / TOAST
+   ═══════════════════════════════════════════════ */
+#toast {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 400;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+  opacity: 0;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  pointer-events: none;
+  white-space: nowrap;
+}
+#toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+#toast.toast-success { border-color: var(--success); color: var(--success); }
+#toast.toast-error { border-color: var(--danger); color: var(--danger); }
+#toast.toast-info { border-color: var(--accent); color: var(--accent); }
+
+/* Keyboard hint */
+.kbd-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 6px 0 0;
+}
+.kbd {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-family: monospace;
+}
+
+.spacer { height: 8px; }
+.divider { height: 1px; background: var(--border); margin: 4px 0; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- MAIN AREA -->
+  <div id="main-area">
+
+    <!-- BALL DISPLAY -->
+    <div id="ball-display-area">
+      <!-- Hopper -->
+      <div id="hopper">
+        <div class="hopper-body" id="hopper-body">
+          <div class="hopper-balls-anim">🎱</div>
+          <svg class="spin-balls" viewBox="0 0 76 76" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="38" cy="8" r="7" fill="rgba(58,143,255,0.5)" class="mini-ball-orbit"/>
+            <circle cx="62" cy="52" r="6" fill="rgba(255,68,102,0.5)"/>
+            <circle cx="14" cy="52" r="5" fill="rgba(68,204,102,0.5)"/>
+          </svg>
+        </div>
+        <div class="hopper-label">Hopper</div>
+      </div>
+
+      <!-- Current Ball -->
+      <div id="current-ball-wrap">
+        <div id="current-ball">
+          <span class="ball-letter" id="ball-letter">—</span>
+          <span class="ball-number" id="ball-number"></span>
+          <div class="ball-shine"></div>
+        </div>
+        <div id="current-ball-label">Current Ball</div>
+      </div>
+
+      <!-- Called Board -->
+      <div id="called-board">
+        <div class="called-board-header">Called Numbers</div>
+        <div class="called-board-columns" id="called-board-columns">
+          <!-- populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- CARDS AREA -->
+    <div id="cards-area">
+      <div id="empty-state">
+        <div class="empty-icon">🎱</div>
+        <div class="empty-title">Waiting for Players</div>
+        <div class="empty-sub">Add players via the admin panel to generate their bingo cards</div>
+      </div>
+      <div id="cards-grid" style="display:none;"></div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div id="status-bar">
+      <span>Balls drawn: <span class="status-ball-count" id="drawn-count">0</span> / 75</span>
+      <span>•</span>
+      <span>Players: <span class="status-ball-count" id="player-count">0</span></span>
+      <span id="status-msg" style="margin-left:auto;"></span>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div id="admin-panel">
+    <div class="panel-header">
+      <h2>🎱 Bingo Control</h2>
+      <p>Retro Bingo Hall — 75 balls</p>
+    </div>
+
+    <div class="panel-scroll">
+
+      <!-- Players -->
+      <div class="panel-section">
+        <h3>Players</h3>
+        <div class="player-list" id="player-list">
+          <!-- populated -->
+        </div>
+        <div class="input-group">
+          <input type="text" id="add-name-input" placeholder="Player name…" maxlength="32">
+          <button class="btn btn-primary btn-sm" id="add-name-btn" title="Add player">+</button>
+        </div>
+        <textarea id="bulk-paste" placeholder="Bulk paste names (one per line)…" rows="3"></textarea>
+        <div class="spacer"></div>
+        <button class="btn btn-sm btn-block" id="bulk-add-btn">Add All from Paste</button>
+      </div>
+
+      <!-- Game Controls -->
+      <div class="panel-section">
+        <h3>Game Controls</h3>
+        <button class="btn btn-gold btn-block" id="draw-btn" style="font-size:16px;padding:14px;">
+          🎱 Draw Ball
+        </button>
+        <div class="kbd-hint" style="margin-bottom:10px;">Press <kbd class="kbd">Space</kbd> to draw</div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">Auto Draw (every 3s)</span>
+          <label class="toggle" id="auto-draw-toggle-wrap">
+            <input type="checkbox" id="auto-draw-toggle">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Winner -->
+      <div class="panel-section">
+        <h3>Winner</h3>
+        <button class="btn btn-success btn-block" id="check-btn">
+          ✅ Check for Winner
+        </button>
+      </div>
+
+      <!-- Options -->
+      <div class="panel-section">
+        <h3>Options</h3>
+        <div class="toggle-row">
+          <span class="toggle-label">Sound Effects</span>
+          <label class="toggle">
+            <input type="checkbox" id="sound-toggle" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <div class="divider"></div>
+        <div class="toggle-row">
+          <span class="toggle-label">Theme</span>
+          <select id="theme-select" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer;outline:none;">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="neon">Neon</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Reset -->
+      <div class="panel-section">
+        <h3>Reset</h3>
+        <button class="btn btn-danger btn-block" id="reset-btn">
+          🔄 Reset Game
+        </button>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:6px;">Clears drawn balls. Player cards persist.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Admin Toggle -->
+<button id="admin-toggle" title="Toggle admin panel (G)">⚙</button>
+
+<!-- Winner Overlay -->
+<div id="winner-overlay">
+  <div id="winner-card">
+    <div class="winner-title">BINGO!</div>
+    <div class="winner-name" id="winner-name-display"></div>
+    <div class="winner-pattern" id="winner-pattern-display"></div>
+    <div class="winner-dismiss" id="winner-dismiss">Click to dismiss</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+(function() {
+
+/* ═══════════════════════════════════════════════
+   CONSTANTS & STATE
+   ═══════════════════════════════════════════════ */
+const LETTERS = ['B','I','N','G','O'];
+const RANGES = { B:[1,15], I:[16,30], N:[31,45], G:[46,60], O:[61,75] };
+const LETTER_COLORS = { B:'b', I:'i', N:'n', G:'g', O:'o' };
+const STORAGE_KEY = 'bingo_players';
+
+const state = {
+  players: {},       // { name: { card, marked: Set } }
+  drawnBalls: [],    // ordered list of drawn ball numbers
+  calledSet: new Set(),
+  autoDrawInterval: null,
+  gameOver: false,
+  soundEnabled: true,
+};
+
+// AudioContext for sounds
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+/* ═══════════════════════════════════════════════
+   CARD GENERATION
+   ═══════════════════════════════════════════════ */
+function range(a, b) {
+  const r = [];
+  for (let i = a; i <= b; i++) r.push(i);
+  return r;
+}
+
+function sample(arr, n) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, n);
+}
+
+function generateCard() {
+  return {
+    B: sample(range(1, 15), 5),
+    I: sample(range(16, 30), 5),
+    N: [...sample(range(31, 45), 2), 'FREE', ...sample(range(31, 45), 2)],
+    G: sample(range(46, 60), 5),
+    O: sample(range(61, 75), 5)
+  };
+}
+
+// card is column-major: card.B[row], card.I[row], etc.
+// cell(row, col) = LETTERS[col] column, row-th value
+function cellValue(card, row, col) {
+  const col_key = LETTERS[col];
+  return card[col_key][row];
+}
+
+/* ═══════════════════════════════════════════════
+   WIN DETECTION
+   ═══════════════════════════════════════════════ */
+function checkWin(card, marked) {
+  // Returns { won: bool, lines: [[{row,col},...], ...] }
+  const winning_lines = [];
+
+  // Rows
+  for (let row = 0; row < 5; row++) {
+    const cells = [];
+    let ok = true;
+    for (let col = 0; col < 5; col++) {
+      const v = cellValue(card, row, col);
+      if (!marked.has(v)) { ok = false; break; }
+      cells.push({row, col});
+    }
+    if (ok) winning_lines.push(cells);
+  }
+
+  // Columns
+  for (let col = 0; col < 5; col++) {
+    const cells = [];
+    let ok = true;
+    for (let row = 0; row < 5; row++) {
+      const v = cellValue(card, row, col);
+      if (!marked.has(v)) { ok = false; break; }
+      cells.push({row, col});
+    }
+    if (ok) winning_lines.push(cells);
+  }
+
+  // Diagonal TL→BR
+  {
+    const cells = [];
+    let ok = true;
+    for (let i = 0; i < 5; i++) {
+      const v = cellValue(card, i, i);
+      if (!marked.has(v)) { ok = false; break; }
+      cells.push({row:i, col:i});
+    }
+    if (ok) winning_lines.push(cells);
+  }
+
+  // Diagonal TR→BL
+  {
+    const cells = [];
+    let ok = true;
+    for (let i = 0; i < 5; i++) {
+      const v = cellValue(card, i, 4-i);
+      if (!marked.has(v)) { ok = false; break; }
+      cells.push({row:i, col:4-i});
+    }
+    if (ok) winning_lines.push(cells);
+  }
+
+  return { won: winning_lines.length > 0, lines: winning_lines };
+}
+
+function patternName(lines) {
+  if (lines.length === 0) return '';
+  const first = lines[0];
+  // Detect type from first winning line
+  const rows = first.map(c=>c.row);
+  const cols = first.map(c=>c.col);
+  const allSameRow = rows.every(r=>r===rows[0]);
+  const allSameCol = cols.every(c=>c===cols[0]);
+  const isDiag1 = first.every((c,i)=>c.row===i && c.col===i);
+  const isDiag2 = first.every((c,i)=>c.row===i && c.col===4-i);
+  if (isDiag1) return 'Diagonal (↘)';
+  if (isDiag2) return 'Diagonal (↙)';
+  if (allSameRow) return ['Top Row','Second Row','Middle Row','Fourth Row','Bottom Row'][rows[0]];
+  if (allSameCol) return ['B Column','I Column','N Column','G Column','O Column'][cols[0]];
+  return 'Bingo!';
+}
+
+/* ═══════════════════════════════════════════════
+   AUDIO
+   ═══════════════════════════════════════════════ */
+function playBallDrop() {
+  if (!state.soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+
+    // Tumble sound: quick noise burst
+    const bufSize = ctx.sampleRate * 0.15;
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.4 * (1 - i/bufSize);
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.value = 800;
+    noiseFilter.Q.value = 0.5;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.3, t);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, t+0.15);
+    noise.connect(noiseFilter).connect(noiseGain).connect(ctx.destination);
+    noise.start(t);
+    noise.stop(t+0.15);
+
+    // Ball drop thud
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(200, t+0.1);
+    osc.frequency.exponentialRampToValueAtTime(60, t+0.4);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, t+0.1);
+    gain.gain.linearRampToValueAtTime(0.5, t+0.12);
+    gain.gain.exponentialRampToValueAtTime(0.001, t+0.4);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t+0.1);
+    osc.stop(t+0.4);
+  } catch(e) {}
+}
+
+function playStamp() {
+  if (!state.soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(400, t);
+    osc.frequency.exponentialRampToValueAtTime(200, t+0.08);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t+0.08);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t+0.08);
+  } catch(e) {}
+}
+
+function playBingoFanfare() {
+  if (!state.soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    const notes = [523, 659, 784, 1047, 784, 1047, 784, 1047];
+    const dur = [0.1, 0.1, 0.1, 0.3, 0.1, 0.1, 0.1, 0.5];
+    let offset = 0;
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.35, t+offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, t+offset+dur[i]);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t+offset);
+      osc.stop(t+offset+dur[i]);
+      offset += dur[i] + 0.02;
+    });
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════
+   CALLED NUMBERS BOARD
+   ═══════════════════════════════════════════════ */
+function buildCalledBoard() {
+  const container = document.getElementById('called-board-columns');
+  container.innerHTML = '';
+  LETTERS.forEach(letter => {
+    const [min, max] = RANGES[letter];
+    const col = document.createElement('div');
+    col.className = 'called-col';
+    const hdr = document.createElement('div');
+    hdr.className = `called-col-header ltr-${letter.toLowerCase()}`;
+    hdr.textContent = letter;
+    col.appendChild(hdr);
+    const balls = document.createElement('div');
+    balls.className = 'called-col-balls';
+    for (let n = min; n <= max; n++) {
+      const b = document.createElement('div');
+      b.className = 'mini-called-ball';
+      b.id = `mini-ball-${n}`;
+      b.textContent = n;
+      balls.appendChild(b);
+    }
+    col.appendChild(balls);
+    container.appendChild(col);
+  });
+}
+
+function updateCalledBoard(num) {
+  const el = document.getElementById(`mini-ball-${num}`);
+  if (!el) return;
+  const letter = getLetterForNumber(num);
+  el.classList.add('called', `ltr-${letter.toLowerCase()}`);
+}
+
+/* ═══════════════════════════════════════════════
+   PLAYER MANAGEMENT
+   ═══════════════════════════════════════════════ */
+function sanitize(str) {
+  return String(str).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function addPlayer(rawName) {
+  const name = rawName.trim().slice(0, 32);
+  if (!name) return false;
+  if (state.players[name]) { showToast(`${name} already in game`, 'error'); return false; }
+  const card = generateCard();
+  const marked = new Set(['FREE']);
+  state.players[name] = { card, marked };
+  renderPlayerList();
+  renderCards();
+  saveToStorage();
+  postOutbound({ type: 'bingo:names', names: Object.keys(state.players) });
+  updateCounts();
+  return true;
+}
+
+function removePlayer(name) {
+  delete state.players[name];
+  renderPlayerList();
+  renderCards();
+  saveToStorage();
+  postOutbound({ type: 'bingo:names', names: Object.keys(state.players) });
+  updateCounts();
+}
+
+function renderPlayerList() {
+  const list = document.getElementById('player-list');
+  list.innerHTML = '';
+  const names = Object.keys(state.players);
+  if (names.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-dim);text-align:center;padding:8px 0;">No players yet</div>';
+    return;
+  }
+  names.forEach(name => {
+    const p = state.players[name];
+    const { won } = checkWin(p.card, p.marked);
+    const item = document.createElement('div');
+    item.className = 'player-item';
+    item.innerHTML = `
+      <span class="player-name" title="${sanitize(name)}">${sanitize(name)}</span>
+      <span class="player-status${won?' bingo':''}">${won?'BINGO':'Active'}</span>
+      <button class="player-remove" data-name="${sanitize(name)}" title="Remove player">×</button>
+    `;
+    item.querySelector('.player-remove').addEventListener('click', e => {
+      removePlayer(e.currentTarget.dataset.name);
+    });
+    list.appendChild(item);
+  });
+}
+
+function updateCounts() {
+  document.getElementById('drawn-count').textContent = state.drawnBalls.length;
+  document.getElementById('player-count').textContent = Object.keys(state.players).length;
+}
+
+/* ═══════════════════════════════════════════════
+   CARD RENDERING
+   ═══════════════════════════════════════════════ */
+function getLetterForNumber(n) {
+  if (n <= 15) return 'B';
+  if (n <= 30) return 'I';
+  if (n <= 45) return 'N';
+  if (n <= 60) return 'G';
+  return 'O';
+}
+
+function getStampColor(n) {
+  if (n === 'FREE') return 'rgba(124,92,252,0.8)';
+  const letter = getLetterForNumber(n);
+  const map = { B: 'rgba(58,143,255,0.75)', I: 'rgba(255,68,102,0.75)', N: 'rgba(180,180,180,0.75)', G: 'rgba(68,204,102,0.75)', O: 'rgba(255,136,51,0.75)' };
+  return map[letter] || 'rgba(124,92,252,0.75)';
+}
+
+function renderCards() {
+  const grid = document.getElementById('cards-grid');
+  const empty = document.getElementById('empty-state');
+  const names = Object.keys(state.players);
+
+  if (names.length === 0) {
+    grid.style.display = 'none';
+    empty.style.display = 'flex';
+    return;
+  }
+  grid.style.display = 'grid';
+  empty.style.display = 'none';
+  grid.innerHTML = '';
+
+  names.forEach(name => {
+    const p = state.players[name];
+    const { won, lines } = checkWin(p.card, p.marked);
+
+    // Flatten winning cells into a set for lookup
+    const winCells = new Set();
+    lines.forEach(line => line.forEach(c => winCells.add(`${c.row},${c.col}`)));
+
+    const cardEl = document.createElement('div');
+    cardEl.className = `bingo-card${won?' winner':''}`;
+    cardEl.id = `card-${CSS.escape(name)}`;
+
+    // Header
+    const hdr = document.createElement('div');
+    hdr.className = 'card-header';
+    hdr.innerHTML = `
+      <span class="card-player-name" title="${sanitize(name)}">${sanitize(name)}</span>
+      <span class="card-winner-badge">BINGO!</span>
+    `;
+    cardEl.appendChild(hdr);
+
+    // Grid
+    const gridWrap = document.createElement('div');
+    gridWrap.className = 'bingo-grid';
+
+    // Column headers
+    const colHeaders = document.createElement('div');
+    colHeaders.className = 'bingo-col-headers';
+    LETTERS.forEach(l => {
+      const h = document.createElement('div');
+      h.className = `bingo-col-header ltr-${l.toLowerCase()}`;
+      h.textContent = l;
+      colHeaders.appendChild(h);
+    });
+    gridWrap.appendChild(colHeaders);
+
+    // Rows
+    for (let row = 0; row < 5; row++) {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'bingo-row';
+      for (let col = 0; col < 5; col++) {
+        const v = cellValue(p.card, row, col);
+        const isFree = v === 'FREE';
+        const isMarked = isFree || p.marked.has(v);
+        const isWinCell = winCells.has(`${row},${col}`);
+
+        const cell = document.createElement('div');
+        cell.className = `bingo-cell${isFree?' free':''}${isMarked&&!isFree?' marked':''}${isWinCell?' winning-line':''}`;
+        cell.dataset.name = name;
+        cell.dataset.row = row;
+        cell.dataset.col = col;
+
+        if (isFree) {
+          cell.textContent = 'FREE';
+        } else {
+          cell.textContent = v;
+          if (isMarked) {
+            const stamp = document.createElement('div');
+            stamp.className = 'cell-stamp';
+            const inner = document.createElement('div');
+            inner.className = 'cell-stamp-inner';
+            inner.style.background = getStampColor(v);
+            stamp.appendChild(inner);
+            cell.appendChild(stamp);
+          }
+        }
+
+        const winH = document.createElement('div');
+        winH.className = 'cell-win-highlight';
+        cell.appendChild(winH);
+
+        rowEl.appendChild(cell);
+      }
+      gridWrap.appendChild(rowEl);
+    }
+
+    cardEl.appendChild(gridWrap);
+    grid.appendChild(cardEl);
+  });
+}
+
+function stampCell(name, number) {
+  // Find all cells for this number across cards and trigger stamp animation
+  const p = state.players[name];
+  if (!p) return;
+  const card = p.card;
+
+  for (let row = 0; row < 5; row++) {
+    for (let col = 0; col < 5; col++) {
+      const v = cellValue(card, row, col);
+      if (v === number) {
+        const cardEl = document.getElementById(`card-${CSS.escape(name)}`);
+        if (!cardEl) continue;
+        const cells = cardEl.querySelectorAll('.bingo-cell');
+        const idx = row * 5 + col;
+        const cellEl = cells[idx];
+        if (cellEl && !cellEl.classList.contains('marked') && !cellEl.classList.contains('free')) {
+          cellEl.classList.add('marked');
+          const stamp = document.createElement('div');
+          stamp.className = 'cell-stamp';
+          const inner = document.createElement('div');
+          inner.className = 'cell-stamp-inner';
+          inner.style.background = getStampColor(number);
+          stamp.appendChild(inner);
+          cellEl.appendChild(stamp);
+          playStamp();
+
+          // Check if this cell is now part of a win line
+          const { lines } = checkWin(card, p.marked);
+          if (lines.length > 0) {
+            const winCells = new Set();
+            lines.forEach(line => line.forEach(c => winCells.add(`${c.row},${c.col}`)));
+            // Update win highlights on this card
+            for (let r = 0; r < 5; r++) {
+              for (let c2 = 0; c2 < 5; c2++) {
+                const ci = r * 5 + c2;
+                const ce = cells[ci];
+                if (ce && winCells.has(`${r},${c2}`)) {
+                  ce.classList.add('winning-line');
+                }
+              }
+            }
+            cardEl.classList.add('winner');
+          }
+        }
+      }
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   BALL DRAWING
+   ═══════════════════════════════════════════════ */
+function getLetterColor(letter) {
+  return `ball-color-${letter.toLowerCase()}`;
+}
+
+function drawBall() {
+  if (state.gameOver) { showToast('Game over — reset to play again', 'info'); return null; }
+  if (state.drawnBalls.length >= 75) { showToast('All 75 balls drawn!', 'info'); return null; }
+
+  // Pick a number not yet drawn
+  const remaining = [];
+  for (let i = 1; i <= 75; i++) {
+    if (!state.calledSet.has(i)) remaining.push(i);
+  }
+  const num = remaining[Math.floor(Math.random() * remaining.length)];
+  const letter = getLetterForNumber(num);
+
+  state.drawnBalls.push(num);
+  state.calledSet.add(num);
+
+  // Update ball display
+  const ballEl = document.getElementById('current-ball');
+  const letterEl = document.getElementById('ball-letter');
+  const numberEl = document.getElementById('ball-number');
+
+  // Remove old color classes
+  ballEl.className = '';
+  void ballEl.offsetWidth; // reflow to restart animation
+  ballEl.className = `has-ball ${getLetterColor(letter)}`;
+
+  letterEl.textContent = `${letter}`;
+  numberEl.textContent = `${num}`;
+
+  // Update called board
+  updateCalledBoard(num);
+
+  // Mark on all cards
+  Object.keys(state.players).forEach(name => {
+    const p = state.players[name];
+    p.marked.add(num);
+    stampCell(name, num);
+  });
+
+  updateCounts();
+  saveToStorage();
+
+  // Outbound
+  postOutbound({ type: 'bingo:drawn', number: num, letter });
+
+  playBallDrop();
+
+  return { num, letter };
+}
+
+/* ═══════════════════════════════════════════════
+   CHECK WINNER
+   ═══════════════════════════════════════════════ */
+function checkForWinner(triggerName) {
+  const names = triggerName ? [triggerName] : Object.keys(state.players);
+  for (const name of names) {
+    const p = state.players[name];
+    if (!p) continue;
+    const { won, lines } = checkWin(p.card, p.marked);
+    if (won) {
+      const pattern = patternName(lines);
+      announceWinner(name, pattern);
+      return { name, pattern };
+    }
+  }
+  if (triggerName) showToast(`No bingo for ${triggerName}`, 'error');
+  else showToast('No winners yet', 'info');
+  return null;
+}
+
+function announceWinner(name, pattern) {
+  state.gameOver = true;
+  stopAutoDraw();
+  playBingoFanfare();
+  spawnConfetti();
+
+  document.getElementById('winner-name-display').textContent = name;
+  document.getElementById('winner-pattern-display').textContent = pattern || 'Bingo!';
+  document.getElementById('winner-overlay').classList.add('show');
+
+  renderPlayerList(); // update status badges
+
+  postOutbound({ type: 'bingo:winner', winner: name, pattern });
+  showToast(`🎉 BINGO! ${name} wins!`, 'success');
+}
+
+/* ═══════════════════════════════════════════════
+   CONFETTI
+   ═══════════════════════════════════════════════ */
+function spawnConfetti() {
+  const colors = ['#ffd700','#ff4466','#7c5cfc','#44ff88','#3a8fff','#ff8833','#fff'];
+  for (let i = 0; i < 80; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `
+      left: ${Math.random()*100}vw;
+      top: -20px;
+      background: ${colors[Math.floor(Math.random()*colors.length)]};
+      transform: rotate(${Math.random()*360}deg);
+      animation-duration: ${1.5 + Math.random()*2}s;
+      animation-delay: ${Math.random()*0.8}s;
+      width: ${6+Math.random()*8}px;
+      height: ${10+Math.random()*10}px;
+    `;
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   RESET
+   ═══════════════════════════════════════════════ */
+function resetGame() {
+  state.drawnBalls = [];
+  state.calledSet.clear();
+  state.gameOver = false;
+  stopAutoDraw();
+  document.getElementById('auto-draw-toggle').checked = false;
+
+  // Reset all markings (keep players and cards, regenerate cards)
+  Object.keys(state.players).forEach(name => {
+    state.players[name].card = generateCard();
+    state.players[name].marked = new Set(['FREE']);
+  });
+
+  // Reset ball display
+  const ballEl = document.getElementById('current-ball');
+  ballEl.className = '';
+  document.getElementById('ball-letter').textContent = '—';
+  document.getElementById('ball-number').textContent = '';
+
+  // Re-init called board
+  buildCalledBoard();
+
+  renderCards();
+  renderPlayerList();
+  updateCounts();
+  saveToStorage();
+
+  document.getElementById('winner-overlay').classList.remove('show');
+  document.getElementById('status-msg').textContent = '';
+  showToast('Game reset — new cards generated', 'info');
+}
+
+/* ═══════════════════════════════════════════════
+   AUTO DRAW
+   ═══════════════════════════════════════════════ */
+function startAutoDraw() {
+  stopAutoDraw();
+  state.autoDrawInterval = setInterval(() => {
+    if (state.gameOver || state.drawnBalls.length >= 75) {
+      stopAutoDraw();
+      document.getElementById('auto-draw-toggle').checked = false;
+      return;
+    }
+    drawBall();
+  }, 3000);
+}
+
+function stopAutoDraw() {
+  if (state.autoDrawInterval) {
+    clearInterval(state.autoDrawInterval);
+    state.autoDrawInterval = null;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   STORAGE
+   ═══════════════════════════════════════════════ */
+function saveToStorage() {
+  try {
+    const save = {};
+    Object.keys(state.players).forEach(name => {
+      const p = state.players[name];
+      save[name] = { card: p.card, marked: [...p.marked] };
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ players: save, drawn: state.drawnBalls }));
+  } catch(e) {}
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.players) {
+      Object.keys(data.players).forEach(name => {
+        const p = data.players[name];
+        state.players[name] = { card: p.card, marked: new Set(p.marked) };
+      });
+    }
+    if (data.drawn && Array.isArray(data.drawn)) {
+      data.drawn.forEach(n => {
+        state.drawnBalls.push(n);
+        state.calledSet.add(n);
+      });
+    }
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════════ */
+let toastTimer = null;
+function showToast(msg, type='info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show toast-${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 2800);
+}
+
+/* ═══════════════════════════════════════════════
+   POSTMESSAGE
+   ═══════════════════════════════════════════════ */
+function postOutbound(msg) {
+  try { window.parent.postMessage(msg, '*'); } catch(e) {}
+}
+
+function handleInbound(data) {
+  if (!data || typeof data.type !== 'string') return;
+  switch (data.type) {
+    case 'bingo:join': {
+      const name = (data.name || '').trim();
+      if (name) addPlayer(name);
+      break;
+    }
+    case 'bingo:draw': {
+      drawBall();
+      break;
+    }
+    case 'bingo:check': {
+      const name = (data.name || '').trim();
+      checkForWinner(name || null);
+      break;
+    }
+    case 'bingo:reset': {
+      resetGame();
+      break;
+    }
+    case 'bingo:names': {
+      postOutbound({ type: 'bingo:names', names: Object.keys(state.players) });
+      break;
+    }
+  }
+}
+
+window.addEventListener('message', e => {
+  handleInbound(e.data);
+});
+
+/* ═══════════════════════════════════════════════
+   URL PARAMS
+   ═══════════════════════════════════════════════ */
+function initFromParams() {
+  const params = new URLSearchParams(location.search);
+
+  if (params.get('bg') === 'transparent') document.body.classList.add('transparent-bg');
+
+  const theme = params.get('theme');
+  if (theme) {
+    document.documentElement.dataset.theme = theme;
+    const sel = document.getElementById('theme-select');
+    if (sel) sel.value = theme;
+  }
+
+  if (params.get('admin') === 'false') {
+    document.getElementById('admin-panel').classList.add('hidden');
+    document.getElementById('admin-toggle').style.display = 'none';
+  }
+
+  const names = params.get('names');
+  if (names) {
+    names.split(',').forEach(n => addPlayer(n.trim()));
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   EVENT LISTENERS
+   ═══════════════════════════════════════════════ */
+function initEvents() {
+  // Admin toggle
+  document.getElementById('admin-toggle').addEventListener('click', () => {
+    document.getElementById('admin-panel').classList.toggle('hidden');
+  });
+
+  // Add player
+  document.getElementById('add-name-btn').addEventListener('click', () => {
+    const inp = document.getElementById('add-name-input');
+    if (addPlayer(inp.value)) inp.value = '';
+  });
+  document.getElementById('add-name-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const inp = e.currentTarget;
+      if (addPlayer(inp.value)) inp.value = '';
+    }
+  });
+
+  // Bulk add
+  document.getElementById('bulk-add-btn').addEventListener('click', () => {
+    const ta = document.getElementById('bulk-paste');
+    ta.value.split('\n').forEach(n => addPlayer(n.trim()));
+    ta.value = '';
+  });
+
+  // Draw ball
+  document.getElementById('draw-btn').addEventListener('click', () => drawBall());
+
+  // Auto draw
+  document.getElementById('auto-draw-toggle').addEventListener('change', e => {
+    if (e.target.checked) startAutoDraw();
+    else stopAutoDraw();
+  });
+
+  // Check winner
+  document.getElementById('check-btn').addEventListener('click', () => checkForWinner(null));
+
+  // Reset
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    if (confirm('Reset the game? New cards will be generated for all players.')) resetGame();
+  });
+
+  // Sound
+  document.getElementById('sound-toggle').addEventListener('change', e => {
+    state.soundEnabled = e.target.checked;
+  });
+
+  // Theme
+  document.getElementById('theme-select').addEventListener('change', e => {
+    document.documentElement.dataset.theme = e.target.value;
+  });
+
+  // Dismiss winner overlay
+  document.getElementById('winner-overlay').addEventListener('click', () => {
+    document.getElementById('winner-overlay').classList.remove('show');
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    // Don't fire if focus is in input
+    const tag = document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+    if (e.code === 'Space') {
+      e.preventDefault();
+      drawBall();
+    }
+    if (e.key === 'g' || e.key === 'G') {
+      document.getElementById('admin-panel').classList.toggle('hidden');
+    }
+    if (e.key === 'Escape') {
+      document.getElementById('winner-overlay').classList.remove('show');
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   RESTORE DRAWN BALLS ON BOARD
+   ═══════════════════════════════════════════════ */
+function restoreCalledBoard() {
+  state.drawnBalls.forEach(n => updateCalledBoard(n));
+  if (state.drawnBalls.length > 0) {
+    const last = state.drawnBalls[state.drawnBalls.length - 1];
+    const letter = getLetterForNumber(last);
+    const ballEl = document.getElementById('current-ball');
+    ballEl.className = `${getLetterColor(letter)}`;
+    document.getElementById('ball-letter').textContent = letter;
+    document.getElementById('ball-number').textContent = last;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════ */
+function init() {
+  buildCalledBoard();
+  loadFromStorage();
+  initFromParams();
+  initEvents();
+  renderPlayerList();
+  renderCards();
+  restoreCalledBoard();
+  updateCounts();
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>

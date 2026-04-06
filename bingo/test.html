@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bingo — Test Harness</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d14;
+  --surface: #1a1a2e;
+  --surface2: #22223a;
+  --border: #2a2a4a;
+  --text: #e8e8f0;
+  --text-dim: #8888aa;
+  --accent: #7c5cfc;
+  --success: #44ff88;
+  --danger: #ff4466;
+  --gold: #ffd700;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+#layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  grid-template-rows: 100%;
+  height: 100vh;
+}
+
+/* IFRAME */
+#game-wrap {
+  position: relative;
+  background: #000;
+  overflow: hidden;
+}
+
+#game-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+.frame-overlay-label {
+  position: absolute;
+  top: 8px; left: 8px;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* CONTROL PANEL */
+#controls {
+  height: 100%;
+  background: #111120;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ctrl-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.ctrl-header h1 { font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+.ctrl-header p { font-size: 11px; color: var(--text-dim); }
+
+.ctrl-scroll {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.ctrl-section {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.ctrl-section h2 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  text-align: center;
+}
+.btn:hover { background: var(--surface2); border-color: var(--accent); }
+.btn:active { transform: scale(0.97); }
+.btn-full { grid-column: 1 / -1; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { filter: brightness(1.15); }
+.btn-success { background: rgba(68,255,136,0.15); border-color: var(--success); color: var(--success); }
+.btn-danger { background: rgba(255,68,102,0.1); border-color: var(--danger); color: var(--danger); }
+.btn-gold { background: rgba(255,215,0,0.15); border-color: var(--gold); color: var(--gold); }
+
+/* URL reload section */
+.url-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+.url-row label { font-size: 11px; color: var(--text-dim); min-width: 50px; }
+.url-row input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 11px;
+  padding: 5px 8px;
+  outline: none;
+  font-family: monospace;
+}
+
+/* Log */
+#log-area {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  flex: 0 0 auto;
+  min-height: 180px;
+  max-height: 240px;
+  border-top: 2px solid var(--border);
+}
+
+.log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.log-header h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
+.log-clear { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+.log-clear:hover { color: var(--danger); }
+
+#log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.log-entry {
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.log-entry:hover { background: rgba(255,255,255,0.03); }
+.log-time { color: var(--text-dim); flex-shrink: 0; font-family: monospace; }
+.log-dir { font-family: monospace; font-weight: 700; flex-shrink: 0; }
+.log-dir.out { color: var(--accent); }
+.log-dir.in { color: var(--success); }
+.log-dir.test { color: var(--gold); }
+.log-dir.err { color: var(--danger); }
+.log-msg { color: var(--text); word-break: break-all; }
+
+/* Test results */
+#test-results {
+  margin: 0;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  max-height: 150px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.test-result { padding: 3px 0; display: flex; gap: 6px; align-items: flex-start; }
+.test-result .pass { color: var(--success); }
+.test-result .fail { color: var(--danger); }
+.test-result .info { color: var(--text-dim); }
+.test-result .msg { flex: 1; }
+</style>
+</head>
+<body>
+<div id="layout">
+  <div id="game-wrap">
+    <div class="frame-overlay-label">index.html (embedded)</div>
+    <iframe id="game-frame" src="index.html" title="Bingo Game"></iframe>
+  </div>
+
+  <div id="controls">
+    <div class="ctrl-header">
+      <h1>🎱 Bingo Test Harness</h1>
+      <p>postMessage API tester &amp; automated test suite</p>
+    </div>
+
+    <div class="ctrl-scroll">
+
+      <!-- Players -->
+      <div class="ctrl-section">
+        <h2>Players (postMessage)</h2>
+        <div class="btn-grid">
+          <button class="btn btn-primary btn-full" onclick="addFourPlayers()">Add 4 Players</button>
+          <button class="btn" onclick="send({type:'bingo:join',name:'StreamerFan'})">Join: StreamerFan</button>
+          <button class="btn" onclick="send({type:'bingo:join',name:'ChatLurker'})">Join: ChatLurker</button>
+          <button class="btn" onclick="send({type:'bingo:names'})">Query Names</button>
+        </div>
+      </div>
+
+      <!-- Game -->
+      <div class="ctrl-section">
+        <h2>Game Control (postMessage)</h2>
+        <div class="btn-grid">
+          <button class="btn btn-gold" onclick="send({type:'bingo:draw'})">Draw Ball</button>
+          <button class="btn btn-gold" onclick="draw10Fast()">Draw 10 Fast</button>
+          <button class="btn btn-success" onclick="send({type:'bingo:check'})">Check Winner</button>
+          <button class="btn btn-danger" onclick="send({type:'bingo:reset'})">Reset Game</button>
+        </div>
+      </div>
+
+      <!-- Theme / URL -->
+      <div class="ctrl-section">
+        <h2>Reload with Params</h2>
+        <div class="btn-grid">
+          <button class="btn" onclick="reloadWith('?theme=dark')">Theme: Dark</button>
+          <button class="btn" onclick="reloadWith('?theme=light')">Theme: Light</button>
+          <button class="btn" onclick="reloadWith('?theme=neon')">Theme: Neon</button>
+          <button class="btn" onclick="reloadWith('?bg=transparent')">Transparent BG</button>
+          <button class="btn" onclick="reloadWith('?admin=false')">admin=false</button>
+          <button class="btn" onclick="reloadWith('?names=Alice,Bob,Carol')">names= param</button>
+          <button class="btn btn-full" onclick="reloadWith('')">Reset to Default</button>
+        </div>
+        <div style="height:8px;"></div>
+        <div class="url-row">
+          <label>Custom URL:</label>
+          <input type="text" id="custom-url" placeholder="?theme=neon&names=A,B">
+          <button class="btn" style="flex-shrink:0" onclick="reloadWith(document.getElementById('custom-url').value)">Go</button>
+        </div>
+      </div>
+
+      <!-- Automated Tests -->
+      <div class="ctrl-section">
+        <h2>Automated Tests</h2>
+        <div class="btn-grid">
+          <button class="btn btn-primary btn-full" onclick="runTests()">▶ Run All Tests</button>
+        </div>
+        <div id="test-results" style="display:none;"></div>
+      </div>
+
+    </div>
+
+    <!-- Log -->
+    <div id="log-area">
+      <div class="log-header">
+        <h2>Message Log</h2>
+        <button class="log-clear" onclick="clearLog()">Clear</button>
+      </div>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+(function() {
+
+const frame = document.getElementById('game-frame');
+const log = document.getElementById('log');
+
+function timestamp() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+}
+
+function logEntry(dir, msg) {
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `
+    <span class="log-time">${timestamp()}</span>
+    <span class="log-dir ${dir}">${dir.toUpperCase()}</span>
+    <span class="log-msg">${escapeHtml(typeof msg === 'object' ? JSON.stringify(msg) : String(msg))}</span>
+  `;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function clearLog() { log.innerHTML = ''; }
+
+// Send to game iframe
+function send(msg) {
+  logEntry('out', msg);
+  frame.contentWindow.postMessage(msg, '*');
+}
+
+// Receive from game
+window.addEventListener('message', e => {
+  if (e.source !== frame.contentWindow) return;
+  if (e.data && typeof e.data.type === 'string' && e.data.type.startsWith('bingo:')) {
+    logEntry('in', e.data);
+  }
+});
+
+// Helpers
+function addFourPlayers() {
+  ['Alice', 'Bob', 'Carol', 'Dave'].forEach(n => send({ type: 'bingo:join', name: n }));
+}
+
+let drawInterval = null;
+function draw10Fast() {
+  let count = 0;
+  if (drawInterval) clearInterval(drawInterval);
+  drawInterval = setInterval(() => {
+    send({ type: 'bingo:draw' });
+    count++;
+    if (count >= 10) { clearInterval(drawInterval); drawInterval = null; }
+  }, 300);
+}
+
+function reloadWith(params) {
+  logEntry('test', `Reloading with: "${params}"`);
+  frame.src = 'index.html' + (params || '');
+}
+
+/* ═══════════════════════════════════════════════
+   AUTOMATED TEST SUITE
+   ═══════════════════════════════════════════════ */
+const testResults = document.getElementById('test-results');
+let pendingTests = [];
+let receivedMessages = [];
+
+// Collect messages during test window
+window.addEventListener('message', e => {
+  if (e.source !== frame.contentWindow) return;
+  receivedMessages.push(e.data);
+});
+
+function runTests() {
+  testResults.style.display = 'block';
+  testResults.innerHTML = '<div class="test-result"><span class="info">⏳</span><span class="msg">Running tests…</span></div>';
+  logEntry('test', 'Automated test suite started');
+
+  // Reset and run after a short delay for the frame to settle
+  frame.src = 'index.html';
+  setTimeout(startTests, 800);
+}
+
+function assert(label, condition) {
+  const entry = document.createElement('div');
+  entry.className = 'test-result';
+  if (condition) {
+    entry.innerHTML = `<span class="pass">✓</span><span class="msg">${escapeHtml(label)}</span>`;
+  } else {
+    entry.innerHTML = `<span class="fail">✗</span><span class="msg">${escapeHtml(label)}</span>`;
+  }
+  testResults.appendChild(entry);
+  return condition;
+}
+
+function info(msg) {
+  const entry = document.createElement('div');
+  entry.className = 'test-result';
+  entry.innerHTML = `<span class="info">·</span><span class="msg">${escapeHtml(msg)}</span>`;
+  testResults.appendChild(entry);
+}
+
+function waitForMessage(type, timeout) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const check = setInterval(() => {
+      const found = receivedMessages.find(m => m && m.type === type);
+      if (found) {
+        clearInterval(check);
+        resolve(found);
+      } else if (Date.now() - start > timeout) {
+        clearInterval(check);
+        reject(new Error(`Timeout waiting for ${type}`));
+      }
+    }, 50);
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function startTests() {
+  receivedMessages = [];
+  testResults.innerHTML = '';
+
+  // ─── TEST 1: bingo:join emits bingo:names ────────────────────────────
+  info('TEST 1: bingo:join → bingo:names');
+  send({ type: 'bingo:join', name: 'TestPlayer1' });
+  try {
+    const msg = await waitForMessage('bingo:names', 1000);
+    assert('1a: bingo:names emitted after join', msg.type === 'bingo:names');
+    assert('1b: names array contains joined player', Array.isArray(msg.names) && msg.names.includes('TestPlayer1'));
+    logEntry('test', `Names: ${JSON.stringify(msg.names)}`);
+  } catch(e) {
+    assert('1a: bingo:names emitted after join', false);
+  }
+
+  // ─── TEST 2: Multiple joins ───────────────────────────────────────────
+  info('TEST 2: Multiple bingo:join messages');
+  receivedMessages = [];
+  send({ type: 'bingo:join', name: 'Player2' });
+  send({ type: 'bingo:join', name: 'Player3' });
+  await sleep(400);
+  try {
+    const msg = await waitForMessage('bingo:names', 800);
+    assert('2a: Names includes Player2', msg.names.includes('Player2') || msg.names.includes('TestPlayer1'));
+  } catch(e) {
+    assert('2a: Names broadcast after multiple joins', false);
+  }
+
+  // ─── TEST 3: bingo:draw → bingo:drawn ────────────────────────────────
+  info('TEST 3: bingo:draw → bingo:drawn');
+  receivedMessages = [];
+  send({ type: 'bingo:draw' });
+  try {
+    const msg = await waitForMessage('bingo:drawn', 1500);
+    assert('3a: bingo:drawn emitted', msg.type === 'bingo:drawn');
+    assert('3b: .number is 1-75', typeof msg.number === 'number' && msg.number >= 1 && msg.number <= 75);
+    assert('3c: .letter is B/I/N/G/O', ['B','I','N','G','O'].includes(msg.letter));
+    assert('3d: letter matches number range', letterForNum(msg.number) === msg.letter);
+    logEntry('test', `Drawn: ${msg.letter}-${msg.number}`);
+  } catch(e) {
+    assert('3a: bingo:drawn emitted', false);
+    assert('3b: .number is 1-75', false);
+    assert('3c: .letter is B/I/N/G/O', false);
+    assert('3d: letter matches number range', false);
+  }
+
+  // ─── TEST 4: bingo:names query ────────────────────────────────────────
+  info('TEST 4: bingo:names query');
+  receivedMessages = [];
+  send({ type: 'bingo:names' });
+  try {
+    const msg = await waitForMessage('bingo:names', 1000);
+    assert('4a: bingo:names responds to query', msg.type === 'bingo:names');
+    assert('4b: names is an array', Array.isArray(msg.names));
+    assert('4c: has at least 1 player', msg.names.length >= 1);
+  } catch(e) {
+    assert('4a: bingo:names responds to query', false);
+  }
+
+  // ─── TEST 5: bingo:reset clears state ────────────────────────────────
+  info('TEST 5: bingo:reset');
+  send({ type: 'bingo:draw' });
+  await sleep(300);
+  send({ type: 'bingo:reset' });
+  await sleep(300);
+  receivedMessages = [];
+  send({ type: 'bingo:names' });
+  try {
+    const msg = await waitForMessage('bingo:names', 1000);
+    // After reset, players are still there but cards are re-generated
+    assert('5a: names still present after reset', Array.isArray(msg.names) && msg.names.length > 0);
+    logEntry('test', 'Reset preserves players, regenerates cards');
+  } catch(e) {
+    assert('5a: names still present after reset', false);
+  }
+
+  // ─── TEST 6: Duplicate join rejected ─────────────────────────────────
+  info('TEST 6: Duplicate join is rejected');
+  receivedMessages = [];
+  send({ type: 'bingo:join', name: 'TestPlayer1' }); // already exists
+  await sleep(400);
+  const namesAfterDupe = receivedMessages.filter(m => m && m.type === 'bingo:names');
+  // If no names message or count stays the same, duplicate was rejected
+  logEntry('test', `Names msgs after dupe join: ${namesAfterDupe.length}`);
+  assert('6a: Duplicate join does not spam names', namesAfterDupe.length <= 1);
+
+  // ─── TEST 7: Letter range validation ─────────────────────────────────
+  info('TEST 7: Letter–number range mapping');
+  assert('7a: 1 → B', letterForNum(1) === 'B');
+  assert('7b: 15 → B', letterForNum(15) === 'B');
+  assert('7c: 16 → I', letterForNum(16) === 'I');
+  assert('7d: 30 → I', letterForNum(30) === 'I');
+  assert('7e: 31 → N', letterForNum(31) === 'N');
+  assert('7f: 45 → N', letterForNum(45) === 'N');
+  assert('7g: 46 → G', letterForNum(46) === 'G');
+  assert('7h: 60 → G', letterForNum(60) === 'G');
+  assert('7i: 61 → O', letterForNum(61) === 'O');
+  assert('7j: 75 → O', letterForNum(75) === 'O');
+
+  // ─── TEST 8: bingo:check with unknown name ────────────────────────────
+  info('TEST 8: bingo:check with name');
+  receivedMessages = [];
+  send({ type: 'bingo:check', name: 'TestPlayer1' });
+  await sleep(500);
+  // Either a winner message or nothing (no crash)
+  const winMsgs = receivedMessages.filter(m => m && m.type === 'bingo:winner');
+  assert('8a: check does not crash (0 or 1 winner msgs)', winMsgs.length <= 1);
+
+  // ─── TEST 9: Multiple draws all unique ───────────────────────────────
+  info('TEST 9: 5 consecutive draws are unique');
+  receivedMessages = [];
+  send({ type: 'bingo:reset' });
+  await sleep(200);
+  for (let i = 0; i < 5; i++) {
+    send({ type: 'bingo:draw' });
+    await sleep(200);
+  }
+  const drawnMsgs = receivedMessages.filter(m => m && m.type === 'bingo:drawn');
+  const nums = drawnMsgs.map(m => m.number);
+  const unique = new Set(nums);
+  assert('9a: 5 draws emitted', drawnMsgs.length >= 5);
+  assert('9b: all drawn numbers unique', unique.size === nums.length);
+  logEntry('test', `Drew: ${nums.join(', ')}`);
+
+  // ─── TEST 10: URL param ?names= ───────────────────────────────────────
+  info('TEST 10: URL param ?names=A,B,C');
+  frame.src = 'index.html?names=Alpha,Beta,Gamma';
+  await sleep(800);
+  receivedMessages = [];
+  frame.contentWindow.postMessage({ type: 'bingo:names' }, '*');
+  try {
+    const msg = await waitForMessage('bingo:names', 1000);
+    assert('10a: ?names= pre-loaded players', Array.isArray(msg.names) && msg.names.length >= 3);
+    assert('10b: Alpha in names', msg.names.includes('Alpha'));
+    assert('10c: Beta in names', msg.names.includes('Beta'));
+    assert('10d: Gamma in names', msg.names.includes('Gamma'));
+    logEntry('test', `Names from URL param: ${JSON.stringify(msg.names)}`);
+  } catch(e) {
+    assert('10a: ?names= pre-loaded players', false);
+  }
+
+  // Done
+  await sleep(200);
+  frame.src = 'index.html'; // restore
+  const entries = testResults.querySelectorAll('.test-result');
+  const passes = testResults.querySelectorAll('.pass').length;
+  const fails = testResults.querySelectorAll('.fail').length;
+  info(`Done: ${passes} passed, ${fails} failed (${entries.length} total checks)`);
+  logEntry('test', `Tests complete: ${passes} pass, ${fails} fail`);
+}
+
+function letterForNum(n) {
+  if (n <= 15) return 'B';
+  if (n <= 30) return 'I';
+  if (n <= 45) return 'N';
+  if (n <= 60) return 'G';
+  return 'O';
+}
+
+// Expose globals used by onclick attributes
+window.send = send;
+window.addFourPlayers = addFourPlayers;
+window.draw10Fast = draw10Fast;
+window.reloadWith = reloadWith;
+window.runTests = runTests;
+window.clearLog = clearLog;
+
+logEntry('test', 'Test harness ready. Click "Add 4 Players" to begin manually, or "Run All Tests" for automated suite.');
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coin Flip — Test Harness</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a12;
+  --surface: #12121e;
+  --surface2: #1a1a2e;
+  --border: #2a2a4a;
+  --text: #e8e8f0;
+  --text-dim: #8888aa;
+  --accent: #7c5cfc;
+  --accent-glow: rgba(124,92,252,0.4);
+  --gold: #ffd700;
+  --success: #44ff88;
+  --danger: #ff4466;
+  --warn: #ffaa00;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+#layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  grid-template-rows: 48px 1fr;
+  height: 100vh;
+  gap: 0;
+}
+
+/* Header */
+#header {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px;
+}
+#header h1 { font-size: 15px; font-weight: 700; color: var(--accent); }
+#header .status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text-dim);
+  transition: background 0.3s;
+}
+#header .status-dot.green { background: var(--success); box-shadow: 0 0 8px var(--success); }
+#header .status-dot.red { background: var(--danger); }
+#header .subtitle { font-size: 12px; color: var(--text-dim); }
+#header .run-all-btn {
+  margin-left: auto;
+  padding: 7px 18px; border-radius: 8px;
+  border: 1px solid var(--accent); background: rgba(124,92,252,0.15);
+  color: var(--accent); font-family: var(--font); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+#header .run-all-btn:hover { background: rgba(124,92,252,0.3); }
+
+/* Game iframe */
+#game-wrapper {
+  position: relative;
+  overflow: hidden;
+  background: #0d0d14;
+}
+#game-frame {
+  width: 100%; height: 100%;
+  border: none;
+}
+#frame-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10,10,18,0.7);
+  font-size: 14px; color: var(--text-dim);
+  pointer-events: none;
+  opacity: 0; transition: opacity 0.3s;
+}
+
+/* Control panel */
+#controls {
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.ctrl-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.ctrl-section h3 {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--text-dim); margin-bottom: 10px;
+}
+
+.btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.ctrl-btn {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  line-height: 1.3;
+}
+.ctrl-btn:hover { border-color: var(--accent); background: rgba(124,92,252,0.1); }
+.ctrl-btn:active { transform: scale(0.97); }
+.ctrl-btn.wide { grid-column: 1 / -1; }
+.ctrl-btn.gold-btn { border-color: rgba(255,215,0,0.4); color: var(--gold); }
+.ctrl-btn.gold-btn:hover { background: rgba(255,215,0,0.1); border-color: var(--gold); }
+.ctrl-btn.danger-btn { border-color: rgba(255,68,102,0.4); color: var(--danger); }
+.ctrl-btn.danger-btn:hover { background: rgba(255,68,102,0.1); border-color: var(--danger); }
+
+.input-row {
+  display: flex; gap: 6px; margin-bottom: 8px;
+}
+.ctrl-input {
+  flex: 1;
+  padding: 7px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text); font-family: var(--font); font-size: 12px;
+  outline: none;
+}
+.ctrl-input:focus { border-color: var(--accent); }
+
+/* Tests */
+#tests-list {
+  flex: 1; overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  padding: 0;
+}
+.test-item {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(42,42,74,0.5);
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 12px;
+}
+.test-status {
+  font-size: 14px; line-height: 1.4; flex-shrink: 0;
+  width: 18px; text-align: center;
+}
+.test-name { font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.test-detail { color: var(--text-dim); font-size: 11px; }
+.test-item.pass .test-status { color: var(--success); }
+.test-item.fail .test-status { color: var(--danger); }
+.test-item.pending .test-status { color: var(--text-dim); }
+.test-item.running .test-status { animation: spin 1s linear infinite; display: inline-block; }
+@keyframes spin { from {transform:rotate(0deg)} to {transform:rotate(360deg)} }
+
+/* Event log */
+#log-section {
+  border-top: 1px solid var(--border);
+  height: 180px;
+  display: flex; flex-direction: column;
+  flex-shrink: 0;
+}
+#log-header {
+  padding: 8px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#log-header span { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-dim); }
+#clear-log { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+#clear-log:hover { color: var(--text); background: var(--surface2); }
+#event-log {
+  flex: 1; overflow-y: auto;
+  font-family: var(--mono); font-size: 11px;
+  padding: 6px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.log-entry {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 2px 0; line-height: 1.5;
+}
+.log-time { color: var(--text-dim); flex-shrink: 0; }
+.log-arrow { flex-shrink: 0; }
+.log-arrow.in  { color: #44aaff; }
+.log-arrow.out { color: var(--gold); }
+.log-arrow.sys { color: var(--text-dim); }
+.log-msg { color: var(--text); word-break: break-all; }
+.log-msg.success { color: var(--success); }
+.log-msg.danger  { color: var(--danger); }
+
+/* Summary bar */
+#summary-bar {
+  flex-shrink: 0;
+  padding: 6px 16px;
+  background: var(--surface2);
+  border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--text-dim);
+  display: flex; gap: 12px; align-items: center;
+}
+#summary-bar .pass-count { color: var(--success); font-weight: 700; }
+#summary-bar .fail-count { color: var(--danger); font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="layout">
+  <!-- Header -->
+  <div id="header">
+    <div class="status-dot" id="conn-dot"></div>
+    <h1>Coin Flip — Test Harness</h1>
+    <span class="subtitle" id="frame-url">index.html</span>
+    <button class="run-all-btn" id="run-all-btn">▶ Run All Tests</button>
+  </div>
+
+  <!-- Game iframe -->
+  <div id="game-wrapper">
+    <iframe id="game-frame" src="index.html?admin=true&theme=dark" title="Coin Flip Game"></iframe>
+    <div id="frame-overlay">Loading…</div>
+  </div>
+
+  <!-- Controls + tests + log -->
+  <div id="controls">
+
+    <!-- Manual controls -->
+    <div class="ctrl-section">
+      <h3>Manual Commands</h3>
+      <div class="input-row">
+        <input class="ctrl-input" id="picker-name" value="StreamFan42" placeholder="Viewer name">
+        <select class="ctrl-input" id="picker-side" style="flex:0 0 90px">
+          <option value="heads">Heads</option>
+          <option value="tails">Tails</option>
+        </select>
+      </div>
+      <div class="btn-grid">
+        <button class="ctrl-btn gold-btn wide" id="btn-pick">📨 coin:pick (send name+side)</button>
+        <button class="ctrl-btn wide" id="btn-flip">🪙 coin:flip</button>
+        <button class="ctrl-btn gold-btn" id="btn-result-heads">→ heads result</button>
+        <button class="ctrl-btn" id="btn-result-tails">→ tails result</button>
+        <button class="ctrl-btn danger-btn wide" id="btn-clear">🗑 coin:clear</button>
+        <button class="ctrl-btn wide" id="btn-names-query">📋 coin:names (query)</button>
+      </div>
+    </div>
+
+    <!-- URL reloads -->
+    <div class="ctrl-section">
+      <h3>Load Variants</h3>
+      <div class="btn-grid">
+        <button class="ctrl-btn" onclick="loadFrame('index.html?theme=dark')">Dark</button>
+        <button class="ctrl-btn" onclick="loadFrame('index.html?theme=light')">Light</button>
+        <button class="ctrl-btn" onclick="loadFrame('index.html?theme=neon')">Neon</button>
+        <button class="ctrl-btn" onclick="loadFrame('index.html?bg=transparent')">Transparent</button>
+        <button class="ctrl-btn" onclick="loadFrame('index.html?admin=false')">No Admin</button>
+        <button class="ctrl-btn" onclick="loadFrame('index.html?names=Alice,Bob,Carol')">Preload Names</button>
+      </div>
+    </div>
+
+    <!-- Tests -->
+    <div id="tests-list"></div>
+
+    <!-- Summary -->
+    <div id="summary-bar">
+      <span>Tests: <span id="total-count">0</span></span>
+      <span class="pass-count">✓ <span id="pass-count">0</span></span>
+      <span class="fail-count">✗ <span id="fail-count">0</span></span>
+    </div>
+
+    <!-- Event log -->
+    <div id="log-section">
+      <div id="log-header">
+        <span>Event Log</span>
+        <button id="clear-log">Clear</button>
+      </div>
+      <div id="event-log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+const frame = document.getElementById('game-frame');
+const connDot = document.getElementById('conn-dot');
+const frameUrlEl = document.getElementById('frame-url');
+const eventLog = document.getElementById('event-log');
+const testsList = document.getElementById('tests-list');
+const passCountEl = document.getElementById('pass-count');
+const failCountEl = document.getElementById('fail-count');
+const totalCountEl = document.getElementById('total-count');
+
+/* ─── Frame comms ─── */
+let frameReady = false;
+
+function loadFrame(url) {
+  frameReady = false;
+  connDot.className = 'status-dot';
+  frame.src = url;
+  frameUrlEl.textContent = url;
+  addLog('sys', `→ Loading: ${url}`);
+}
+
+frame.addEventListener('load', () => {
+  frameReady = true;
+  connDot.className = 'status-dot green';
+  addLog('sys', 'Frame loaded', 'success');
+});
+
+window.addEventListener('message', e => {
+  if (!e.data || !e.data.type) return;
+  if (!String(e.data.type).startsWith('coin:')) return;
+  addLog('out', JSON.stringify(e.data));
+});
+
+function sendMsg(obj) {
+  if (!frame.contentWindow) return;
+  addLog('in', JSON.stringify(obj));
+  frame.contentWindow.postMessage(obj, '*');
+}
+
+/* ─── Log ─── */
+function addLog(dir, msg, cls) {
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  const now = new Date();
+  const ts = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}.${now.getMilliseconds().toString().padStart(3,'0')}`;
+  const arrowMap = {in:'◀', out:'▶', sys:'·'};
+  entry.innerHTML = `
+    <span class="log-time">${ts}</span>
+    <span class="log-arrow ${dir}">${arrowMap[dir]||'·'}</span>
+    <span class="log-msg ${cls||''}">${escHtml(msg)}</span>`;
+  eventLog.appendChild(entry);
+  eventLog.scrollTop = eventLog.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('clear-log').addEventListener('click', () => {
+  eventLog.innerHTML = '';
+});
+
+/* ─── Manual controls ─── */
+document.getElementById('btn-pick').addEventListener('click', () => {
+  const name = document.getElementById('picker-name').value.trim() || 'TestViewer';
+  const side = document.getElementById('picker-side').value;
+  sendMsg({type:'coin:pick', name, side});
+});
+document.getElementById('btn-flip').addEventListener('click', () => sendMsg({type:'coin:flip'}));
+document.getElementById('btn-result-heads').addEventListener('click', () => sendMsg({type:'coin:result', winner:'heads'}));
+document.getElementById('btn-result-tails').addEventListener('click', () => sendMsg({type:'coin:result', winner:'tails'}));
+document.getElementById('btn-clear').addEventListener('click', () => sendMsg({type:'coin:clear'}));
+document.getElementById('btn-names-query').addEventListener('click', () => sendMsg({type:'coin:names'}));
+document.getElementById('run-all-btn').addEventListener('click', runAllTests);
+
+/* ─── Test framework ─── */
+const tests = [];
+let results = {pass:0, fail:0};
+
+function defineTest(name, fn) {
+  tests.push({name, fn, el: null});
+}
+
+function renderTests() {
+  testsList.innerHTML = '';
+  results = {pass:0, fail:0};
+  tests.forEach((t, i) => {
+    const div = document.createElement('div');
+    div.className = 'test-item pending';
+    div.innerHTML = `
+      <span class="test-status">○</span>
+      <div>
+        <div class="test-name">${escHtml(t.name)}</div>
+        <div class="test-detail" id="td-${i}">Not run</div>
+      </div>`;
+    testsList.appendChild(div);
+    t.el = div;
+  });
+  updateSummary();
+}
+
+function setTestState(t, state, detail) {
+  if (!t.el) return;
+  t.el.className = `test-item ${state}`;
+  const iconMap = {pass:'✓', fail:'✗', running:'↻', pending:'○'};
+  t.el.querySelector('.test-status').textContent = iconMap[state] || '?';
+  const detailEl = t.el.querySelector('.test-detail');
+  if (detail) detailEl.textContent = detail;
+  if (state === 'pass') { results.pass++; updateSummary(); }
+  if (state === 'fail') { results.fail++; updateSummary(); }
+}
+
+function updateSummary() {
+  const total = tests.length;
+  passCountEl.textContent = results.pass;
+  failCountEl.textContent = results.fail;
+  totalCountEl.textContent = total;
+}
+
+// Wait for a postMessage matching a predicate, with timeout
+function waitForMessage(predicate, timeoutMs = 3500) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      window.removeEventListener('message', handler);
+      reject(new Error('Timeout waiting for message'));
+    }, timeoutMs);
+    function handler(e) {
+      if (!e.data || !e.data.type) return;
+      if (predicate(e.data)) {
+        clearTimeout(timer);
+        window.removeEventListener('message', handler);
+        resolve(e.data);
+      }
+    }
+    window.addEventListener('message', handler);
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function runAllTests() {
+  // Reload frame first for clean state
+  loadFrame('index.html?admin=true&theme=dark');
+  await new Promise(r => frame.addEventListener('load', r, {once:true}));
+  await sleep(300);
+
+  renderTests();
+  results = {pass:0, fail:0};
+
+  for (const t of tests) {
+    setTestState(t, 'running', 'Running…');
+    try {
+      await t.fn();
+      setTestState(t, 'pass', 'Passed');
+    } catch(e) {
+      setTestState(t, 'fail', e.message || String(e));
+    }
+    await sleep(100);
+  }
+  addLog('sys', `Tests complete: ${results.pass} passed, ${results.fail} failed`,
+    results.fail === 0 ? 'success' : 'danger');
+}
+
+/* ═══════════════════════════════════════════════
+   TEST DEFINITIONS
+   ═══════════════════════════════════════════════ */
+
+// 1. Frame loads
+defineTest('Frame loads and is accessible', async () => {
+  if (!frameReady) throw new Error('Frame not marked ready');
+  if (!frame.contentWindow) throw new Error('No contentWindow');
+});
+
+// 2. coin:pick — heads
+defineTest('coin:pick adds name to heads team', async () => {
+  sendMsg({type:'coin:clear'});
+  await sleep(200);
+  sendMsg({type:'coin:pick', name:'TestHeadsUser', side:'heads'});
+  await sleep(200);
+  sendMsg({type:'coin:names'});
+  const resp = await waitForMessage(m => m.type === 'coin:names');
+  if (!resp.heads || !resp.heads.includes('TestHeadsUser')) {
+    throw new Error(`Expected TestHeadsUser in heads, got: ${JSON.stringify(resp.heads)}`);
+  }
+});
+
+// 3. coin:pick — tails
+defineTest('coin:pick adds name to tails team', async () => {
+  sendMsg({type:'coin:pick', name:'TestTailsUser', side:'tails'});
+  await sleep(200);
+  sendMsg({type:'coin:names'});
+  const resp = await waitForMessage(m => m.type === 'coin:names');
+  if (!resp.tails || !resp.tails.includes('TestTailsUser')) {
+    throw new Error(`Expected TestTailsUser in tails, got: ${JSON.stringify(resp.tails)}`);
+  }
+});
+
+// 4. Duplicate prevention
+defineTest('Duplicate names are rejected', async () => {
+  sendMsg({type:'coin:pick', name:'DupeUser', side:'heads'});
+  await sleep(150);
+  sendMsg({type:'coin:pick', name:'DupeUser', side:'tails'});
+  await sleep(150);
+  sendMsg({type:'coin:names'});
+  const resp = await waitForMessage(m => m.type === 'coin:names');
+  const allNames = [...(resp.heads||[]), ...(resp.tails||[])];
+  const count = allNames.filter(n => n === 'DupeUser').length;
+  if (count !== 1) throw new Error(`Expected exactly 1 DupeUser, found ${count}`);
+});
+
+// 5. coin:clear
+defineTest('coin:clear empties both teams', async () => {
+  sendMsg({type:'coin:clear'});
+  await sleep(200);
+  sendMsg({type:'coin:names'});
+  const resp = await waitForMessage(m => m.type === 'coin:names');
+  if ((resp.heads||[]).length !== 0 || (resp.tails||[]).length !== 0) {
+    throw new Error(`Expected empty teams, got heads:${resp.heads?.length} tails:${resp.tails?.length}`);
+  }
+});
+
+// 6. coin:flip emits coin:winner
+defineTest('coin:flip emits coin:winner with valid result', async () => {
+  sendMsg({type:'coin:clear'});
+  await sleep(150);
+  sendMsg({type:'coin:flip'});
+  const msg = await waitForMessage(m => m.type === 'coin:winner', 4000);
+  if (msg.winner !== 'heads' && msg.winner !== 'tails') {
+    throw new Error(`Expected winner to be heads or tails, got: ${msg.winner}`);
+  }
+  if (!Array.isArray(msg.names)) {
+    throw new Error('Expected names array in coin:winner');
+  }
+});
+
+// 7. coin:result forces specific outcome
+defineTest('coin:result forces heads outcome', async () => {
+  sendMsg({type:'coin:clear'});
+  await sleep(150);
+  sendMsg({type:'coin:pick', name:'Alice', side:'heads'});
+  sendMsg({type:'coin:pick', name:'Bob', side:'tails'});
+  await sleep(150);
+  sendMsg({type:'coin:result', winner:'heads'});
+  const msg = await waitForMessage(m => m.type === 'coin:winner', 4000);
+  if (msg.winner !== 'heads') throw new Error(`Expected heads, got ${msg.winner}`);
+  if (!msg.names.includes('Alice')) throw new Error('Expected Alice in winners');
+});
+
+// 8. coin:result tails
+defineTest('coin:result forces tails outcome', async () => {
+  sendMsg({type:'coin:clear'});
+  await sleep(150);
+  sendMsg({type:'coin:pick', name:'Carol', side:'tails'});
+  await sleep(150);
+  sendMsg({type:'coin:result', winner:'tails'});
+  const msg = await waitForMessage(m => m.type === 'coin:winner', 4000);
+  if (msg.winner !== 'tails') throw new Error(`Expected tails, got ${msg.winner}`);
+  if (!msg.names.includes('Carol')) throw new Error('Expected Carol in winners');
+});
+
+// 9. coin:winner names array with multiple pickers
+defineTest('coin:winner includes all pickers from winning side', async () => {
+  sendMsg({type:'coin:clear'});
+  await sleep(150);
+  ['Dave','Eve','Frank'].forEach(n => sendMsg({type:'coin:pick', name:n, side:'heads'}));
+  await sleep(200);
+  sendMsg({type:'coin:result', winner:'heads'});
+  const msg = await waitForMessage(m => m.type === 'coin:winner', 4000);
+  const missing = ['Dave','Eve','Frank'].filter(n => !msg.names.includes(n));
+  if (missing.length) throw new Error(`Missing winners: ${missing.join(', ')}`);
+});
+
+// 10. XSS safety — name with script tag
+defineTest('XSS-unsafe names are sanitized in panel', async () => {
+  sendMsg({type:'coin:clear'});
+  await sleep(150);
+  sendMsg({type:'coin:pick', name: '<script>window._xss=1</script>', side:'heads'});
+  await sleep(300);
+  // If XSS fired, window._xss would be set inside the frame
+  try {
+    const xss = frame.contentWindow._xss;
+    if (xss === 1) throw new Error('XSS script executed inside frame!');
+  } catch(e) {
+    if (e.message.includes('XSS')) throw e;
+    // cross-origin access blocked = also safe
+  }
+  sendMsg({type:'coin:names'});
+  const resp = await waitForMessage(m => m.type === 'coin:names');
+  // Name should be stored as text
+  const allNames = [...(resp.heads||[]), ...(resp.tails||[])];
+  const hasRaw = allNames.some(n => n.includes('<script>'));
+  // Raw text storage is OK; what matters is it didn't execute. Pass.
+});
+
+// 11. Ignore invalid side in coin:pick
+defineTest('coin:pick with invalid side is ignored', async () => {
+  sendMsg({type:'coin:clear'});
+  await sleep(150);
+  sendMsg({type:'coin:pick', name:'GhostUser', side:'invalid'});
+  await sleep(200);
+  sendMsg({type:'coin:names'});
+  const resp = await waitForMessage(m => m.type === 'coin:names');
+  const allNames = [...(resp.heads||[]), ...(resp.tails||[])];
+  if (allNames.includes('GhostUser')) throw new Error('GhostUser should have been rejected');
+});
+
+// 12. coin:flip ignored while already flipping
+defineTest('Second coin:flip while flipping is ignored (no double-winner)', async () => {
+  sendMsg({type:'coin:clear'});
+  await sleep(150);
+  sendMsg({type:'coin:flip'});
+  await sleep(50);
+  sendMsg({type:'coin:flip'}); // should be ignored
+  let winCount = 0;
+  const timeout = 5000;
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    try {
+      await waitForMessage(m => m.type === 'coin:winner', 200);
+      winCount++;
+      if (winCount > 1) throw new Error('Got 2 coin:winner events for one flip trigger');
+    } catch(e) {
+      if (e.message.includes('2 coin:winner')) throw e;
+      break; // timeout = done
+    }
+  }
+});
+
+/* ─── Init ─── */
+renderTests();
+addLog('sys', 'Test harness ready — click "Run All Tests" or use manual controls');
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dice Roll — Streamer Games</title>
+<style>
+/* ═══════════════════════════════════════════════
+   CSS RESET & VARIABLES
+   ═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d14;
+  --bg2: #14141f;
+  --surface: #1a1a2e;
+  --surface2: #22223a;
+  --border: #2a2a4a;
+  --text: #e8e8f0;
+  --text-dim: #8888aa;
+  --accent: #7c5cfc;
+  --accent-glow: rgba(124,92,252,0.4);
+  --gold: #ffd700;
+  --gold-glow: rgba(255,215,0,0.5);
+  --danger: #ff4466;
+  --success: #44ff88;
+  --panel-width: 360px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --die-face-bg: #ffffff;
+  --die-face-border: #cccccc;
+  --die-pip: #1a1a2e;
+  --die-shadow: rgba(0,0,0,0.6);
+}
+
+[data-theme="light"] {
+  --bg: #f0f0f5;
+  --bg2: #e8e8f0;
+  --surface: #ffffff;
+  --surface2: #f5f5fa;
+  --border: #d0d0e0;
+  --text: #1a1a2e;
+  --text-dim: #666680;
+  --die-face-bg: #ffffff;
+  --die-face-border: #aaaacc;
+  --die-pip: #1a1a2e;
+  --die-shadow: rgba(0,0,0,0.2);
+}
+
+[data-theme="neon"] {
+  --bg: #0a0a0a;
+  --bg2: #111111;
+  --surface: #1a1a1a;
+  --surface2: #222222;
+  --border: #333333;
+  --text: #ffffff;
+  --text-dim: #888888;
+  --accent: #00ffcc;
+  --accent-glow: rgba(0,255,204,0.4);
+  --gold: #ff00ff;
+  --gold-glow: rgba(255,0,255,0.5);
+  --die-face-bg: #1a1a1a;
+  --die-face-border: #00ffcc;
+  --die-pip: #00ffcc;
+  --die-shadow: rgba(0,255,204,0.3);
+}
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.transparent-bg { background: transparent !important; }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════ */
+#app {
+  display: flex;
+  width: 100%; height: 100%;
+  position: relative;
+}
+
+#game-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   ADMIN PANEL
+   ═══════════════════════════════════════════════ */
+#admin-panel {
+  width: var(--panel-width);
+  height: 100%;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+#admin-panel.hidden {
+  transform: translateX(100%);
+  opacity: 0;
+  position: absolute;
+  right: 0; top: 0;
+  pointer-events: none;
+}
+
+#admin-toggle {
+  position: fixed;
+  top: 12px; right: 12px;
+  z-index: 200;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#admin-toggle:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.panel-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.panel-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.panel-header p {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.panel-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.panel-section h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+input[type="text"], textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="text"]:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 72px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn:hover { background: var(--surface2); border-color: var(--accent); }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.btn-primary:hover {
+  filter: brightness(1.15);
+  box-shadow: 0 6px 24px var(--accent-glow);
+}
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.btn-danger { color: var(--danger); border-color: rgba(255,68,102,0.3); }
+.btn-danger:hover { background: rgba(255,68,102,0.1); border-color: var(--danger); }
+
+.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.btn-block { width: 100%; }
+
+.btn-group { display: flex; gap: 8px; }
+
+/* Segmented control (dice count) */
+.seg-group {
+  display: flex;
+  gap: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.seg-btn {
+  flex: 1;
+  padding: 9px 0;
+  background: var(--surface);
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-right: 1px solid var(--border);
+}
+.seg-btn:last-child { border-right: none; }
+.seg-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+.seg-btn:hover:not(.active) { background: var(--surface2); color: var(--text); }
+
+/* Name tags in panel */
+.name-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 13px;
+  margin: 3px;
+  max-width: 100%;
+}
+.name-tag span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+.name-tag button {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.name-tag button:hover { color: var(--danger); }
+
+#names-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: 4px;
+  min-height: 30px;
+}
+
+#player-count {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+/* Roll button */
+#roll-btn {
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), #9b7cfc);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 6px 30px var(--accent-glow);
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+#roll-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+#roll-btn:hover::before { left: 100%; }
+#roll-btn:hover {
+  box-shadow: 0 8px 40px var(--accent-glow);
+  transform: translateY(-1px);
+}
+#roll-btn:active { transform: translateY(0); }
+#roll-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Status bar */
+#status-bar {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+#status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+#status-dot.ready { background: var(--success); box-shadow: 0 0 6px var(--success); }
+#status-dot.rolling { background: var(--accent); box-shadow: 0 0 6px var(--accent);
+  animation: pulse-dot 0.5s ease-in-out infinite alternate; }
+#status-dot.winner { background: var(--gold); box-shadow: 0 0 8px var(--gold-glow); }
+
+@keyframes pulse-dot {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════
+   GAME AREA — DICE STAGE
+   ═══════════════════════════════════════════════ */
+#dice-stage {
+  flex-shrink: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 20px 16px;
+  gap: 28px;
+  min-height: 200px;
+  background: linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+#dice-stage::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 5%; right: 5%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+}
+
+/* ═══════════════════════════════════════════════
+   3D DICE
+   ═══════════════════════════════════════════════ */
+.die-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.die-value-label {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 1px;
+  min-height: 24px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+.die-value-label.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.die-scene {
+  perspective: 400px;
+  display: inline-block;
+  width: 80px;
+  height: 80px;
+}
+
+.die {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  transform-style: preserve-3d;
+  /* default resting position shows face 1 */
+  transform: rotateX(0deg) rotateY(0deg);
+  transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+  filter: drop-shadow(0 8px 16px var(--die-shadow));
+}
+
+/* bounce animation */
+@keyframes die-bounce {
+  0%   { margin-top: 0; }
+  20%  { margin-top: -18px; }
+  40%  { margin-top: 0; }
+  55%  { margin-top: -8px; }
+  70%  { margin-top: 0; }
+  82%  { margin-top: -3px; }
+  92%  { margin-top: 0; }
+  100% { margin-top: 0; }
+}
+
+.die.rolling {
+  animation: die-bounce 1.5s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+.face {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 14px;
+  background: var(--die-face-bg);
+  border: 2px solid var(--die-face-border);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.2);
+}
+
+[data-theme="neon"] .face {
+  box-shadow: 0 0 12px var(--die-face-border), inset 0 0 8px rgba(0,255,204,0.1);
+}
+
+/* Face positions */
+.face.front  { transform: translateZ(40px); }
+.face.back   { transform: rotateY(180deg) translateZ(40px); }
+.face.right  { transform: rotateY(90deg) translateZ(40px); }
+.face.left   { transform: rotateY(-90deg) translateZ(40px); }
+.face.top    { transform: rotateX(90deg) translateZ(40px); }
+.face.bottom { transform: rotateX(-90deg) translateZ(40px); }
+
+/* Pip grid layouts — each face uses named grid areas */
+.pips {
+  width: 60px;
+  height: 60px;
+  display: grid;
+  position: relative;
+}
+
+.pip {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--die-pip);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  justify-self: center;
+  align-self: center;
+}
+
+/* Face 1 — center */
+.pips-1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  place-items: center;
+}
+
+/* Face 2 — top-right + bottom-left */
+.pips-2 {
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+}
+.pips-2 .pip:nth-child(1) { grid-column: 3; grid-row: 1; }
+.pips-2 .pip:nth-child(2) { grid-column: 1; grid-row: 3; }
+
+/* Face 3 — top-right, center, bottom-left */
+.pips-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+}
+.pips-3 .pip:nth-child(1) { grid-column: 3; grid-row: 1; }
+.pips-3 .pip:nth-child(2) { grid-column: 2; grid-row: 2; }
+.pips-3 .pip:nth-child(3) { grid-column: 1; grid-row: 3; }
+
+/* Face 4 — all corners */
+.pips-4 {
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+}
+.pips-4 .pip:nth-child(1) { grid-column: 1; grid-row: 1; }
+.pips-4 .pip:nth-child(2) { grid-column: 3; grid-row: 1; }
+.pips-4 .pip:nth-child(3) { grid-column: 1; grid-row: 3; }
+.pips-4 .pip:nth-child(4) { grid-column: 3; grid-row: 3; }
+
+/* Face 5 — all corners + center */
+.pips-5 {
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+}
+.pips-5 .pip:nth-child(1) { grid-column: 1; grid-row: 1; }
+.pips-5 .pip:nth-child(2) { grid-column: 3; grid-row: 1; }
+.pips-5 .pip:nth-child(3) { grid-column: 2; grid-row: 2; }
+.pips-5 .pip:nth-child(4) { grid-column: 1; grid-row: 3; }
+.pips-5 .pip:nth-child(5) { grid-column: 3; grid-row: 3; }
+
+/* Face 6 — left col 3 + right col 3 */
+.pips-6 {
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+}
+.pips-6 .pip:nth-child(1) { grid-column: 1; grid-row: 1; }
+.pips-6 .pip:nth-child(2) { grid-column: 3; grid-row: 1; }
+.pips-6 .pip:nth-child(3) { grid-column: 1; grid-row: 2; }
+.pips-6 .pip:nth-child(4) { grid-column: 3; grid-row: 2; }
+.pips-6 .pip:nth-child(5) { grid-column: 1; grid-row: 3; }
+.pips-6 .pip:nth-child(6) { grid-column: 3; grid-row: 3; }
+
+/* ═══════════════════════════════════════════════
+   LEADERBOARD
+   ═══════════════════════════════════════════════ */
+#leaderboard-wrap {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+#leaderboard-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#leaderboard-title span { flex: 1; }
+
+#leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.player-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.45s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+  overflow: hidden;
+}
+
+.player-card.winner {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px var(--gold-glow), 0 0 40px rgba(255,215,0,0.15);
+  background: linear-gradient(135deg, var(--surface), rgba(255,215,0,0.08));
+}
+
+.player-card.winner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.12), transparent);
+  animation: winner-shimmer 2.5s ease-in-out infinite;
+}
+
+@keyframes winner-shimmer {
+  0%   { left: -100%; }
+  100% { left: 200%; }
+}
+
+.player-rank {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-dim);
+  width: 24px;
+  flex-shrink: 0;
+  text-align: center;
+}
+.player-card.winner .player-rank { color: var(--gold); }
+
+.player-crown {
+  font-size: 16px;
+  flex-shrink: 0;
+  display: none;
+}
+.player-card.winner .player-crown { display: block; }
+
+.player-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-card.winner .player-name { color: var(--gold); }
+
+.player-dice {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* Mini dice in leaderboard */
+.mini-die {
+  width: 24px; height: 24px;
+  border-radius: 5px;
+  background: var(--die-face-bg);
+  border: 1.5px solid var(--die-face-border);
+  display: grid;
+  place-items: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.mini-pips {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  position: relative;
+}
+
+.mini-pip {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--die-pip);
+  justify-self: center;
+  align-self: center;
+}
+
+/* Reuse pip grid classes for mini */
+.mini-pips.pips-1 { grid-template-columns:1fr; grid-template-rows:1fr; place-items:center; }
+.mini-pips.pips-2 { grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; }
+.mini-pips.pips-2 .mini-pip:nth-child(1) { grid-column:3; grid-row:1; }
+.mini-pips.pips-2 .mini-pip:nth-child(2) { grid-column:1; grid-row:3; }
+.mini-pips.pips-3 { grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; }
+.mini-pips.pips-3 .mini-pip:nth-child(1) { grid-column:3; grid-row:1; }
+.mini-pips.pips-3 .mini-pip:nth-child(2) { grid-column:2; grid-row:2; }
+.mini-pips.pips-3 .mini-pip:nth-child(3) { grid-column:1; grid-row:3; }
+.mini-pips.pips-4 { grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; }
+.mini-pips.pips-4 .mini-pip:nth-child(1) { grid-column:1; grid-row:1; }
+.mini-pips.pips-4 .mini-pip:nth-child(2) { grid-column:3; grid-row:1; }
+.mini-pips.pips-4 .mini-pip:nth-child(3) { grid-column:1; grid-row:3; }
+.mini-pips.pips-4 .mini-pip:nth-child(4) { grid-column:3; grid-row:3; }
+.mini-pips.pips-5 { grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; }
+.mini-pips.pips-5 .mini-pip:nth-child(1) { grid-column:1; grid-row:1; }
+.mini-pips.pips-5 .mini-pip:nth-child(2) { grid-column:3; grid-row:1; }
+.mini-pips.pips-5 .mini-pip:nth-child(3) { grid-column:2; grid-row:2; }
+.mini-pips.pips-5 .mini-pip:nth-child(4) { grid-column:1; grid-row:3; }
+.mini-pips.pips-5 .mini-pip:nth-child(5) { grid-column:3; grid-row:3; }
+.mini-pips.pips-6 { grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; }
+.mini-pips.pips-6 .mini-pip:nth-child(1) { grid-column:1; grid-row:1; }
+.mini-pips.pips-6 .mini-pip:nth-child(2) { grid-column:3; grid-row:1; }
+.mini-pips.pips-6 .mini-pip:nth-child(3) { grid-column:1; grid-row:2; }
+.mini-pips.pips-6 .mini-pip:nth-child(4) { grid-column:3; grid-row:2; }
+.mini-pips.pips-6 .mini-pip:nth-child(5) { grid-column:1; grid-row:3; }
+.mini-pips.pips-6 .mini-pip:nth-child(6) { grid-column:3; grid-row:3; }
+
+.player-total {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent);
+  width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.player-card.winner .player-total { color: var(--gold); }
+
+/* Tie badge */
+.tie-badge {
+  background: rgba(255,68,102,0.15);
+  border: 1px solid rgba(255,68,102,0.4);
+  color: var(--danger);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* Empty state */
+#empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  color: var(--text-dim);
+  text-align: center;
+}
+#empty-state .empty-icon { font-size: 48px; opacity: 0.4; }
+#empty-state p { font-size: 14px; line-height: 1.5; }
+
+/* ═══════════════════════════════════════════════
+   ANNOUNCER OVERLAY
+   ═══════════════════════════════════════════════ */
+#announcer {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: linear-gradient(135deg, var(--surface), var(--surface2));
+  border: 1px solid var(--gold);
+  border-radius: 16px;
+  padding: 14px 28px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold);
+  text-shadow: 0 0 20px var(--gold-glow);
+  box-shadow: 0 8px 32px var(--gold-glow);
+  white-space: nowrap;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+#announcer.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ═══════════════════════════════════════════════
+   PARTICLE EFFECTS
+   ═══════════════════════════════════════════════ */
+.particle {
+  position: absolute;
+  pointer-events: none;
+  font-size: 20px;
+  animation: particle-float 1.2s ease-out forwards;
+  z-index: 60;
+}
+
+@keyframes particle-float {
+  0%   { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+  100% { opacity: 0; transform: translateY(-80px) rotate(360deg) scale(0.3); }
+}
+
+/* ═══════════════════════════════════════════════
+   IDLE AMBIENT DICE
+   ═══════════════════════════════════════════════ */
+#idle-dice {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.ambient-die {
+  position: absolute;
+  opacity: 0;
+  animation: ambient-drift linear infinite;
+  font-size: 24px;
+}
+
+@keyframes ambient-drift {
+  0%   { opacity: 0; transform: translateY(100%) rotate(0deg); }
+  10%  { opacity: 0.06; }
+  90%  { opacity: 0.06; }
+  100% { opacity: 0; transform: translateY(-120%) rotate(360deg); }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- GAME AREA -->
+  <div id="game-area">
+
+    <!-- Dice Stage -->
+    <div id="dice-stage">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- Leaderboard -->
+    <div id="leaderboard-wrap">
+      <div id="leaderboard-title">
+        <span>Leaderboard</span>
+        <span id="round-label" style="color:var(--text-dim);font-size:11px;"></span>
+      </div>
+      <div id="leaderboard"></div>
+      <div id="empty-state">
+        <div class="empty-icon">🎲</div>
+        <p>Add players and hit<br><strong>Roll All</strong> to start!</p>
+      </div>
+    </div>
+
+    <!-- Announcer -->
+    <div id="announcer"></div>
+
+    <!-- Idle ambient dice -->
+    <div id="idle-dice"></div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div id="admin-panel">
+    <div class="panel-header">
+      <h2>🎲 Dice Roll</h2>
+      <p>Highest total wins — ties re-roll automatically</p>
+    </div>
+
+    <div class="panel-scroll">
+      <!-- Players -->
+      <div class="panel-section">
+        <h3>Players</h3>
+        <div id="player-count">0 players</div>
+        <div id="names-container"></div>
+        <div class="input-group">
+          <input type="text" id="name-input" placeholder="Add player name…" autocomplete="off" maxlength="40">
+          <button class="btn btn-sm btn-primary" id="add-btn">Add</button>
+        </div>
+        <textarea id="bulk-input" placeholder="Bulk paste — one name per line"></textarea>
+        <div class="btn-group" style="margin-top:8px;">
+          <button class="btn btn-sm btn-block" id="bulk-add-btn">Add All</button>
+          <button class="btn btn-sm btn-danger" id="clear-btn">Clear</button>
+        </div>
+      </div>
+
+      <!-- Dice count -->
+      <div class="panel-section">
+        <h3>Dice Per Player</h3>
+        <div class="seg-group">
+          <button class="seg-btn active" data-count="1">1</button>
+          <button class="seg-btn" data-count="2">2</button>
+          <button class="seg-btn" data-count="3">3</button>
+        </div>
+      </div>
+
+      <!-- Roll -->
+      <div class="panel-section">
+        <button id="roll-btn" class="btn-block">🎲 Roll All</button>
+        <p style="font-size:11px;color:var(--text-dim);text-align:center;margin-top:8px;">
+          Space bar also rolls
+        </p>
+      </div>
+
+      <!-- Options -->
+      <div class="panel-section">
+        <h3>Options</h3>
+        <div class="btn-group">
+          <button class="btn btn-sm" id="sound-btn">🔊 Sound On</button>
+          <button class="btn btn-sm" id="theme-btn">🌙 Theme</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div id="status-bar">
+      <div id="status-dot"></div>
+      <span id="status-text">Ready</span>
+    </div>
+  </div>
+</div>
+
+<!-- Gear toggle -->
+<button id="admin-toggle" title="Toggle admin panel">⚙</button>
+
+<script>
+'use strict';
+(function() {
+
+/* ═══════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════ */
+const state = {
+  players: [],        // [{name, rolls:[], total}]
+  diceCount: 1,
+  rolling: false,
+  soundEnabled: true,
+  round: 0,
+  theme: 'dark',
+  adminVisible: true,
+};
+
+/* ═══════════════════════════════════════════════
+   URL PARAMS
+   ═══════════════════════════════════════════════ */
+(function initFromURL() {
+  const p = new URLSearchParams(location.search);
+  if (p.get('bg') === 'transparent') document.body.classList.add('transparent-bg');
+  if (p.get('admin') === 'false') {
+    state.adminVisible = false;
+  }
+  const theme = p.get('theme');
+  if (theme === 'light' || theme === 'neon') {
+    state.theme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+  const names = p.get('names');
+  if (names) {
+    names.split(',').map(n => n.trim()).filter(Boolean).forEach(addPlayer);
+  }
+  const dc = parseInt(p.get('dice'), 10);
+  if (dc >= 1 && dc <= 3) setDiceCount(dc);
+})();
+
+/* ═══════════════════════════════════════════════
+   AUDIO ENGINE
+   ═══════════════════════════════════════════════ */
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playRattle() {
+  if (!state.soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const dur = 1.4;
+    const ticks = 18;
+    for (let i = 0; i < ticks; i++) {
+      const t = i / ticks * dur * 0.85;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.value = 80 + Math.random() * 120;
+      const vol = (1 - i / ticks) * 0.08;
+      g.gain.setValueAtTime(vol, ctx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.06);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + 0.07);
+    }
+  } catch(e) {}
+}
+
+function playBounce() {
+  if (!state.soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const times = [0, 0.18, 0.32, 0.42, 0.5];
+    times.forEach((t, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = 200 - i * 20;
+      const vol = 0.12 * (1 - i * 0.15);
+      g.gain.setValueAtTime(vol, ctx.currentTime + 1.1 + t);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.1 + t + 0.08);
+      osc.start(ctx.currentTime + 1.1 + t);
+      osc.stop(ctx.currentTime + 1.1 + t + 0.1);
+    });
+  } catch(e) {}
+}
+
+function playChime() {
+  if (!state.soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const notes = [523, 659, 784, 1047];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0, ctx.currentTime + i * 0.1);
+      g.gain.linearRampToValueAtTime(0.15, ctx.currentTime + i * 0.1 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.5);
+      osc.start(ctx.currentTime + i * 0.1);
+      osc.stop(ctx.currentTime + i * 0.1 + 0.55);
+    });
+  } catch(e) {}
+}
+
+function playTie() {
+  if (!state.soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    [440, 330].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.1, ctx.currentTime + i * 0.18);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.25);
+      osc.start(ctx.currentTime + i * 0.18);
+      osc.stop(ctx.currentTime + i * 0.18 + 0.28);
+    });
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════
+   XSS-SAFE HTML ESCAPE
+   ═══════════════════════════════════════════════ */
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+/* ═══════════════════════════════════════════════
+   PLAYER MANAGEMENT
+   ═══════════════════════════════════════════════ */
+function addPlayer(name) {
+  name = String(name).trim().slice(0, 40);
+  if (!name) return false;
+  if (state.players.some(p => p.name.toLowerCase() === name.toLowerCase())) return false;
+  state.players.push({ name, rolls: [], total: 0 });
+  renderPanel();
+  renderLeaderboard();
+  emitNames();
+  return true;
+}
+
+function removePlayer(name) {
+  const i = state.players.findIndex(p => p.name === name);
+  if (i >= 0) {
+    state.players.splice(i, 1);
+    renderPanel();
+    renderLeaderboard();
+    emitNames();
+  }
+}
+
+function clearPlayers() {
+  state.players = [];
+  state.round = 0;
+  renderPanel();
+  renderLeaderboard();
+  renderDiceStage();
+  setStatus('ready', 'Ready');
+  hideAnnouncer();
+  emitNames();
+}
+
+/* ═══════════════════════════════════════════════
+   DICE COUNT
+   ═══════════════════════════════════════════════ */
+function setDiceCount(n) {
+  state.diceCount = Math.max(1, Math.min(3, n));
+  document.querySelectorAll('.seg-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.count) === state.diceCount);
+  });
+  renderDiceStage();
+}
+
+/* ═══════════════════════════════════════════════
+   DIE FACE ROTATIONS
+   Rotation to bring each face to front:
+   1=front: 0,0 | 2=back: 0,180 | 3=right: 0,-90 | 4=left: 0,90 | 5=top: -90,0 | 6=bottom: 90,0
+   ═══════════════════════════════════════════════ */
+const FACE_ROTATIONS = {
+  1: { x: 0,   y: 0   },
+  2: { x: 0,   y: 180 },
+  3: { x: 0,   y: -90 },
+  4: { x: 0,   y: 90  },
+  5: { x: -90, y: 0   },
+  6: { x: 90,  y: 0   },
+};
+
+function buildPips(count, prefix) {
+  const cls = prefix === 'mini' ? 'mini-pip' : 'pip';
+  let html = '';
+  for (let i = 0; i < count; i++) html += `<div class="${cls}"></div>`;
+  return html;
+}
+
+function buildDie(id) {
+  return `
+  <div class="die-scene">
+    <div class="die" id="${esc(id)}" data-value="1" style="transform:rotateX(0deg) rotateY(0deg)">
+      <div class="face front"><div class="pips pips-1">${buildPips(1,'')}</div></div>
+      <div class="face back"><div class="pips pips-2">${buildPips(2,'')}</div></div>
+      <div class="face right"><div class="pips pips-3">${buildPips(3,'')}</div></div>
+      <div class="face left"><div class="pips pips-4">${buildPips(4,'')}</div></div>
+      <div class="face top"><div class="pips pips-5">${buildPips(5,'')}</div></div>
+      <div class="face bottom"><div class="pips pips-6">${buildPips(6,'')}</div></div>
+    </div>
+  </div>`;
+}
+
+function buildMiniDie(value) {
+  return `<div class="mini-die">
+    <div class="mini-pips pips-${value}">${buildPips(value,'mini')}</div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER DICE STAGE
+   ═══════════════════════════════════════════════ */
+function renderDiceStage() {
+  const stage = document.getElementById('dice-stage');
+  let html = '';
+  for (let i = 0; i < state.diceCount; i++) {
+    html += `
+    <div class="die-slot">
+      <div class="die-value-label" id="die-label-${i}"></div>
+      ${buildDie(`die-${i}`)}
+    </div>`;
+  }
+  stage.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════
+   ROLL DICE
+   ═══════════════════════════════════════════════ */
+function rollValue() {
+  return Math.floor(Math.random() * 6) + 1;
+}
+
+// Apply spin to a die before landing — massive random rotation + multiple full spins
+function spinDie(dieEl, targetValue, delayMs) {
+  const { x: fx, y: fy } = FACE_ROTATIONS[targetValue];
+  // Add many full spins so it looks like it's tumbling
+  const extraX = (Math.floor(Math.random() * 5) + 3) * 360 * (Math.random() < 0.5 ? 1 : -1);
+  const extraY = (Math.floor(Math.random() * 5) + 3) * 360 * (Math.random() < 0.5 ? 1 : -1);
+  const finalX = fx + extraX;
+  const finalY = fy + extraY;
+
+  setTimeout(() => {
+    dieEl.style.transform = `rotateX(${finalX}deg) rotateY(${finalY}deg)`;
+    dieEl.classList.add('rolling');
+  }, delayMs);
+
+  return new Promise(resolve => {
+    setTimeout(() => {
+      dieEl.classList.remove('rolling');
+      dieEl.dataset.value = targetValue;
+      resolve(targetValue);
+    }, delayMs + 1550);
+  });
+}
+
+async function doRoll(isTieBreaker) {
+  if (state.rolling || state.players.length === 0) return;
+  state.rolling = true;
+  setRollBtn(false);
+
+  const isFirst = !isTieBreaker;
+  if (isFirst) state.round++;
+
+  // Assign random rolls to all players (or only tied players)
+  let rollingPlayers = state.players;
+  if (isTieBreaker) {
+    const maxTotal = Math.max(...state.players.map(p => p.total));
+    rollingPlayers = state.players.filter(p => p.total === maxTotal);
+    setStatus('rolling', 'Tie-breaker! Re-rolling…');
+  } else {
+    // Reset all rolls
+    state.players.forEach(p => { p.rolls = []; p.total = 0; });
+    setStatus('rolling', 'Rolling…');
+  }
+
+  const rollMap = {};
+  rollingPlayers.forEach(p => {
+    const rolls = Array.from({ length: state.diceCount }, rollValue);
+    rollMap[p.name] = rolls;
+  });
+
+  // Animate stage dice (show any one player's roll for the hero animation)
+  const featuredPlayer = rollingPlayers[0];
+  const featuredRolls = rollMap[featuredPlayer.name];
+
+  playRattle();
+
+  const dieEls = [];
+  const labelEls = [];
+  for (let i = 0; i < state.diceCount; i++) {
+    const el = document.getElementById(`die-${i}`);
+    const lbl = document.getElementById(`die-label-${i}`);
+    if (el) dieEls.push(el);
+    if (lbl) { lbl.classList.remove('visible'); labelEls.push(lbl); }
+  }
+
+  // Stagger the dice
+  const promises = dieEls.map((el, i) => spinDie(el, featuredRolls[i], i * 120));
+
+  await Promise.all(promises);
+
+  playBounce();
+
+  // Show values
+  dieEls.forEach((el, i) => {
+    if (labelEls[i]) {
+      labelEls[i].textContent = featuredRolls[i];
+      labelEls[i].classList.add('visible');
+    }
+  });
+
+  // Assign rolls & totals to players
+  rollingPlayers.forEach(p => {
+    p.rolls = rollMap[p.name];
+    p.total = p.rolls.reduce((s, v) => s + v, 0);
+  });
+
+  // Sort leaderboard
+  state.players.sort((a, b) => b.total - a.total);
+
+  renderLeaderboard();
+
+  // Determine winner / tie
+  const topTotal = state.players[0].total;
+  const topPlayers = state.players.filter(p => p.total === topTotal);
+
+  await sleep(400);
+
+  if (topPlayers.length > 1 && isTieBreaker) {
+    // Still tied — delay and re-roll again
+    playTie();
+    setStatus('rolling', `Still tied at ${topTotal} — rolling again…`);
+    renderLeaderboard(topPlayers.map(p => p.name));
+    await sleep(1800);
+    state.rolling = false;
+    doRoll(true);
+    return;
+  }
+
+  if (topPlayers.length > 1) {
+    // First tie
+    playTie();
+    setStatus('rolling', `Tie at ${topTotal}! Re-rolling tied players…`);
+    renderLeaderboard(topPlayers.map(p => p.name));
+    await sleep(1800);
+    state.rolling = false;
+    doRoll(true);
+    return;
+  }
+
+  // We have a winner
+  const winner = topPlayers[0];
+  playChime();
+  setStatus('winner', `${winner.name} wins with ${winner.total}!`);
+  renderLeaderboard();
+  showAnnouncer(`👑 ${winner.name} wins with ${winner.total}!`);
+  spawnParticles();
+
+  window.parent.postMessage({
+    type: 'dice:winner',
+    winner: winner.name,
+    rolls: winner.rolls,
+    total: winner.total,
+  }, '*');
+
+  state.rolling = false;
+  setRollBtn(true);
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER LEADERBOARD
+   ═══════════════════════════════════════════════ */
+function renderLeaderboard(tiedNames) {
+  const lb = document.getElementById('leaderboard');
+  const empty = document.getElementById('empty-state');
+
+  if (state.players.length === 0) {
+    lb.innerHTML = '';
+    empty.style.display = 'flex';
+    document.getElementById('round-label').textContent = '';
+    return;
+  }
+
+  empty.style.display = 'none';
+  const round = state.round;
+  document.getElementById('round-label').textContent = round > 0 ? `Round ${round}` : '';
+
+  const html = state.players.map((p, i) => {
+    const isWinner = i === 0 && p.total > 0 && !state.rolling;
+    const isTied = tiedNames && tiedNames.includes(p.name);
+    const hasDice = p.rolls && p.rolls.length > 0;
+
+    const miniDice = hasDice
+      ? p.rolls.map(v => buildMiniDie(v)).join('')
+      : '';
+
+    const tieBadge = isTied
+      ? `<span class="tie-badge">Tie</span>`
+      : '';
+
+    return `
+    <div class="player-card${isWinner ? ' winner' : ''}" data-name="${esc(p.name)}">
+      <span class="player-rank">${isWinner ? '' : i + 1}</span>
+      <span class="player-crown">👑</span>
+      <span class="player-name">${esc(p.name)}</span>
+      <div class="player-dice">${miniDice}</div>
+      ${tieBadge}
+      <span class="player-total">${hasDice ? p.total : ''}</span>
+    </div>`;
+  }).join('');
+
+  lb.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER PANEL (names list)
+   ═══════════════════════════════════════════════ */
+function renderPanel() {
+  const container = document.getElementById('names-container');
+  const countEl = document.getElementById('player-count');
+  countEl.textContent = `${state.players.length} player${state.players.length !== 1 ? 's' : ''}`;
+
+  container.innerHTML = state.players.map(p => `
+    <div class="name-tag">
+      <span>${esc(p.name)}</span>
+      <button data-remove="${esc(p.name)}" title="Remove">×</button>
+    </div>
+  `).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   STATUS / ANNOUNCER
+   ═══════════════════════════════════════════════ */
+function setStatus(type, text) {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  dot.className = type === 'ready' ? 'ready' : type;
+  txt.textContent = text;
+}
+
+function setRollBtn(enabled) {
+  const btn = document.getElementById('roll-btn');
+  btn.disabled = !enabled || state.players.length === 0;
+}
+
+function showAnnouncer(text) {
+  const el = document.getElementById('announcer');
+  el.textContent = text;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 5000);
+}
+
+function hideAnnouncer() {
+  document.getElementById('announcer').classList.remove('visible');
+}
+
+/* ═══════════════════════════════════════════════
+   PARTICLES
+   ═══════════════════════════════════════════════ */
+function spawnParticles() {
+  const area = document.getElementById('game-area');
+  const emojis = ['🎲', '✨', '⭐', '🌟', '🏆', '🎉'];
+  for (let i = 0; i < 12; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    p.style.left = (10 + Math.random() * 80) + '%';
+    p.style.bottom = (20 + Math.random() * 50) + '%';
+    p.style.animationDelay = (Math.random() * 0.5) + 's';
+    p.style.animationDuration = (0.8 + Math.random() * 0.8) + 's';
+    area.appendChild(p);
+    p.addEventListener('animationend', () => p.remove(), { once: true });
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   AMBIENT IDLE DICE
+   ═══════════════════════════════════════════════ */
+function spawnAmbient() {
+  const container = document.getElementById('idle-dice');
+  const el = document.createElement('div');
+  el.className = 'ambient-die';
+  el.textContent = '⚅';
+  const left = 5 + Math.random() * 90;
+  const dur = 8 + Math.random() * 10;
+  const delay = Math.random() * 5;
+  el.style.left = left + '%';
+  el.style.animationDuration = dur + 's';
+  el.style.animationDelay = delay + 's';
+  container.appendChild(el);
+  el.addEventListener('animationend', () => el.remove(), { once: true });
+}
+
+setInterval(spawnAmbient, 2500);
+
+/* ═══════════════════════════════════════════════
+   THEME
+   ═══════════════════════════════════════════════ */
+const THEMES = ['dark', 'light', 'neon'];
+function cycleTheme() {
+  const i = THEMES.indexOf(state.theme);
+  state.theme = THEMES[(i + 1) % THEMES.length];
+  document.documentElement.setAttribute('data-theme', state.theme === 'dark' ? '' : state.theme);
+  const icons = { dark: '🌙', light: '☀️', neon: '⚡' };
+  document.getElementById('theme-btn').textContent = `${icons[state.theme]} Theme`;
+}
+
+/* ═══════════════════════════════════════════════
+   POSTMESSAGE API
+   ═══════════════════════════════════════════════ */
+function emitNames() {
+  window.parent.postMessage({
+    type: 'dice:names',
+    names: state.players.map(p => p.name),
+  }, '*');
+}
+
+window.addEventListener('message', function(e) {
+  const msg = e.data;
+  if (!msg || typeof msg.type !== 'string') return;
+
+  switch (msg.type) {
+    case 'dice:join':
+      if (msg.name) addPlayer(msg.name);
+      break;
+    case 'dice:roll':
+      if (!state.rolling) doRoll(false);
+      break;
+    case 'dice:result':
+      // External result injection (bypass roll)
+      if (msg.name && msg.rolls) {
+        const p = state.players.find(x => x.name === msg.name);
+        if (p) {
+          p.rolls = msg.rolls;
+          p.total = msg.rolls.reduce((s, v) => s + v, 0);
+          state.players.sort((a, b) => b.total - a.total);
+          renderLeaderboard();
+        }
+      }
+      break;
+    case 'dice:reset':
+      clearPlayers();
+      break;
+    case 'dice:names':
+      emitNames();
+      break;
+  }
+});
+
+/* ═══════════════════════════════════════════════
+   EVENT LISTENERS
+   ═══════════════════════════════════════════════ */
+// Add player
+document.getElementById('add-btn').addEventListener('click', () => {
+  const inp = document.getElementById('name-input');
+  if (addPlayer(inp.value)) {
+    inp.value = '';
+    inp.focus();
+  }
+});
+
+document.getElementById('name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('add-btn').click();
+});
+
+// Bulk add
+document.getElementById('bulk-add-btn').addEventListener('click', () => {
+  const ta = document.getElementById('bulk-input');
+  ta.value.split('\n').map(n => n.trim()).filter(Boolean).forEach(addPlayer);
+  ta.value = '';
+});
+
+// Remove via delegation
+document.getElementById('names-container').addEventListener('click', e => {
+  const btn = e.target.closest('[data-remove]');
+  if (btn) removePlayer(btn.dataset.remove);
+});
+
+// Clear
+document.getElementById('clear-btn').addEventListener('click', clearPlayers);
+
+// Dice count
+document.querySelectorAll('.seg-btn').forEach(btn => {
+  btn.addEventListener('click', () => setDiceCount(parseInt(btn.dataset.count)));
+});
+
+// Roll button
+document.getElementById('roll-btn').addEventListener('click', () => doRoll(false));
+
+// Spacebar roll
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    doRoll(false);
+  }
+});
+
+// Sound
+document.getElementById('sound-btn').addEventListener('click', () => {
+  state.soundEnabled = !state.soundEnabled;
+  document.getElementById('sound-btn').textContent = state.soundEnabled ? '🔊 Sound On' : '🔇 Sound Off';
+});
+
+// Theme
+document.getElementById('theme-btn').addEventListener('click', cycleTheme);
+
+// Admin toggle
+document.getElementById('admin-toggle').addEventListener('click', () => {
+  const panel = document.getElementById('admin-panel');
+  panel.classList.toggle('hidden');
+});
+
+/* ═══════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════ */
+function init() {
+  if (!state.adminVisible) {
+    document.getElementById('admin-panel').classList.add('hidden');
+  }
+  renderDiceStage();
+  renderPanel();
+  renderLeaderboard();
+  setStatus('ready', 'Ready');
+  setRollBtn(true);
+  // Kick off first ambient die immediately
+  spawnAmbient();
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>

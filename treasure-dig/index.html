@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treasure Dig — Streamer Games</title>
+<style>
+/* ═══════════════════════════════════════════════
+   CSS RESET & VARIABLES
+   ═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d14;
+  --bg2: #14141f;
+  --surface: #1a1a2e;
+  --surface2: #22223a;
+  --border: #2a2a4a;
+  --text: #e8e8f0;
+  --text-dim: #8888aa;
+  --accent: #7c5cfc;
+  --accent-glow: rgba(124,92,252,0.4);
+  --gold: #ffd700;
+  --gold-glow: rgba(255,215,0,0.5);
+  --danger: #ff4466;
+  --success: #44ff88;
+  --panel-width: 360px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --dirt-top: #8B6914;
+  --dirt-bot: #6B4F10;
+  --dug-top: #4a3208;
+  --dug-bot: #3a2606;
+  --rock: #6a6a7a;
+}
+
+[data-theme="light"] {
+  --bg: #f0f0f5;
+  --bg2: #e8e8f0;
+  --surface: #ffffff;
+  --surface2: #f5f5fa;
+  --border: #d0d0e0;
+  --text: #1a1a2e;
+  --text-dim: #666680;
+}
+
+[data-theme="neon"] {
+  --bg: #0a0a0a;
+  --bg2: #111111;
+  --surface: #1a1a1a;
+  --surface2: #222222;
+  --border: #333333;
+  --text: #ffffff;
+  --text-dim: #888888;
+  --accent: #00ffcc;
+  --accent-glow: rgba(0,255,204,0.4);
+  --gold: #ff00ff;
+  --gold-glow: rgba(255,0,255,0.5);
+}
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.transparent-bg { background: transparent !important; }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════ */
+#app {
+  display: flex;
+  width: 100%; height: 100%;
+  position: relative;
+}
+
+#game-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   ADMIN PANEL
+   ═══════════════════════════════════════════════ */
+#admin-panel {
+  width: var(--panel-width);
+  height: 100%;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+#admin-panel.hidden {
+  transform: translateX(100%);
+  opacity: 0;
+  position: absolute;
+  right: 0; top: 0;
+  pointer-events: none;
+}
+
+#admin-toggle {
+  position: fixed;
+  top: 12px; right: 12px;
+  z-index: 200;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#admin-toggle:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.panel-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.panel-header h2 {
+  font-size: 16px; font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.panel-header p { font-size: 12px; color: var(--text-dim); }
+
+.panel-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-section h3 {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* ── Form Elements ── */
+.input-group { display: flex; gap: 8px; margin-bottom: 8px; }
+
+input[type="text"] {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="text"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn:hover { background: var(--surface2); border-color: var(--accent); }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.btn-primary:hover { filter: brightness(1.15); box-shadow: 0 6px 24px var(--accent-glow); }
+
+.btn-gold {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #1a1000;
+  box-shadow: 0 4px 16px var(--gold-glow);
+}
+.btn-gold:hover { filter: brightness(1.1); box-shadow: 0 6px 24px var(--gold-glow); }
+
+.btn-danger { color: var(--danger); border-color: rgba(255,68,102,0.3); }
+.btn-danger:hover { background: rgba(255,68,102,0.1); border-color: var(--danger); }
+
+.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.btn-block { width: 100%; }
+.btn-group { display: flex; gap: 8px; }
+
+.size-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.size-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-size: 12px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  text-align: center;
+}
+.size-btn:hover { border-color: var(--accent); color: var(--text); }
+.size-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* ── Status log ── */
+#log {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+  min-height: 60px;
+  max-height: 140px;
+  overflow-y: auto;
+  line-height: 1.6;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+#log .log-win { color: var(--gold); font-weight: 700; }
+#log .log-miss { color: var(--text-dim); }
+#log .log-info { color: var(--accent); }
+
+/* toggle row */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.toggle-row label { cursor: pointer; }
+.toggle {
+  position: relative;
+  width: 38px; height: 22px;
+  cursor: pointer;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  background: var(--border);
+  transition: background 0.25s;
+}
+.toggle input:checked ~ .toggle-track { background: var(--accent); }
+.toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.25s;
+  pointer-events: none;
+}
+.toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
+
+/* ═══════════════════════════════════════════════
+   GRID WRAPPER
+   ═══════════════════════════════════════════════ */
+#grid-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+/* row: label + tiles */
+.grid-row {
+  display: flex;
+  align-items: center;
+}
+
+.row-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+/* column header row */
+#col-labels {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.col-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-align: center;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+.col-label-spacer { flex-shrink: 0; width: 28px; }
+
+/* ═══════════════════════════════════════════════
+   TILES
+   ═══════════════════════════════════════════════ */
+.tile {
+  position: relative;
+  border-radius: 6px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  flex-shrink: 0;
+}
+
+.tile:hover .tile-cover {
+  filter: brightness(1.15);
+  transform: translateY(-2px);
+}
+
+/* The cover (dirt face, slides away on dig) */
+.tile-cover {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: linear-gradient(145deg, var(--dirt-top) 0%, var(--dirt-bot) 100%);
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease;
+  z-index: 2;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.12), inset 0 -2px 0 rgba(0,0,0,0.25);
+  /* subtle texture via radial gradients */
+  background-image:
+    radial-gradient(ellipse 4px 3px at 20% 30%, rgba(0,0,0,0.15) 0%, transparent 100%),
+    radial-gradient(ellipse 3px 4px at 70% 65%, rgba(0,0,0,0.12) 0%, transparent 100%),
+    radial-gradient(ellipse 5px 3px at 50% 20%, rgba(255,255,255,0.07) 0%, transparent 100%),
+    linear-gradient(145deg, var(--dirt-top) 0%, var(--dirt-bot) 100%);
+}
+
+.tile.dug .tile-cover {
+  transform: scale(0.01) rotate(45deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The content beneath the cover */
+.tile-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  background: linear-gradient(145deg, var(--dug-top) 0%, var(--dug-bot) 100%);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+}
+
+.tile-inner .tile-emoji {
+  font-size: 1.6em;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  transform: scale(0);
+}
+.tile.dug .tile-inner .tile-emoji { transform: scale(1); }
+
+/* Rock tile */
+.tile.rock .tile-inner { background: linear-gradient(145deg, #555566 0%, #3a3a4a 100%); }
+.tile.rock .tile-inner .tile-emoji { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)) grayscale(0.2); }
+
+/* Treasure tile */
+.tile.treasure .tile-inner {
+  background: radial-gradient(circle at 50% 40%, #3a2800 0%, #1a1000 100%);
+}
+.tile.treasure .tile-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: radial-gradient(ellipse 80% 60% at 50% 50%, var(--gold-glow), transparent 70%);
+  animation: treasure-pulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes treasure-pulse {
+  from { opacity: 0.5; transform: scale(0.95); }
+  to   { opacity: 1;   transform: scale(1.05); }
+}
+.tile.treasure .tile-inner .tile-emoji {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 12px var(--gold)) drop-shadow(0 0 24px var(--gold-glow));
+  animation: chest-float 2s ease-in-out infinite alternate;
+}
+@keyframes chest-float {
+  from { transform: scale(1.1) translateY(0); }
+  to   { transform: scale(1.15) translateY(-3px); }
+}
+
+/* Digger name badge on missed tiles */
+.tile-badge {
+  position: absolute;
+  bottom: 2px; left: 0; right: 0;
+  text-align: center;
+  font-size: 0.6em;
+  font-weight: 700;
+  color: var(--text);
+  opacity: 0.85;
+  z-index: 3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 2px;
+  line-height: 1.2;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Shake animation on dig */
+@keyframes tile-shake {
+  0%   { transform: translate(0,0) rotate(0); }
+  20%  { transform: translate(-3px,-2px) rotate(-2deg); }
+  40%  { transform: translate(3px,2px) rotate(2deg); }
+  60%  { transform: translate(-2px,1px) rotate(-1deg); }
+  80%  { transform: translate(2px,-1px) rotate(1deg); }
+  100% { transform: translate(0,0) rotate(0); }
+}
+.tile.shaking { animation: tile-shake 0.28s ease; }
+
+/* ═══════════════════════════════════════════════
+   DIRT PARTICLE ANIMATIONS
+   ═══════════════════════════════════════════════ */
+.dirt-particle {
+  position: fixed;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #8B6914;
+  pointer-events: none;
+  z-index: 9999;
+  animation: dirt-fly var(--dur, 0.55s) ease-out forwards;
+  transform-origin: center;
+}
+@keyframes dirt-fly {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx,0px), var(--dy,0px)) scale(0.2); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════
+   WINNER OVERLAY
+   ═══════════════════════════════════════════════ */
+#winner-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+#winner-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#winner-box {
+  background: linear-gradient(145deg, #1a1200, #0d0800);
+  border: 2px solid var(--gold);
+  border-radius: 24px;
+  padding: 48px 64px;
+  text-align: center;
+  box-shadow: 0 0 60px var(--gold-glow), 0 0 120px rgba(255,215,0,0.2), 0 20px 60px rgba(0,0,0,0.6);
+  animation: winner-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  max-width: 500px;
+}
+@keyframes winner-pop {
+  from { transform: scale(0.6) translateY(40px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+#winner-chest {
+  font-size: 80px;
+  display: block;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 20px var(--gold)) drop-shadow(0 0 40px var(--gold-glow));
+  animation: winner-chest-spin 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.1s both;
+}
+@keyframes winner-chest-spin {
+  from { transform: scale(0.3) rotate(-20deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+#winner-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+#winner-name {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--gold);
+  text-shadow: 0 0 30px var(--gold-glow);
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+#winner-coord {
+  font-size: 18px;
+  color: var(--text-dim);
+  margin-bottom: 28px;
+}
+#winner-close {
+  padding: 14px 36px;
+  border-radius: 12px;
+  border: 2px solid var(--gold);
+  background: transparent;
+  color: var(--gold);
+  font-family: var(--font);
+  font-size: 15px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+#winner-close:hover {
+  background: var(--gold);
+  color: #1a1000;
+  box-shadow: 0 0 24px var(--gold-glow);
+}
+
+/* ═══════════════════════════════════════════════
+   GOLD PARTICLES (winner burst)
+   ═══════════════════════════════════════════════ */
+.gold-particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: gold-burst var(--dur, 1.2s) ease-out forwards;
+}
+@keyframes gold-burst {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  80%  { opacity: 0.6; }
+  100% { transform: translate(var(--dx,0px), var(--dy,0px)) scale(0.1); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════
+   GAME STATUS BAR (bottom of game area)
+   ═══════════════════════════════════════════════ */
+#status-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  padding: 8px 20px;
+  font-size: 13px;
+  color: var(--text-dim);
+  z-index: 10;
+  white-space: nowrap;
+}
+#status-bar .status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  flex-shrink: 0;
+}
+#status-bar .status-dot.inactive {
+  background: var(--text-dim);
+  box-shadow: none;
+}
+#status-text { font-weight: 600; color: var(--text); }
+
+</style>
+</head>
+<body>
+<button id="admin-toggle" title="Toggle admin panel">⚙</button>
+
+<div id="app">
+  <!-- ── GAME AREA ── -->
+  <div id="game-area">
+    <div id="grid-wrap">
+      <!-- col labels and tile rows injected by JS -->
+    </div>
+
+    <div id="status-bar">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Ready — New Game to begin</span>
+    </div>
+  </div>
+
+  <!-- ── ADMIN PANEL ── -->
+  <div id="admin-panel">
+    <div class="panel-header">
+      <h2>⛏ Treasure Dig</h2>
+      <p>Viewers dig for buried treasure</p>
+    </div>
+    <div class="panel-scroll">
+
+      <div class="panel-section">
+        <h3>Grid Size</h3>
+        <div class="size-btns">
+          <button class="size-btn" data-size="6">6×6</button>
+          <button class="size-btn" data-size="7">7×7</button>
+          <button class="size-btn active" data-size="8">8×8</button>
+          <button class="size-btn" data-size="9">9×9</button>
+          <button class="size-btn" data-size="10">10×10</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Game Controls</h3>
+        <div class="btn-group" style="margin-bottom:10px">
+          <button class="btn btn-primary btn-block" id="btn-new-game">⛏ New Game</button>
+          <button class="btn btn-block" id="btn-show-all">👁 Show All</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Manual Dig</h3>
+        <div class="input-group">
+          <input type="text" id="manual-coord" placeholder="e.g. B3" maxlength="4" style="text-transform:uppercase">
+          <input type="text" id="manual-name" placeholder="Name" maxlength="32">
+        </div>
+        <button class="btn btn-block" id="btn-manual-dig">Dig</button>
+      </div>
+
+      <div class="panel-section">
+        <h3>Theme</h3>
+        <div class="btn-group">
+          <button class="btn btn-sm" data-theme="dark">🌑 Dark</button>
+          <button class="btn btn-sm" data-theme="light">☀ Light</button>
+          <button class="btn btn-sm" data-theme="neon">⚡ Neon</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Options</h3>
+        <div class="toggle-row">
+          <label for="snd-toggle">Sound effects</label>
+          <label class="toggle">
+            <input type="checkbox" id="snd-toggle" checked>
+            <span class="toggle-track"></span>
+            <span class="toggle-thumb"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Activity Log</h3>
+        <div id="log"><span style="color:var(--text-dim);font-style:italic">Waiting for digs…</span></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── WINNER OVERLAY ── -->
+<div id="winner-overlay">
+  <div id="winner-box">
+    <span id="winner-chest">💰</span>
+    <div id="winner-title">TREASURE FOUND!</div>
+    <div id="winner-name">PlayerName</div>
+    <div id="winner-coord">dug at A1</div>
+    <button id="winner-close">Continue</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+(function() {
+
+/* ════════════════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════════════════ */
+const STATE = {
+  size: 8,
+  treasureIdx: -1,   // flat index col + row*size
+  grid: [],          // array of { dug:bool, name:string|null, isTreasure:bool }
+  gameActive: false,
+  soundEnabled: true,
+};
+
+/* ════════════════════════════════════════════════════════
+   DOM REFS
+   ════════════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const gridWrap   = $('grid-wrap');
+const adminPanel = $('admin-panel');
+const adminToggle= $('admin-toggle');
+const statusDot  = $('status-dot');
+const statusText = $('status-text');
+const log        = $('log');
+const sndToggle  = $('snd-toggle');
+const winOverlay = $('winner-overlay');
+const winName    = $('winner-name');
+const winCoord   = $('winner-coord');
+
+/* ════════════════════════════════════════════════════════
+   URL PARAMS
+   ════════════════════════════════════════════════════════ */
+(function applyParams() {
+  const p = new URLSearchParams(location.search);
+  if (p.get('bg') === 'transparent') document.body.classList.add('transparent-bg');
+  if (p.get('theme')) document.documentElement.setAttribute('data-theme', p.get('theme'));
+  if (p.get('admin') === 'false') {
+    adminPanel.style.display = 'none';
+    adminToggle.style.display = 'none';
+  }
+  const sz = parseInt(p.get('size'));
+  if (sz >= 6 && sz <= 10) STATE.size = sz;
+})();
+
+/* ════════════════════════════════════════════════════════
+   WEB AUDIO
+   ════════════════════════════════════════════════════════ */
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playDig() {
+  if (!STATE.soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    // Shovel thud: low-frequency thump + noise burst
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.exponentialRampToValueAtTime(60, t + 0.18);
+    gain.gain.setValueAtTime(0.55, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    osc.start(t); osc.stop(t + 0.25);
+
+    // Dirt crumble (short noise)
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+    const src = ctx.createBufferSource();
+    const flt = ctx.createBiquadFilter();
+    const ng  = ctx.createGain();
+    src.buffer = buf;
+    flt.type = 'bandpass'; flt.frequency.value = 700; flt.Q.value = 0.8;
+    src.connect(flt); flt.connect(ng); ng.connect(ctx.destination);
+    ng.gain.setValueAtTime(0.4, t + 0.02);
+    ng.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    src.start(t + 0.02);
+  } catch(e) {}
+}
+
+function playRock() {
+  if (!STATE.soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    // Metallic clink: two quick high tones
+    [440, 660].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, t + i * 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.04 + 0.25);
+      osc.start(t + i * 0.04);
+      osc.stop(t + i * 0.04 + 0.3);
+    });
+  } catch(e) {}
+}
+
+function playTreasure() {
+  if (!STATE.soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    // Triumphant ascending arpeggio
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+    notes.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const st = t + i * 0.09;
+      gain.gain.setValueAtTime(0, st);
+      gain.gain.linearRampToValueAtTime(0.45, st + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, st + 0.55);
+      osc.start(st); osc.stop(st + 0.6);
+    });
+    // Shimmer layer
+    const osc2 = ctx.createOscillator();
+    const g2   = ctx.createGain();
+    osc2.connect(g2); g2.connect(ctx.destination);
+    osc2.type = 'sine'; osc2.frequency.value = 2093;
+    g2.gain.setValueAtTime(0.25, t + 0.35);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+    osc2.start(t + 0.35); osc2.stop(t + 1.3);
+  } catch(e) {}
+}
+
+/* ════════════════════════════════════════════════════════
+   COORDINATE HELPERS
+   ════════════════════════════════════════════════════════ */
+function parseCoord(coord) {
+  if (!coord || typeof coord !== 'string') return null;
+  const s = coord.trim().toUpperCase();
+  if (s.length < 2 || s.length > 3) return null;
+  const col = s.charCodeAt(0) - 65; // A=0, B=1...
+  const row = parseInt(s.slice(1), 10) - 1; // "1"→0, "2"→1...
+  if (isNaN(row) || col < 0 || row < 0) return null;
+  return { col, row };
+}
+
+function coordToLabel(col, row) {
+  return String.fromCharCode(65 + col) + (row + 1);
+}
+
+function coordToIdx(col, row) {
+  return row * STATE.size + col;
+}
+
+/* ════════════════════════════════════════════════════════
+   GRID BUILD
+   ════════════════════════════════════════════════════════ */
+function buildGrid() {
+  // Init state
+  const total = STATE.size * STATE.size;
+  STATE.grid = Array.from({ length: total }, () => ({ dug: false, name: null }));
+  STATE.treasureIdx = -1;
+  STATE.gameActive = false;
+
+  // Clear DOM
+  gridWrap.innerHTML = '';
+
+  // Measure available space
+  const gameArea = document.getElementById('game-area');
+  const areaW = gameArea.clientWidth - 40;
+  const areaH = gameArea.clientHeight - 80;
+  const labelSize = 28;
+  const gap = 4;
+  const maxTileW = Math.floor((areaW - labelSize - gap * STATE.size) / STATE.size);
+  const maxTileH = Math.floor((areaH - labelSize - gap * STATE.size) / STATE.size);
+  const tileSize = Math.max(32, Math.min(maxTileW, maxTileH, 80));
+
+  // Column labels row
+  const colRow = document.createElement('div');
+  colRow.id = 'col-labels';
+  colRow.style.gap = gap + 'px';
+  const spacer = document.createElement('div');
+  spacer.className = 'col-label-spacer';
+  colRow.appendChild(spacer);
+  for (let c = 0; c < STATE.size; c++) {
+    const lbl = document.createElement('div');
+    lbl.className = 'col-label';
+    lbl.style.width = tileSize + 'px';
+    lbl.textContent = String.fromCharCode(65 + c);
+    colRow.appendChild(lbl);
+  }
+  gridWrap.appendChild(colRow);
+
+  // Tile rows
+  for (let r = 0; r < STATE.size; r++) {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'grid-row';
+    rowDiv.style.gap = gap + 'px';
+    rowDiv.style.marginTop = gap + 'px';
+
+    const rowLbl = document.createElement('div');
+    rowLbl.className = 'row-label';
+    rowLbl.textContent = r + 1;
+    rowDiv.appendChild(rowLbl);
+
+    for (let c = 0; c < STATE.size; c++) {
+      const tile = createTileEl(c, r, tileSize);
+      rowDiv.appendChild(tile);
+    }
+    gridWrap.appendChild(rowDiv);
+  }
+
+  setStatus('inactive', 'Ready — click ⛏ New Game');
+  updateSizeButtons();
+}
+
+function createTileEl(col, row, size) {
+  const tile = document.createElement('div');
+  tile.className = 'tile';
+  tile.style.width  = size + 'px';
+  tile.style.height = size + 'px';
+  tile.dataset.col = col;
+  tile.dataset.row = row;
+
+  const cover = document.createElement('div');
+  cover.className = 'tile-cover';
+
+  const inner = document.createElement('div');
+  inner.className = 'tile-inner';
+
+  const emoji = document.createElement('span');
+  emoji.className = 'tile-emoji';
+  inner.appendChild(emoji);
+
+  tile.appendChild(inner);
+  tile.appendChild(cover);
+
+  tile.addEventListener('click', () => {
+    if (!STATE.gameActive) return;
+    const coord = coordToLabel(col, row);
+    adminDig(coord, 'Admin');
+  });
+
+  return tile;
+}
+
+/* ════════════════════════════════════════════════════════
+   GAME LOGIC
+   ════════════════════════════════════════════════════════ */
+function newGame(size) {
+  if (size && size !== STATE.size) {
+    STATE.size = size;
+  }
+  buildGrid();
+  // Place treasure randomly
+  const total = STATE.size * STATE.size;
+  STATE.treasureIdx = Math.floor(Math.random() * total);
+  STATE.gameActive = true;
+  setStatus('active', `Game on! ${STATE.size}×${STATE.size} grid — ${total} tiles`);
+  logMsg('info', `⛏ New ${STATE.size}×${STATE.size} game started. Treasure hidden!`);
+}
+
+function digTile(col, row, name) {
+  if (!STATE.gameActive) {
+    logMsg('miss', `${name} tried to dig ${coordToLabel(col, row)} — no active game`);
+    return;
+  }
+  if (col < 0 || col >= STATE.size || row < 0 || row >= STATE.size) {
+    logMsg('miss', `${name} — coord out of bounds`);
+    return;
+  }
+  const idx = coordToIdx(col, row);
+  if (STATE.grid[idx].dug) {
+    logMsg('miss', `${name} — ${coordToLabel(col,row)} already dug`);
+    return;
+  }
+
+  const coord = coordToLabel(col, row);
+  const isTreasure = (idx === STATE.treasureIdx);
+
+  // Mark dug
+  STATE.grid[idx].dug = true;
+  STATE.grid[idx].name = name;
+
+  const tileEl = getTileEl(col, row);
+  if (!tileEl) return;
+
+  // Shake
+  tileEl.classList.add('shaking');
+  setTimeout(() => tileEl.classList.remove('shaking'), 300);
+
+  // Dirt particles
+  spawnDirtParticles(tileEl, isTreasure);
+
+  if (isTreasure) {
+    // Reveal treasure
+    playDig();
+    setTimeout(() => playTreasure(), 300);
+    tileEl.classList.add('dug', 'treasure');
+    tileEl.querySelector('.tile-emoji').textContent = '💰';
+    addBadge(tileEl, name);
+
+    STATE.gameActive = false;
+    setStatus('inactive', `💰 ${name} found the treasure at ${coord}!`);
+    logMsg('win', `💰 ${name} found the treasure at ${coord}!`);
+
+    setTimeout(() => showWinner(name, coord), 600);
+    setTimeout(() => spawnGoldBurst(tileEl), 400);
+
+    // postMessage outbound
+    emit('treasure:winner', { winner: name, coord });
+
+  } else {
+    // Rock or empty — 25% chance rock
+    const isRock = (Math.random() < 0.25);
+    if (isRock) {
+      playRock();
+      tileEl.classList.add('dug', 'rock');
+      tileEl.querySelector('.tile-emoji').textContent = '🪨';
+    } else {
+      playDig();
+      tileEl.classList.add('dug');
+      tileEl.querySelector('.tile-emoji').textContent = '';
+    }
+    addBadge(tileEl, name);
+    logMsg('miss', `${name} dug ${coord} — ${isRock ? '🪨 rock' : 'empty'}`);
+
+    // postMessage outbound
+    emit('treasure:miss', { name, coord });
+  }
+}
+
+function adminDig(rawCoord, name) {
+  const parsed = parseCoord(rawCoord);
+  if (!parsed) {
+    logMsg('miss', `Invalid coordinate: ${escHtml(rawCoord)}`);
+    return;
+  }
+  digTile(parsed.col, parsed.row, name || 'Admin');
+}
+
+function showAll() {
+  if (STATE.treasureIdx < 0) { logMsg('info', 'Start a game first'); return; }
+  const col = STATE.treasureIdx % STATE.size;
+  const row = Math.floor(STATE.treasureIdx / STATE.size);
+  const tileEl = getTileEl(col, row);
+  if (tileEl && !STATE.grid[STATE.treasureIdx].dug) {
+    // Reveal with glow (but don't mark as dug)
+    tileEl.querySelector('.tile-cover').style.opacity = '0.4';
+    tileEl.querySelector('.tile-inner').style.background =
+      'radial-gradient(circle at 50% 40%, #3a2800 0%, #1a1000 100%)';
+    tileEl.querySelector('.tile-emoji').textContent = '💰';
+    tileEl.querySelector('.tile-emoji').style.transform = 'scale(0.7)';
+  }
+  logMsg('info', `Treasure is at ${coordToLabel(col, row)}`);
+}
+
+/* ════════════════════════════════════════════════════════
+   VISUALS / HELPERS
+   ════════════════════════════════════════════════════════ */
+function getTileEl(col, row) {
+  return gridWrap.querySelector(`.tile[data-col="${col}"][data-row="${row}"]`);
+}
+
+function addBadge(tileEl, name) {
+  if (!name) return;
+  const badge = document.createElement('div');
+  badge.className = 'tile-badge';
+  badge.textContent = name.length > 10 ? name.slice(0, 9) + '…' : name;
+  tileEl.appendChild(badge);
+}
+
+function spawnDirtParticles(tileEl, isTreasure) {
+  const rect = tileEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top  + rect.height / 2;
+  const count = isTreasure ? 12 : 5;
+
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'dirt-particle';
+    const angle = (Math.PI * 2 * i / count) + (Math.random() - 0.5) * 0.8;
+    const dist  = 30 + Math.random() * 50;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist - 20;
+    const dur = 0.4 + Math.random() * 0.25;
+    const sz  = 4 + Math.random() * 6;
+    p.style.cssText = `
+      left:${cx}px; top:${cy}px;
+      width:${sz}px; height:${sz}px;
+      --dx:${dx}px; --dy:${dy}px; --dur:${dur}s;
+      background:${isTreasure ? '#ffd700' : '#8B6914'};
+    `;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), dur * 1000 + 50);
+  }
+}
+
+function spawnGoldBurst(tileEl) {
+  const rect = tileEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top  + rect.height / 2;
+
+  for (let i = 0; i < 32; i++) {
+    const p = document.createElement('div');
+    p.className = 'gold-particle';
+    const angle = Math.PI * 2 * i / 32 + (Math.random() - 0.5) * 0.4;
+    const dist  = 80 + Math.random() * 160;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    const dur = 0.8 + Math.random() * 0.6;
+    const sz  = 4 + Math.random() * 10;
+    p.style.cssText = `
+      left:${cx}px; top:${cy}px;
+      width:${sz}px; height:${sz}px;
+      --dx:${dx}px; --dy:${dy}px; --dur:${dur}s;
+    `;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), dur * 1000 + 100);
+  }
+}
+
+function showWinner(name, coord) {
+  winName.textContent = escHtml(name);
+  winCoord.textContent = `dug at ${escHtml(coord)}`;
+  winOverlay.classList.add('visible');
+}
+
+function setStatus(type, msg) {
+  statusDot.className = 'status-dot' + (type === 'active' ? '' : ' inactive');
+  statusText.textContent = msg;
+}
+
+function logMsg(type, msg) {
+  // Clear placeholder
+  if (log.querySelector('span[style]')) log.innerHTML = '';
+  const line = document.createElement('div');
+  line.className = 'log-' + type;
+  line.textContent = msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+  // Keep last 50
+  while (log.children.length > 50) log.removeChild(log.firstChild);
+}
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(String(str)));
+  return d.innerHTML;
+}
+
+function updateSizeButtons() {
+  document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.size) === STATE.size);
+  });
+}
+
+function emit(type, data) {
+  try {
+    window.parent.postMessage({ type, ...data }, '*');
+  } catch(e) {}
+}
+
+/* ════════════════════════════════════════════════════════
+   EVENT LISTENERS
+   ════════════════════════════════════════════════════════ */
+adminToggle.addEventListener('click', () => {
+  adminPanel.classList.toggle('hidden');
+  // Rebuild grid to recalculate tile sizes
+  if (!adminPanel.classList.contains('hidden')) {
+    requestAnimationFrame(() => {
+      const sz = STATE.size;
+      const active = STATE.gameActive;
+      const tIdx = STATE.treasureIdx;
+      buildGrid();
+      if (active) {
+        STATE.gameActive = true;
+        STATE.treasureIdx = tIdx;
+        // Re-apply dug states
+        STATE.grid.forEach((cell, idx) => {
+          if (cell.dug) {
+            const col = idx % sz;
+            const row = Math.floor(idx / sz);
+            // just mark as dug visually
+            const el = getTileEl(col, row);
+            if (el) el.classList.add('dug');
+          }
+        });
+      }
+    });
+  } else {
+    requestAnimationFrame(() => buildGrid());
+  }
+});
+
+$('btn-new-game').addEventListener('click', () => newGame(STATE.size));
+
+$('btn-show-all').addEventListener('click', showAll);
+
+$('btn-manual-dig').addEventListener('click', () => {
+  const coord = $('manual-coord').value.trim().toUpperCase();
+  const name  = $('manual-name').value.trim() || 'Admin';
+  if (!coord) return;
+  adminDig(coord, name);
+  $('manual-coord').value = '';
+});
+
+$('manual-coord').addEventListener('keydown', e => {
+  if (e.key === 'Enter') $('btn-manual-dig').click();
+});
+
+document.querySelectorAll('.size-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    newGame(parseInt(btn.dataset.size));
+  });
+});
+
+document.querySelectorAll('[data-theme]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.documentElement.setAttribute('data-theme', btn.dataset.theme);
+  });
+});
+
+sndToggle.addEventListener('change', () => {
+  STATE.soundEnabled = sndToggle.checked;
+});
+
+$('winner-close').addEventListener('click', () => {
+  winOverlay.classList.remove('visible');
+});
+
+winOverlay.addEventListener('click', e => {
+  if (e.target === winOverlay) winOverlay.classList.remove('visible');
+});
+
+/* ════════════════════════════════════════════════════════
+   postMessage INBOUND
+   ════════════════════════════════════════════════════════ */
+window.addEventListener('message', e => {
+  const msg = e.data;
+  if (!msg || typeof msg.type !== 'string') return;
+
+  switch (msg.type) {
+
+    case 'treasure:dig': {
+      if (!msg.coord) return;
+      const p = parseCoord(msg.coord);
+      if (!p) { emit('treasure:miss', { name: msg.name || '?', coord: msg.coord }); return; }
+      digTile(p.col, p.row, escHtml(msg.name || 'viewer'));
+      break;
+    }
+
+    case 'treasure:reset':
+      newGame(STATE.size);
+      break;
+
+    case 'treasure:resize': {
+      const sz = parseInt(msg.size);
+      if (sz >= 6 && sz <= 10) newGame(sz);
+      break;
+    }
+
+    default: break;
+  }
+});
+
+/* ════════════════════════════════════════════════════════
+   RESIZE HANDLER
+   ════════════════════════════════════════════════════════ */
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    // Preserve game state across resize
+    const snapshot = {
+      size: STATE.size,
+      active: STATE.gameActive,
+      treasureIdx: STATE.treasureIdx,
+      grid: STATE.grid.map(c => ({ ...c })),
+    };
+    buildGrid();
+    STATE.gameActive = snapshot.active;
+    STATE.treasureIdx = snapshot.treasureIdx;
+    STATE.grid = snapshot.grid;
+    if (snapshot.active) {
+      setStatus('active', `Game on! ${STATE.size}×${STATE.size} grid`);
+    }
+    // Re-apply dug tiles
+    snapshot.grid.forEach((cell, idx) => {
+      if (!cell.dug) return;
+      const col = idx % snapshot.size;
+      const row = Math.floor(idx / snapshot.size);
+      const el = getTileEl(col, row);
+      if (!el) return;
+      const isTreasure = (idx === snapshot.treasureIdx);
+      el.classList.add('dug');
+      if (isTreasure) {
+        el.classList.add('treasure');
+        el.querySelector('.tile-emoji').textContent = '💰';
+      }
+      if (cell.name) addBadge(el, cell.name);
+    });
+  }, 150);
+});
+
+/* ════════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════════ */
+buildGrid();
+
+})();
+</script>
+</body>
+</html>
