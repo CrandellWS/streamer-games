@@ -807,6 +807,7 @@ input[type="range"]::-moz-range-thumb {
   align-items: center;
   filter: drop-shadow(0 20px 60px rgba(0,0,0,0.6));
   transition: transform 0.1s;
+  overflow: hidden;
 }
 
 #cabinet {
@@ -2508,14 +2509,15 @@ function triggerScreenShake() {
 }
 
 function triggerCoinShower() {
+  const machine = document.getElementById('slot-machine');
   for (let i = 0; i < 30; i++) {
     setTimeout(() => {
       const coin = document.createElement('div');
       coin.className = 'shower-coin';
-      coin.style.left = Math.random() * 100 + 'vw';
+      coin.style.left = Math.random() * 100 + '%';
       coin.style.animationDuration = (0.8 + Math.random() * 0.8) + 's';
       coin.style.animationDelay = '0s';
-      document.body.appendChild(coin);
+      machine.appendChild(coin);
       setTimeout(() => coin.remove(), 2000);
     }, i * 50);
   }
