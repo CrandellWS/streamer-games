@@ -350,7 +350,7 @@ textarea {
    ═══════════════════════════════════════════════ */
 #slot-machine {
   position: relative;
-  width: 520px;
+  width: min(680px, 95vw);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -535,7 +535,7 @@ textarea {
 /* Individual reel window */
 .reel-window {
   flex: 1;
-  height: 200px;
+  height: 240px;
   background: var(--reel-bg);
   border-radius: 10px;
   overflow: hidden;
@@ -628,18 +628,23 @@ textarea {
   padding-left: 10px;
   position: relative;
   height: 200px;
-  cursor: pointer;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#lever-assembly:active {
+  cursor: grabbing;
 }
 
 #lever-shaft {
   width: 14px;
-  height: 160px;
   background: linear-gradient(90deg, #666, #ccc, #888, #ddd, #666);
   border-radius: 7px;
   position: absolute;
   top: 20px;
-  transform-origin: bottom center;
-  transition: transform 0.2s cubic-bezier(0.4,0,0.2,1);
+  height: 160px;
+  transition: height 0.1s ease;
   box-shadow: 2px 0 8px rgba(0,0,0,0.5);
   z-index: 2;
 }
@@ -656,9 +661,9 @@ textarea {
     inset 0 2px 4px rgba(255,100,68,0.6);
   position: absolute;
   top: 0;
-  transform-origin: bottom center;
-  transition: transform 0.2s cubic-bezier(0.4,0,0.2,1);
+  transition: top 0.1s ease;
   z-index: 3;
+  touch-action: none;
 }
 
 #lever-base {
@@ -670,13 +675,6 @@ textarea {
   bottom: 0;
   z-index: 1;
   box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-}
-
-.lever-pulled #lever-shaft {
-  transform: rotate(28deg);
-}
-.lever-pulled #lever-ball {
-  transform: rotate(28deg) translateY(8px);
 }
 
 /* ═══════════════════════════════════════════════
@@ -863,7 +861,7 @@ textarea {
    RESPONSIVE
    ═══════════════════════════════════════════════ */
 @media (max-width: 900px) {
-  #slot-machine { width: min(480px, 90vw); }
+  #slot-machine { width: min(560px, 92vw); }
   #display-title { font-size: 22px; letter-spacing: 4px; }
 }
 @media (max-width: 600px) {
@@ -1265,11 +1263,6 @@ function spin(forceWin) {
   document.getElementById('pull-btn').disabled = true;
   document.getElementById('force-win-btn').disabled = true;
   clearWinState();
-
-  // Lever animation
-  const lever = document.getElementById('lever-assembly');
-  lever.classList.add('lever-pulled');
-  setTimeout(() => lever.classList.remove('lever-pulled'), 400);
 
   playSound('lever');
   setTimeout(() => playSound('spin'), 150);
@@ -1825,17 +1818,135 @@ function bindEvents() {
     else setStatus('Add names first!', false);
   });
 
-  // Lever click
-  document.getElementById('lever-assembly').addEventListener('click', () => spin(false));
-  document.getElementById('lever-assembly').addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); spin(false); }
-  });
+  // Lever drag interaction
+  (() => {
+    const assembly = document.getElementById('lever-assembly');
+    const ball = document.getElementById('lever-ball');
+    const shaft = document.getElementById('lever-shaft');
+
+    const RESTING_TOP = 0;
+    const SHAFT_HEIGHT = 160;
+    const SHAFT_TOP = 20;
+    const TRIGGER_PERCENT = 0.45;
+    const MAX_PULL = SHAFT_HEIGHT;
+    const OVERSHOOT = SHAFT_HEIGHT * 0.2;
+
+    let isDragging = false;
+    let startY = 0;
+    let currentPull = 0;
+
+    function updateLever(pullAmount) {
+      pullAmount = Math.max(0, Math.min(pullAmount, MAX_PULL));
+      currentPull = pullAmount;
+      ball.style.top = pullAmount + 'px';
+      const newHeight = SHAFT_HEIGHT - pullAmount;
+      shaft.style.height = Math.max(0, newHeight) + 'px';
+      shaft.style.top = (SHAFT_TOP + pullAmount) + 'px';
+      const progress = pullAmount / MAX_PULL;
+      if (progress >= TRIGGER_PERCENT) {
+        ball.style.boxShadow = `0 4px 12px rgba(200,0,0,0.6),
+          inset 0 -2px 4px rgba(0,0,0,0.4),
+          inset 0 2px 4px rgba(255,100,68,0.6),
+          0 0 ${20 * progress}px rgba(255,68,34,${0.3 + progress * 0.4})`;
+      } else {
+        ball.style.boxShadow = '';
+      }
+    }
+
+    function snapBack() {
+      ball.style.transition = 'top 0.4s cubic-bezier(0.22, 1.2, 0.36, 1)';
+      shaft.style.transition = 'height 0.4s cubic-bezier(0.22, 1.2, 0.36, 1), top 0.4s cubic-bezier(0.22, 1.2, 0.36, 1)';
+      ball.style.top = RESTING_TOP + 'px';
+      shaft.style.height = SHAFT_HEIGHT + 'px';
+      shaft.style.top = SHAFT_TOP + 'px';
+      ball.style.boxShadow = '';
+      setTimeout(() => {
+        ball.style.transition = '';
+        shaft.style.transition = '';
+      }, 450);
+      currentPull = 0;
+    }
+
+    function autoComplete() {
+      isDragging = false;
+      ball.style.transition = 'top 0.25s cubic-bezier(0.4, 0, 1, 1)';
+      shaft.style.transition = 'height 0.25s cubic-bezier(0.4, 0, 1, 1), top 0.25s cubic-bezier(0.4, 0, 1, 1)';
+      ball.style.top = (MAX_PULL + OVERSHOOT) + 'px';
+      shaft.style.height = '0px';
+      shaft.style.top = (SHAFT_TOP + MAX_PULL) + 'px';
+      setTimeout(() => {
+        ball.style.transition = 'top 0.5s cubic-bezier(0.22, 1.4, 0.36, 1)';
+        shaft.style.transition = 'height 0.5s cubic-bezier(0.22, 1.4, 0.36, 1), top 0.5s cubic-bezier(0.22, 1.4, 0.36, 1)';
+        ball.style.top = RESTING_TOP + 'px';
+        shaft.style.height = SHAFT_HEIGHT + 'px';
+        shaft.style.top = SHAFT_TOP + 'px';
+        ball.style.boxShadow = '';
+        setTimeout(() => {
+          ball.style.transition = '';
+          shaft.style.transition = '';
+        }, 550);
+      }, 300);
+      spin(false);
+    }
+
+    function onStart(e) {
+      if (STATE.spinning) return;
+      e.preventDefault();
+      isDragging = true;
+      startY = (e.touches ? e.touches[0].clientY : e.clientY) - currentPull;
+      ball.style.transition = 'none';
+      shaft.style.transition = 'none';
+      assembly.style.cursor = 'grabbing';
+    }
+
+    function onMove(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const pullAmount = clientY - startY;
+      updateLever(pullAmount);
+      if (currentPull / MAX_PULL >= TRIGGER_PERCENT) {
+        autoComplete();
+      }
+    }
+
+    function onEnd(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      assembly.style.cursor = 'grab';
+      if (currentPull / MAX_PULL < TRIGGER_PERCENT) {
+        snapBack();
+      }
+    }
+
+    ball.addEventListener('mousedown', onStart);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    ball.addEventListener('touchstart', onStart, { passive: false });
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+
+    // Click on assembly (not ball) as fallback
+    assembly.addEventListener('click', (e) => {
+      if (e.target === ball) return;
+      if (!STATE.spinning) spin(false);
+    });
+
+    // Keyboard: Enter/Space triggers animated pull
+    assembly.addEventListener('keydown', e => {
+      if ((e.key === 'Enter' || e.key === ' ') && !STATE.spinning) {
+        e.preventDefault();
+        autoComplete();
+      }
+    });
+  })();
 
   // Spacebar
   document.addEventListener('keydown', e => {
     if (e.code === 'Space' && !e.target.matches('input, textarea, button')) {
       e.preventDefault();
-      spin(false);
+      const assembly = document.getElementById('lever-assembly');
+      assembly.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     }
   });
 
