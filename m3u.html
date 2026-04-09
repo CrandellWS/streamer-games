@@ -7,33 +7,55 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0d0d14; color: #e8e8f0; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-.container { max-width: 600px; width: 100%; }
+.container { max-width: 640px; width: 100%; }
 h1 { font-size: 1.5rem; margin-bottom: 8px; background: linear-gradient(135deg, #7c5cfc, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-p.sub { font-size: 0.85rem; color: #888; margin-bottom: 20px; }
-textarea { width: 100%; height: 200px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; padding: 12px; font-family: monospace; font-size: 0.85rem; resize: vertical; }
+p.sub { font-size: 0.85rem; color: #888; margin-bottom: 20px; line-height: 1.5; }
+textarea { width: 100%; height: 180px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; padding: 12px; font-family: monospace; font-size: 0.85rem; resize: vertical; }
 textarea:focus { outline: none; border-color: #7c5cfc; }
 textarea::placeholder { color: #555; }
-button { margin-top: 12px; padding: 12px 24px; min-height: 44px; background: linear-gradient(135deg, #7c5cfc, #5c3cdc); color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; width: 100%; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(124, 92, 252, 0.4); }
-button:active { transform: translateY(0); }
-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.stats { margin-top: 12px; font-size: 0.85rem; color: #888; }
+.btn { margin-top: 12px; padding: 12px 24px; min-height: 44px; background: linear-gradient(135deg, #7c5cfc, #5c3cdc); color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; width: 100%; }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(124, 92, 252, 0.4); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.stats { margin-top: 12px; font-size: 0.85rem; color: #888; line-height: 1.6; }
 .error { color: #ff4444; }
 .warn { color: #ffaa00; }
 .ok { color: #44ff88; }
-.resolving { display: inline-block; animation: pulse 1s infinite; }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* Short URL resolution panel */
+.resolve-panel { margin-top: 16px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; padding: 16px; display: none; }
+.resolve-panel.show { display: block; }
+.resolve-panel h3 { font-size: 0.95rem; color: #ffaa00; margin-bottom: 8px; }
+.resolve-panel p { font-size: 0.8rem; color: #888; margin-bottom: 12px; line-height: 1.5; }
+.resolve-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.resolve-item { display: flex; align-items: center; gap: 8px; }
+.resolve-item a { color: #7c5cfc; text-decoration: none; font-size: 0.85rem; font-family: monospace; padding: 6px 12px; background: #22223a; border-radius: 4px; transition: background 0.15s; flex-shrink: 0; }
+.resolve-item a:hover { background: #2a2a5a; }
+.resolve-item .resolve-input { flex: 1; background: #14141f; border: 1px solid #2a2a4a; border-radius: 4px; color: #e0e0e0; padding: 6px 10px; font-family: monospace; font-size: 0.8rem; }
+.resolve-item .resolve-input:focus { outline: none; border-color: #7c5cfc; }
+.resolve-item .resolve-input.resolved { border-color: #44ff88; }
+.resolve-item .status { font-size: 0.75rem; width: 20px; text-align: center; flex-shrink: 0; }
+.resolve-done { margin-top: 8px; padding: 8px 16px; min-height: 36px; background: #44ff88; color: #0d0d14; border: none; border-radius: 4px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: transform 0.15s, opacity 0.15s; }
+.resolve-done:hover { transform: translateY(-1px); }
+.resolve-done:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>Suno M3U Generator</h1>
-  <p class="sub">Paste Suno URLs (one per line) — song pages, short links, or bare UUIDs.</p>
+  <p class="sub">Paste Suno song URLs (one per line). Use the full URL from your browser address bar:<br>
+  <code style="color:#7c5cfc">suno.com/song/uuid...</code> or just bare UUIDs.</p>
   <textarea id="urls" placeholder="https://suno.com/song/cd71ebad-7358-4c72-8e68-72c2f51879e5
-https://suno.com/s/4F2a6OBXdyOw6pcr
 cd71ebad-7358-4c72-8e68-72c2f51879e5"></textarea>
-  <button id="btn" onclick="generate()">Download M3U</button>
+  <button class="btn" id="btn" onclick="generate()">Download M3U</button>
   <div class="stats" id="stats"></div>
+
+  <div class="resolve-panel" id="resolvePanel">
+    <h3>These need full URLs</h3>
+    <p>Short links (<code>/s/...</code>) don't contain the song ID. Click each link below &mdash; it opens the song page in the same tab. Copy the URL from your address bar and paste it into the box next to it.</p>
+    <ol class="resolve-list" id="resolveList"></ol>
+    <button class="resolve-done" id="resolveBtn" onclick="applyResolved()" disabled>Add resolved songs &amp; download</button>
+  </div>
 </div>
 <script>
 'use strict';
@@ -41,93 +63,56 @@ cd71ebad-7358-4c72-8e68-72c2f51879e5"></textarea>
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const SHORT_RE = /suno\.com\/s\/([A-Za-z0-9_-]+)/;
 
+let pendingIds = [];
+
 function extractId(line) {
   line = line.trim();
   if (!line || line.startsWith('#')) return null;
   const m = line.match(UUID_RE);
-  return m ? { type: 'uuid', id: m[0] } : null;
+  return m ? m[0] : null;
 }
 
-function extractShortCode(line) {
+function isShortUrl(line) {
+  return SHORT_RE.test(line.trim());
+}
+
+function getShortCode(line) {
   const m = line.trim().match(SHORT_RE);
   return m ? m[1] : null;
 }
 
-async function resolveShortUrl(code) {
-  // Fetch the short URL page and extract the UUID from the redirect/meta
-  try {
-    const resp = await fetch(`https://suno.com/s/${code}`, { redirect: 'follow' });
-    const url = resp.url;
-    const m = url.match(UUID_RE);
-    if (m) return m[0];
-    // If URL didn't have it, check the HTML
-    const html = await resp.text();
-    const hm = html.match(UUID_RE);
-    return hm ? hm[0] : null;
-  } catch {
-    // CORS will likely block this — try alternate approach
-    // Fetch the song page via opengraph or just warn the user
-    return null;
-  }
+function checkResolveInputs() {
+  const inputs = document.querySelectorAll('.resolve-input');
+  let allDone = true;
+  inputs.forEach(inp => {
+    const val = inp.value.trim();
+    const id = extractId(val);
+    if (id) {
+      inp.classList.add('resolved');
+      inp.nextElementSibling.textContent = '\u2705';
+    } else {
+      inp.classList.remove('resolved');
+      inp.nextElementSibling.textContent = val ? '\u274c' : '';
+      allDone = false;
+    }
+  });
+  document.getElementById('resolveBtn').disabled = !document.querySelector('.resolve-input.resolved');
 }
 
-async function generate() {
-  const btn = document.getElementById('btn');
-  const stats = document.getElementById('stats');
-  const raw = document.getElementById('urls').value;
-  const lines = raw.split('\n').filter(l => l.trim());
-
-  if (!lines.length) {
-    stats.innerHTML = '<span class="error">Paste some URLs first.</span>';
-    return;
-  }
-
-  btn.disabled = true;
-  const ids = [];
-  const shorts = [];
-  const bad = [];
-
-  // First pass: extract UUIDs directly, collect short codes
-  lines.forEach((line, i) => {
-    const direct = extractId(line);
-    if (direct) {
-      ids.push(direct.id);
-      return;
-    }
-    const code = extractShortCode(line);
-    if (code) {
-      shorts.push({ code, lineNum: i + 1 });
-      return;
-    }
-    bad.push(i + 1);
+function applyResolved() {
+  const inputs = document.querySelectorAll('.resolve-input');
+  inputs.forEach(inp => {
+    const id = extractId(inp.value);
+    if (id) pendingIds.push(id);
   });
 
-  // Second pass: try to resolve short URLs
-  if (shorts.length > 0) {
-    stats.innerHTML = `<span class="resolving">Resolving ${shorts.length} short URL${shorts.length > 1 ? 's' : ''}...</span>`;
+  document.getElementById('resolvePanel').classList.remove('show');
+  downloadM3U(pendingIds);
+}
 
-    for (const s of shorts) {
-      const resolved = await resolveShortUrl(s.code);
-      if (resolved) {
-        ids.push(resolved);
-      } else {
-        bad.push(s.lineNum);
-      }
-    }
-  }
+function downloadM3U(ids) {
+  if (ids.length === 0) return;
 
-  btn.disabled = false;
-
-  if (ids.length === 0) {
-    let msg = '<span class="error">No valid song IDs found.</span>';
-    if (shorts.length > 0 && bad.length > 0) {
-      msg += '<br><span class="warn">Short URLs (/s/) can\'t be resolved from the browser (CORS). Use the full song page URL instead:<br>suno.com/song/uuid...</span>';
-    }
-    stats.innerHTML = msg;
-    return;
-  }
-
-  // Build M3U (MP3 only — CDN doesn't serve MP4)
   let m3u = '#EXTM3U\n';
   ids.forEach((id, i) => {
     m3u += `#EXTINF:-1,Track ${i + 1}\n`;
@@ -141,14 +126,81 @@ async function generate() {
   a.click();
   URL.revokeObjectURL(a.href);
 
-  let msg = `<span class="ok">Downloaded ${ids.length} track${ids.length > 1 ? 's' : ''}</span>`;
-  if (bad.length) {
-    msg += `<br><span class="warn">${bad.length} skipped (line${bad.length > 1 ? 's' : ''} ${bad.join(', ')})</span>`;
-    if (shorts.length > 0) {
-      msg += '<br><span class="warn">Tip: Short URLs (/s/) may not resolve from browser. Use full song URLs instead.</span>';
-    }
+  document.getElementById('stats').innerHTML =
+    `<span class="ok">Downloaded ${ids.length} track${ids.length > 1 ? 's' : ''}</span>`;
+}
+
+function generate() {
+  const stats = document.getElementById('stats');
+  const panel = document.getElementById('resolvePanel');
+  const list = document.getElementById('resolveList');
+  const raw = document.getElementById('urls').value;
+  const lines = raw.split('\n').filter(l => l.trim());
+
+  if (!lines.length) {
+    stats.innerHTML = '<span class="error">Paste some URLs first.</span>';
+    return;
   }
-  stats.innerHTML = msg;
+
+  pendingIds = [];
+  const shorts = [];
+  const bad = [];
+
+  lines.forEach((line, i) => {
+    const id = extractId(line);
+    if (id) {
+      pendingIds.push(id);
+      return;
+    }
+    if (isShortUrl(line)) {
+      shorts.push({ code: getShortCode(line), raw: line.trim(), lineNum: i + 1 });
+      return;
+    }
+    bad.push(i + 1);
+  });
+
+  // If no short URLs, just download
+  if (shorts.length === 0 && pendingIds.length > 0) {
+    if (bad.length) {
+      stats.innerHTML = `<span class="warn">${bad.length} line${bad.length > 1 ? 's' : ''} skipped (not a valid Suno URL)</span>`;
+    }
+    downloadM3U(pendingIds);
+    panel.classList.remove('show');
+    return;
+  }
+
+  // If only bad lines, error
+  if (shorts.length === 0 && pendingIds.length === 0) {
+    stats.innerHTML = '<span class="error">No valid song URLs found. Use the full URL from your browser address bar.</span>';
+    panel.classList.remove('show');
+    return;
+  }
+
+  // Show resolve panel for short URLs
+  let readyMsg = '';
+  if (pendingIds.length > 0) {
+    readyMsg = `<span class="ok">${pendingIds.length} song${pendingIds.length > 1 ? 's' : ''} ready.</span> `;
+  }
+  if (bad.length) {
+    readyMsg += `<span class="warn">${bad.length} skipped.</span> `;
+  }
+  readyMsg += `<span class="warn">${shorts.length} short URL${shorts.length > 1 ? 's' : ''} need full song pages &darr;</span>`;
+  stats.innerHTML = readyMsg;
+
+  list.innerHTML = '';
+  shorts.forEach((s, i) => {
+    const li = document.createElement('li');
+    li.className = 'resolve-item';
+    li.innerHTML = `
+      <a href="https://suno.com/s/${s.code}" target="_blank" rel="noopener">/s/${s.code} &rarr;</a>
+      <input class="resolve-input" type="text" placeholder="Paste full song URL here" oninput="checkResolveInputs()">
+      <span class="status"></span>
+    `;
+    list.appendChild(li);
+  });
+
+  panel.classList.add('show');
+  document.getElementById('resolveBtn').disabled = true;
 }
 </script>
 </body>
