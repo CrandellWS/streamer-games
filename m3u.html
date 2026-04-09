@@ -73,7 +73,8 @@ code { color: #7c5cfc; }
   <div class="msg" id="msg"></div>
   <div class="tracks" id="tracks"></div>
   <div class="bottom" id="bottom">
-    <button class="btn btn-m3u" onclick="dlM3U()">Download M3U</button>
+    <button class="btn btn-m3u" onclick="playAll()">Play All</button>
+    <button class="btn btn-all" onclick="dlM3U()">Download M3U</button>
     <button class="btn btn-all" onclick="dlAll()">Download All MP3s</button>
   </div>
   <div class="np" id="np"></div>
@@ -213,6 +214,12 @@ function play(i) {
     }
     np.textContent = '';
   };
+}
+
+function playAll() {
+  for (let i = 0; i < tracks.length; i++) {
+    if (tracks[i].resolved) { play(i); return; }
+  }
 }
 
 async function dl(i) {
