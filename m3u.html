@@ -23,46 +23,62 @@ code { color: #7c5cfc; }
 .add-btn:active { transform: translateY(0); }
 .import-btn { background: #22223a; color: #888; border: 1px solid #2a2a4a; border-radius: 6px; padding: 6px 14px; font-size: 0.75rem; cursor: pointer; transition: border-color 0.15s, color 0.15s; min-height: 30px; }
 .import-btn:hover { border-color: #7c5cfc; color: #e8e8f0; }
-
 .msg { margin-top: 8px; font-size: 0.8rem; min-height: 1.2em; }
+.error { color: #ff4444; }
+.warn { color: #ffaa00; }
+.ok { color: #44ff88; }
+
+/* Player controls */
+.player { margin-top: 16px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; padding: 14px; display: none; }
+.player.show { display: block; }
+.player-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.player-track { flex: 1; font-size: 0.85rem; color: #7c5cfc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-time { font-size: 0.75rem; color: #888; font-family: monospace; flex-shrink: 0; }
+.progress-bar { width: 100%; height: 6px; background: #22223a; border-radius: 3px; cursor: pointer; margin-bottom: 12px; position: relative; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #7c5cfc, #ffd700); border-radius: 3px; width: 0%; transition: width 0.3s linear; }
+.controls { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.ctrl { background: none; border: 1px solid #2a2a4a; color: #e8e8f0; border-radius: 6px; width: 40px; height: 40px; font-size: 1.1rem; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; display: flex; align-items: center; justify-content: center; }
+.ctrl:hover { border-color: #7c5cfc; color: #7c5cfc; }
+.ctrl.active { border-color: #ffd700; color: #ffd700; }
+.ctrl-play { width: 50px; height: 50px; font-size: 1.3rem; }
+.vol-wrap { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.vol-wrap span { font-size: 0.85rem; }
+.vol-slider { width: 80px; height: 4px; -webkit-appearance: none; appearance: none; background: #22223a; border-radius: 2px; outline: none; cursor: pointer; }
+.vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #7c5cfc; cursor: pointer; }
 
 /* Track list */
-.tracks { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
-
-/* Ready track */
-.track { display: flex; align-items: center; gap: 8px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px; padding: 8px 10px; }
+.tracks { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; max-height: 400px; overflow-y: auto; }
+.track { display: flex; align-items: center; gap: 8px; background: #14141f; border: 1px solid transparent; border-radius: 6px; padding: 6px 10px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.track:hover { background: #1a1a2e; }
+.track.active { border-color: #7c5cfc; background: #1a1a2e; }
 .t-num { color: #555; font-size: 0.75rem; font-weight: 700; width: 20px; text-align: center; flex-shrink: 0; }
-.t-id { flex: 1; font-family: monospace; font-size: 0.78rem; color: #7c5cfc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sb { background: none; border: 1px solid #2a2a4a; color: #e8e8f0; border-radius: 4px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; transition: border-color 0.15s, color 0.15s; min-height: 32px; flex-shrink: 0; }
-.sb:hover { border-color: #7c5cfc; color: #7c5cfc; }
-.sb.playing { border-color: #44ff88; color: #44ff88; }
-.sb.dl:hover { border-color: #ffd700; color: #ffd700; }
-.sb.done { border-color: #44ff88; color: #44ff88; }
-.sb.busy { opacity: 0.5; pointer-events: none; }
-.sb.rm { font-size: 0.9rem; padding: 4px 8px; }
-.sb.rm:hover { border-color: #ff4444; color: #ff4444; }
+.track.active .t-num { color: #44ff88; }
+.t-id { flex: 1; font-family: monospace; font-size: 0.78rem; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track.active .t-id { color: #7c5cfc; }
+.ib { background: none; border: none; color: #555; font-size: 0.85rem; cursor: pointer; padding: 2px 6px; border-radius: 3px; transition: color 0.15s; flex-shrink: 0; }
+.ib:hover { color: #e8e8f0; }
+.ib.dl-btn:hover { color: #ffd700; }
+.ib.rm-btn:hover { color: #ff4444; }
 
 /* Unresolved short URL */
-.track-short { display: flex; flex-direction: column; gap: 6px; background: #1a1a2e; border: 1px solid #ffaa0044; border-radius: 6px; padding: 10px; }
+.track-short { display: flex; flex-direction: column; gap: 6px; background: #14141f; border: 1px solid #ffaa0033; border-radius: 6px; padding: 8px 10px; }
 .track-short .row1 { display: flex; align-items: center; gap: 8px; }
-.track-short .hint { font-size: 0.75rem; color: #666; flex: 1; }
-.track-short a { color: #7c5cfc; text-decoration: none; font-family: monospace; font-size: 0.85rem; padding: 4px 10px; background: #22223a; border-radius: 4px; transition: background 0.15s; flex-shrink: 0; }
+.track-short .hint { font-size: 0.72rem; color: #555; flex: 1; }
+.track-short a { color: #7c5cfc; text-decoration: none; font-family: monospace; font-size: 0.82rem; padding: 3px 8px; background: #22223a; border-radius: 4px; transition: background 0.15s; flex-shrink: 0; }
 .track-short a:hover { background: #2a2a5a; }
-.track-short .row2 { display: flex; gap: 8px; align-items: center; }
-.track-short input { flex: 1; background: #14141f; border: 1px solid #2a2a4a; border-radius: 4px; color: #e0e0e0; padding: 6px 10px; font-family: monospace; font-size: 0.8rem; }
+.track-short .row2 { display: flex; gap: 6px; align-items: center; }
+.track-short input { flex: 1; background: #0d0d14; border: 1px solid #2a2a4a; border-radius: 4px; color: #e0e0e0; padding: 5px 8px; font-family: monospace; font-size: 0.8rem; }
 .track-short input:focus { outline: none; border-color: #7c5cfc; }
 
 /* Bottom bar */
-.bottom { display: flex; gap: 8px; margin-top: 14px; display: none; }
-.bottom .btn { flex: 1; padding: 10px 16px; min-height: 44px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; }
+.bottom { display: flex; gap: 8px; margin-top: 12px; display: none; }
+.bottom .btn { flex: 1; padding: 10px 16px; min-height: 44px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; }
 .bottom .btn:hover { transform: translateY(-2px); }
 .bottom .btn:active { transform: translateY(0); }
 .btn-m3u { background: linear-gradient(135deg, #7c5cfc, #5c3cdc); color: #fff; }
 .btn-m3u:hover { box-shadow: 0 4px 20px rgba(124, 92, 252, 0.4); }
-.btn-all { background: #22223a; color: #e8e8f0; }
-.btn-all:hover { box-shadow: 0 4px 20px rgba(255,255,255,0.05); }
-
-.np { margin-top: 10px; font-size: 0.8rem; color: #44ff88; min-height: 1.2em; }
+.btn-dim { background: #22223a; color: #e8e8f0; }
+.btn-dim:hover { box-shadow: 0 4px 20px rgba(255,255,255,0.05); }
 </style>
 </head>
 <body>
@@ -78,13 +94,35 @@ code { color: #7c5cfc; }
     </div>
   </div>
   <div class="msg" id="msg"></div>
-  <div class="tracks" id="tracks"></div>
-  <div class="bottom" id="bottom">
-    <button class="btn btn-m3u" onclick="playAll()">Play All</button>
-    <button class="btn btn-all" onclick="dlM3U()">Download M3U</button>
-    <button class="btn btn-all" onclick="dlAll()">Download All MP3s</button>
+
+  <!-- Player -->
+  <div class="player" id="player">
+    <div class="player-top">
+      <span class="player-track" id="playerTrack">No track</span>
+      <span class="player-time" id="playerTime">0:00 / 0:00</span>
+    </div>
+    <div class="progress-bar" id="progressBar" onclick="seek(event)">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="controls">
+      <button class="ctrl" onclick="prevTrack()" title="Previous">&#9198;</button>
+      <button class="ctrl ctrl-play" id="playBtn" onclick="togglePlay()" title="Play/Pause">&#9654;</button>
+      <button class="ctrl" onclick="nextTrack()" title="Next">&#9197;</button>
+      <button class="ctrl" id="shuffleBtn" onclick="toggleShuffle()" title="Shuffle">&#128256;</button>
+      <div class="vol-wrap">
+        <span>&#128264;</span>
+        <input type="range" class="vol-slider" id="vol" min="0" max="100" value="80" oninput="setVol(this.value)">
+      </div>
+    </div>
   </div>
-  <div class="np" id="np"></div>
+
+  <!-- Track list -->
+  <div class="tracks" id="tracks"></div>
+
+  <div class="bottom" id="bottom">
+    <button class="btn btn-m3u" onclick="dlM3U()">&#128190; Save M3U</button>
+    <button class="btn btn-dim" onclick="dlAll()">&#11015; Download All MP3s</button>
+  </div>
 </div>
 <script>
 'use strict';
@@ -93,152 +131,100 @@ const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const SHORT_RE = /suno\.com\/s\/([A-Za-z0-9_-]+)/;
 const CDN = 'https://cdn1.suno.ai/';
 
-let tracks = []; // { id, shortCode, resolved }
+let tracks = [];
 let audio = null;
 let playIdx = -1;
+let shuffle = false;
+let shuffleOrder = [];
 
 function trackUrl(t) { return t.directUrl || (CDN + t.id + '.mp3'); }
+function trackLabel(t) { return t.directUrl ? t.directUrl.replace(/^https?:\/\//, '').split('?')[0] : t.id; }
+function fmtTime(s) { if (!s || isNaN(s)) return '0:00'; const m = Math.floor(s/60); return m + ':' + String(Math.floor(s%60)).padStart(2,'0'); }
 
+// --- Input ---
 const ta = document.getElementById('inp');
-
-// Ctrl+Enter or Cmd+Enter to add
-ta.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) addFromInput();
-});
-
-// Drag and drop M3U files onto textarea
+ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) addFromInput(); });
 ta.addEventListener('dragover', e => { e.preventDefault(); ta.style.borderColor = '#7c5cfc'; });
 ta.addEventListener('dragleave', () => { ta.style.borderColor = '#2a2a4a'; });
 ta.addEventListener('drop', e => {
-  e.preventDefault();
-  ta.style.borderColor = '#2a2a4a';
+  e.preventDefault(); ta.style.borderColor = '#2a2a4a';
   const file = e.dataTransfer.files[0];
   if (file && (file.name.endsWith('.m3u') || file.name.endsWith('.m3u8'))) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      let added = 0;
-      reader.result.split('\n').filter(l => l.trim()).forEach(line => { if (addLine(line) === 'ok') added++; });
-      msg(`<span class="ok">Imported ${added} track${added !== 1 ? 's' : ''} from ${file.name}</span>`);
-      render();
-    };
-    reader.readAsText(file);
+    const r = new FileReader();
+    r.onload = () => { let n=0; r.result.split('\n').forEach(l => { if(addLine(l)==='ok') n++; }); msg(`<span class="ok">Imported ${n} tracks from ${file.name}</span>`); render(); };
+    r.readAsText(file);
   }
 });
 
 function addLine(line) {
   line = line.trim();
   if (!line || line.startsWith('#EXTM3U') || line.startsWith('#EXTINF')) return 'skip';
-
-  // Direct MP3/audio URL from anywhere — just use it as-is
-  if (/^https?:\/\/.+\.(mp3|m4a|ogg|wav|flac|aac)(\?.*)?$/i.test(line)) {
-    tracks.push({ id: null, directUrl: line, shortCode: null, resolved: true });
-    return 'ok';
-  }
-
-  // Any other direct URL (might be a stream or CDN link without extension)
-  if (/^https?:\/\/.+/i.test(line) && !line.includes('suno.com')) {
-    tracks.push({ id: null, directUrl: line, shortCode: null, resolved: true });
-    return 'ok';
-  }
-
-  // Suno CDN URL — extract UUID
-  if (line.startsWith('http') && line.includes('cdn1.suno.ai')) {
-    const id = (line.match(UUID_RE) || [])[0];
-    if (id) { tracks.push({ id, shortCode: null, resolved: true }); return 'ok'; }
-  }
-
-  // Suno song page or bare UUID
-  const id = (line.match(UUID_RE) || [])[0];
+  if (/^https?:\/\/.+\.(mp3|m4a|ogg|wav|flac|aac)(\?.*)?$/i.test(line)) { tracks.push({ id: null, directUrl: line, shortCode: null, resolved: true }); return 'ok'; }
+  if (/^https?:\/\/.+/i.test(line) && !line.includes('suno.com')) { tracks.push({ id: null, directUrl: line, shortCode: null, resolved: true }); return 'ok'; }
+  if (line.includes('cdn1.suno.ai')) { const id = (line.match(UUID_RE)||[])[0]; if (id) { tracks.push({ id, shortCode: null, resolved: true }); return 'ok'; } }
+  const id = (line.match(UUID_RE)||[])[0];
   if (id) { tracks.push({ id, shortCode: null, resolved: true }); return 'ok'; }
-
-  const sm = (line.match(SHORT_RE) || [])[1];
+  const sm = (line.match(SHORT_RE)||[])[1];
   if (sm) { tracks.push({ id: null, shortCode: sm, resolved: false }); return 'short'; }
-
   return 'bad';
 }
 
 function addFromInput() {
-  const ta = document.getElementById('inp');
   const lines = ta.value.split('\n').filter(l => l.trim());
   if (!lines.length) return;
-
-  let added = 0, shorts = 0, bad = 0;
-  lines.forEach(line => {
-    const r = addLine(line);
-    if (r === 'ok') added++;
-    else if (r === 'short') shorts++;
-    else if (r === 'bad') bad++;
-  });
-
-  ta.value = '';
-  ta.focus();
-
-  let m = '';
-  if (added) m += `<span class="ok">${added} added</span> `;
-  if (shorts) m += `<span class="warn">${shorts} need resolving</span> `;
-  if (bad) m += `<span class="error">${bad} skipped</span>`;
-  msg(m || '');
-
-  render();
+  let a=0, s=0, b=0;
+  lines.forEach(l => { const r=addLine(l); if(r==='ok')a++; else if(r==='short')s++; else if(r==='bad')b++; });
+  ta.value = ''; ta.focus();
+  let m=''; if(a) m+=`<span class="ok">${a} added</span> `; if(s) m+=`<span class="warn">${s} need resolving</span> `; if(b) m+=`<span class="error">${b} skipped</span>`;
+  msg(m); render();
 }
 
 function importM3U(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    const lines = reader.result.split('\n').filter(l => l.trim());
-    let added = 0;
-    lines.forEach(line => { if (addLine(line) === 'ok') added++; });
-    msg(`<span class="ok">Imported ${added} track${added !== 1 ? 's' : ''} from ${file.name}</span>`);
-    render();
-  };
-  reader.readAsText(file);
-  input.value = ''; // reset so same file can be re-imported
+  const file = input.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = () => { let n=0; r.result.split('\n').forEach(l => { if(addLine(l)==='ok') n++; }); msg(`<span class="ok">Imported ${n} tracks from ${file.name}</span>`); render(); };
+  r.readAsText(file); input.value = '';
 }
 
 function msg(html) { document.getElementById('msg').innerHTML = html; }
 
+// --- Track list ---
 function remove(i) {
-  if (playIdx === i && audio) { audio.pause(); audio = null; playIdx = -1; document.getElementById('np').textContent = ''; }
-  if (playIdx > i) playIdx--;
-  tracks.splice(i, 1);
-  render();
+  if (playIdx === i) stopAudio();
+  else if (playIdx > i) playIdx--;
+  tracks.splice(i, 1); render();
 }
 
 function resolve(i, input) {
-  const id = (input.value.trim().match(UUID_RE) || [])[0];
+  const id = (input.value.trim().match(UUID_RE)||[])[0];
   if (!id) return;
-  tracks[i].id = id;
-  tracks[i].resolved = true;
-  render();
+  tracks[i].id = id; tracks[i].resolved = true; render();
 }
 
 function render() {
   const el = document.getElementById('tracks');
   el.innerHTML = '';
-
   tracks.forEach((t, i) => {
     if (t.resolved) {
       const row = document.createElement('div');
-      row.className = 'track';
+      row.className = 'track' + (playIdx === i ? ' active' : '');
       row.innerHTML = `
-        <span class="t-num">${i + 1}</span>
-        <span class="t-id" title="${t.directUrl || t.id}">${t.directUrl ? t.directUrl.replace(/^https?:\/\//, '').slice(0, 40) : t.id.slice(0, 8)}...</span>
-        <button class="sb" id="p${i}" onclick="play(${i})">Play</button>
-        <button class="sb dl" id="d${i}" onclick="dl(${i})">MP3</button>
-        <button class="sb rm" onclick="remove(${i})">&#128465;</button>
+        <span class="t-num">${i+1}</span>
+        <span class="t-id" title="${trackLabel(t)}" ondblclick="playTrack(${i})">${trackLabel(t)}</span>
+        <button class="ib dl-btn" onclick="dl(${i})" title="Download MP3">&#11015;mp3</button>
+        <button class="ib rm-btn" onclick="remove(${i})" title="Remove">&#128465;</button>
       `;
+      row.querySelector('.t-id').style.cursor = 'pointer';
       el.appendChild(row);
     } else {
       const row = document.createElement('div');
       row.className = 'track-short';
       row.innerHTML = `
         <div class="row1">
-          <span class="t-num">${i + 1}</span>
+          <span class="t-num" style="color:#ffaa00">${i+1}</span>
           <a href="https://suno.com/s/${t.shortCode}" target="_blank">/s/${t.shortCode}</a>
           <span class="hint">click link, copy address bar URL</span>
-          <button class="sb rm" onclick="remove(${i})">&#128465;</button>
+          <button class="ib rm-btn" onclick="remove(${i})" title="Remove">&#128465;</button>
         </div>
         <div class="row2">
           <input type="text" placeholder="Paste full song URL here" onpaste="setTimeout(()=>resolve(${i},this),0)" oninput="resolve(${i},this)">
@@ -247,85 +233,135 @@ function render() {
       el.appendChild(row);
     }
   });
-
-  // Update playing state
-  if (playIdx >= 0) {
-    const pb = document.getElementById('p' + playIdx);
-    if (pb) { pb.textContent = 'Stop'; pb.classList.add('playing'); }
-  }
-
   document.getElementById('bottom').style.display = tracks.some(t => t.resolved) ? 'flex' : 'none';
+  document.getElementById('player').classList.toggle('show', tracks.some(t => t.resolved));
+  if (shuffle) buildShuffleOrder();
 }
 
-function play(i) {
-  const np = document.getElementById('np');
+// --- Player ---
+function stopAudio() {
+  if (audio) { audio.pause(); audio.onended = null; audio.ontimeupdate = null; audio = null; }
+  playIdx = -1;
+  document.getElementById('playBtn').innerHTML = '&#9654;';
+  document.getElementById('playerTrack').textContent = 'No track';
+  document.getElementById('playerTime').textContent = '0:00 / 0:00';
+  document.getElementById('progressFill').style.width = '0%';
+  render();
+}
 
-  if (playIdx === i && audio && !audio.paused) {
-    audio.pause(); audio = null; playIdx = -1;
-    const b = document.getElementById('p' + i);
-    if (b) { b.textContent = 'Play'; b.classList.remove('playing'); }
-    np.textContent = '';
+function playTrack(i) {
+  if (!tracks[i] || !tracks[i].resolved) return;
+  if (audio) { audio.pause(); audio.onended = null; audio.ontimeupdate = null; }
+  audio = new Audio(trackUrl(tracks[i]));
+  audio.volume = document.getElementById('vol').value / 100;
+  playIdx = i;
+  document.getElementById('playBtn').innerHTML = '&#9646;&#9646;';
+  document.getElementById('playerTrack').textContent = `Track ${i+1} — ${trackLabel(tracks[i])}`;
+  audio.ontimeupdate = updateProgress;
+  audio.onended = () => nextTrack();
+  audio.play().catch(() => { msg('<span class="error">Playback failed</span>'); stopAudio(); });
+  render();
+}
+
+function togglePlay() {
+  if (!audio) {
+    // Start from first resolved track
+    for (let i=0; i<tracks.length; i++) { if (tracks[i].resolved) { playTrack(i); return; } }
     return;
   }
-
-  if (audio) {
+  if (audio.paused) {
+    audio.play();
+    document.getElementById('playBtn').innerHTML = '&#9646;&#9646;';
+  } else {
     audio.pause();
-    const ob = document.getElementById('p' + playIdx);
-    if (ob) { ob.textContent = 'Play'; ob.classList.remove('playing'); }
-  }
-
-  audio = new Audio(trackUrl(tracks[i]));
-  playIdx = i;
-  const b = document.getElementById('p' + i);
-  if (b) { b.textContent = 'Stop'; b.classList.add('playing'); }
-  np.textContent = 'Playing track ' + (i + 1);
-
-  audio.play().catch(() => { if (b) b.textContent = 'Error'; np.textContent = ''; });
-
-  audio.onended = () => {
-    if (b) { b.textContent = 'Play'; b.classList.remove('playing'); }
-    playIdx = -1;
-    for (let n = i + 1; n < tracks.length; n++) {
-      if (tracks[n].resolved) { play(n); return; }
-    }
-    np.textContent = '';
-  };
-}
-
-function playAll() {
-  for (let i = 0; i < tracks.length; i++) {
-    if (tracks[i].resolved) { play(i); return; }
+    document.getElementById('playBtn').innerHTML = '&#9654;';
   }
 }
 
+function nextTrack() {
+  const resolved = tracks.map((t,i) => t.resolved ? i : -1).filter(i => i >= 0);
+  if (!resolved.length) return;
+  if (shuffle) {
+    const cur = shuffleOrder.indexOf(playIdx);
+    const next = cur >= 0 && cur < shuffleOrder.length - 1 ? shuffleOrder[cur+1] : shuffleOrder[0];
+    playTrack(next);
+  } else {
+    const cur = resolved.indexOf(playIdx);
+    const next = cur >= 0 && cur < resolved.length - 1 ? resolved[cur+1] : resolved[0];
+    playTrack(next);
+  }
+}
+
+function prevTrack() {
+  if (audio && audio.currentTime > 3) { audio.currentTime = 0; return; }
+  const resolved = tracks.map((t,i) => t.resolved ? i : -1).filter(i => i >= 0);
+  if (!resolved.length) return;
+  if (shuffle) {
+    const cur = shuffleOrder.indexOf(playIdx);
+    const prev = cur > 0 ? shuffleOrder[cur-1] : shuffleOrder[shuffleOrder.length-1];
+    playTrack(prev);
+  } else {
+    const cur = resolved.indexOf(playIdx);
+    const prev = cur > 0 ? resolved[cur-1] : resolved[resolved.length-1];
+    playTrack(prev);
+  }
+}
+
+function toggleShuffle() {
+  shuffle = !shuffle;
+  document.getElementById('shuffleBtn').classList.toggle('active', shuffle);
+  if (shuffle) buildShuffleOrder();
+}
+
+function buildShuffleOrder() {
+  shuffleOrder = tracks.map((t,i) => t.resolved ? i : -1).filter(i => i >= 0);
+  for (let i = shuffleOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffleOrder[i], shuffleOrder[j]] = [shuffleOrder[j], shuffleOrder[i]];
+  }
+}
+
+function updateProgress() {
+  if (!audio || !audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('playerTime').textContent = fmtTime(audio.currentTime) + ' / ' + fmtTime(audio.duration);
+}
+
+function seek(e) {
+  if (!audio || !audio.duration) return;
+  const bar = document.getElementById('progressBar');
+  const pct = (e.clientX - bar.getBoundingClientRect().left) / bar.offsetWidth;
+  audio.currentTime = pct * audio.duration;
+}
+
+function setVol(v) { if (audio) audio.volume = v / 100; }
+
+// --- Downloads ---
 async function dl(i) {
-  const b = document.getElementById('d' + i);
-  if (!b) return;
-  b.textContent = '...'; b.classList.add('busy');
+  const btn = document.querySelectorAll('.dl-btn')[i];
+  if (!btn) return;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '...'; btn.style.pointerEvents = 'none';
   try {
     const r = await fetch(trackUrl(tracks[i]));
     const blob = await r.blob();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     const t = tracks[i];
-    const fname = t.directUrl ? t.directUrl.split('/').pop().split('?')[0] || 'track.mp3' : 'suno-' + t.id.slice(0, 8) + '.mp3';
-    a.download = fname;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    b.textContent = 'Done'; b.classList.remove('busy'); b.classList.add('done');
-    setTimeout(() => { b.textContent = 'MP3'; b.classList.remove('done'); }, 2000);
+    a.download = t.directUrl ? t.directUrl.split('/').pop().split('?')[0] || 'track.mp3' : 'suno-' + t.id.slice(0, 8) + '.mp3';
+    a.click(); URL.revokeObjectURL(a.href);
+    btn.innerHTML = '&#10003;'; btn.style.color = '#44ff88';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; btn.style.pointerEvents = ''; }, 2000);
   } catch {
-    b.textContent = 'Fail'; b.classList.remove('busy');
-    setTimeout(() => { b.textContent = 'MP3'; }, 2000);
+    btn.innerHTML = '&#10007;'; btn.style.color = '#ff4444';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; btn.style.pointerEvents = ''; }, 2000);
   }
 }
 
 async function dlAll() {
-  for (let i = 0; i < tracks.length; i++) {
-    if (tracks[i].resolved) {
-      await dl(i);
-      if (i < tracks.length - 1) await new Promise(r => setTimeout(r, 500));
-    }
+  for (let i=0; i<tracks.length; i++) {
+    if (tracks[i].resolved) { await dl(i); await new Promise(r => setTimeout(r, 500)); }
   }
 }
 
@@ -333,7 +369,7 @@ function dlM3U() {
   const ready = tracks.filter(t => t.resolved);
   if (!ready.length) return;
   let m3u = '#EXTM3U\n';
-  ready.forEach((t, i) => { m3u += `#EXTINF:-1,Track ${i + 1}\n` + trackUrl(t) + '\n'; });
+  ready.forEach((t, i) => { m3u += `#EXTINF:-1,Track ${i+1}\n` + trackUrl(t) + '\n'; });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([m3u], { type: 'audio/x-mpegurl' }));
   a.download = 'suno-playlist-' + ready.length + 'tracks.m3u';
