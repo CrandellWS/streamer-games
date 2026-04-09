@@ -11,68 +11,72 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 h1 { font-size: 1.5rem; margin-bottom: 8px; background: linear-gradient(135deg, #7c5cfc, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 p.sub { font-size: 0.85rem; color: #888; margin-bottom: 20px; line-height: 1.5; }
 code { color: #7c5cfc; }
-textarea { width: 100%; height: 140px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; padding: 12px; font-family: monospace; font-size: 0.85rem; resize: vertical; }
-textarea:focus { outline: none; border-color: #7c5cfc; }
-textarea::placeholder { color: #555; }
-.btn { margin-top: 12px; padding: 12px 24px; min-height: 44px; background: linear-gradient(135deg, #7c5cfc, #5c3cdc); color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; width: 100%; }
-.btn:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(124, 92, 252, 0.4); }
-.btn:active { transform: translateY(0); }
-.stats { margin-top: 12px; font-size: 0.85rem; color: #888; line-height: 1.6; }
-.error { color: #ff4444; }
-.warn { color: #ffaa00; }
-.ok { color: #44ff88; }
+
+/* Input bar */
+.input-bar { display: flex; gap: 8px; }
+.input-bar input { flex: 1; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px; color: #e0e0e0; padding: 10px 14px; font-family: monospace; font-size: 0.85rem; }
+.input-bar input:focus { outline: none; border-color: #7c5cfc; }
+.input-bar input::placeholder { color: #555; }
+.add-btn { background: linear-gradient(135deg, #7c5cfc, #5c3cdc); color: #fff; border: none; border-radius: 6px; padding: 10px 18px; font-weight: 700; font-size: 0.9rem; cursor: pointer; min-height: 44px; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; flex-shrink: 0; }
+.add-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(124, 92, 252, 0.4); }
+.add-btn:active { transform: translateY(0); }
+
+.msg { margin-top: 8px; font-size: 0.8rem; min-height: 1.2em; }
 
 /* Track list */
 .tracks { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
 
-/* Ready track row */
-.track { display: flex; align-items: center; gap: 8px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px; padding: 8px 12px; }
-.track-num { color: #555; font-size: 0.75rem; font-weight: 700; width: 22px; text-align: center; flex-shrink: 0; }
-.track-id { flex: 1; font-family: monospace; font-size: 0.78rem; color: #7c5cfc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sm-btn { background: none; border: 1px solid #2a2a4a; color: #e8e8f0; border-radius: 4px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; transition: border-color 0.15s, color 0.15s; min-height: 32px; flex-shrink: 0; }
-.sm-btn:hover { border-color: #7c5cfc; color: #7c5cfc; }
-.sm-btn.playing { border-color: #44ff88; color: #44ff88; }
-.sm-btn.dl:hover { border-color: #ffd700; color: #ffd700; }
-.sm-btn.done { border-color: #44ff88; color: #44ff88; }
-.sm-btn.busy { opacity: 0.5; pointer-events: none; }
+/* Ready track */
+.track { display: flex; align-items: center; gap: 8px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px; padding: 8px 10px; }
+.t-num { color: #555; font-size: 0.75rem; font-weight: 700; width: 20px; text-align: center; flex-shrink: 0; }
+.t-id { flex: 1; font-family: monospace; font-size: 0.78rem; color: #7c5cfc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb { background: none; border: 1px solid #2a2a4a; color: #e8e8f0; border-radius: 4px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; transition: border-color 0.15s, color 0.15s; min-height: 32px; flex-shrink: 0; }
+.sb:hover { border-color: #7c5cfc; color: #7c5cfc; }
+.sb.playing { border-color: #44ff88; color: #44ff88; }
+.sb.dl:hover { border-color: #ffd700; color: #ffd700; }
+.sb.done { border-color: #44ff88; color: #44ff88; }
+.sb.busy { opacity: 0.5; pointer-events: none; }
+.sb.rm { font-size: 0.9rem; padding: 4px 8px; }
+.sb.rm:hover { border-color: #ff4444; color: #ff4444; }
 
-/* Unresolved short URL row */
-.track-unresolved { display: flex; flex-direction: column; gap: 6px; background: #1a1a2e; border: 1px solid #ffaa0044; border-radius: 6px; padding: 10px 12px; }
-.track-unresolved .top { display: flex; align-items: center; gap: 8px; }
-.track-unresolved .track-num { color: #ffaa00; }
-.track-unresolved .hint { font-size: 0.75rem; color: #666; }
-.track-unresolved a { color: #7c5cfc; text-decoration: none; font-family: monospace; font-size: 0.85rem; padding: 4px 10px; background: #22223a; border-radius: 4px; transition: background 0.15s; flex-shrink: 0; }
-.track-unresolved a:hover { background: #2a2a5a; }
-.track-unresolved .resolve-row { display: flex; gap: 8px; align-items: center; }
-.track-unresolved input { flex: 1; background: #14141f; border: 1px solid #2a2a4a; border-radius: 4px; color: #e0e0e0; padding: 6px 10px; font-family: monospace; font-size: 0.8rem; }
-.track-unresolved input:focus { outline: none; border-color: #7c5cfc; }
+/* Unresolved short URL */
+.track-short { display: flex; flex-direction: column; gap: 6px; background: #1a1a2e; border: 1px solid #ffaa0044; border-radius: 6px; padding: 10px; }
+.track-short .row1 { display: flex; align-items: center; gap: 8px; }
+.track-short .hint { font-size: 0.75rem; color: #666; flex: 1; }
+.track-short a { color: #7c5cfc; text-decoration: none; font-family: monospace; font-size: 0.85rem; padding: 4px 10px; background: #22223a; border-radius: 4px; transition: background 0.15s; flex-shrink: 0; }
+.track-short a:hover { background: #2a2a5a; }
+.track-short .row2 { display: flex; gap: 8px; align-items: center; }
+.track-short input { flex: 1; background: #14141f; border: 1px solid #2a2a4a; border-radius: 4px; color: #e0e0e0; padding: 6px 10px; font-family: monospace; font-size: 0.8rem; }
+.track-short input:focus { outline: none; border-color: #7c5cfc; }
 
-/* Action bar */
-.action-bar { display: flex; gap: 8px; margin-top: 14px; }
-.action-bar .btn { flex: 1; font-size: 0.9rem; padding: 10px 16px; }
-.btn-dim { background: linear-gradient(135deg, #2a2a4a, #22223a) !important; }
-.btn-dim:hover { box-shadow: 0 4px 20px rgba(255,255,255,0.05) !important; }
+/* Bottom bar */
+.bottom { display: flex; gap: 8px; margin-top: 14px; display: none; }
+.bottom .btn { flex: 1; padding: 10px 16px; min-height: 44px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; }
+.bottom .btn:hover { transform: translateY(-2px); }
+.bottom .btn:active { transform: translateY(0); }
+.btn-m3u { background: linear-gradient(135deg, #7c5cfc, #5c3cdc); color: #fff; }
+.btn-m3u:hover { box-shadow: 0 4px 20px rgba(124, 92, 252, 0.4); }
+.btn-all { background: #22223a; color: #e8e8f0; }
+.btn-all:hover { box-shadow: 0 4px 20px rgba(255,255,255,0.05); }
 
-.now-playing { margin-top: 10px; font-size: 0.8rem; color: #44ff88; min-height: 1.2em; }
+.np { margin-top: 10px; font-size: 0.8rem; color: #44ff88; min-height: 1.2em; }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>Suno Playlist Tool</h1>
-  <p class="sub">Paste Suno song URLs, one per line.<br>
-  Full URLs (<code>suno.com/song/...</code>) and bare UUIDs work instantly.<br>
-  Short links (<code>suno.com/s/...</code>) will need one extra step.</p>
-  <textarea id="urls" placeholder="https://suno.com/song/cd71ebad-7358-4c72-8e68-72c2f51879e5
-cd71ebad-7358-4c72-8e68-72c2f51879e5
-https://suno.com/s/4F2a6OBXdyOw6pcr"></textarea>
-  <button class="btn" onclick="build()">Build Playlist</button>
-  <div class="stats" id="stats"></div>
-  <div class="tracks" id="tracks"></div>
-  <div class="action-bar" id="actionBar" style="display:none">
-    <button class="btn" onclick="downloadM3U()">Download M3U</button>
-    <button class="btn btn-dim" onclick="downloadAllMp3()">Download All MP3s</button>
+  <p class="sub">Paste a Suno URL and hit Add. Builds your playlist one song at a time.</p>
+  <div class="input-bar">
+    <input type="text" id="inp" placeholder="Paste a Suno URL or UUID..." autofocus>
+    <button class="add-btn" onclick="addSong()">Add</button>
   </div>
-  <div class="now-playing" id="np"></div>
+  <div class="msg" id="msg"></div>
+  <div class="tracks" id="tracks"></div>
+  <div class="bottom" id="bottom">
+    <button class="btn btn-m3u" onclick="dlM3U()">Download M3U</button>
+    <button class="btn btn-all" onclick="dlAll()">Download All MP3s</button>
+  </div>
+  <div class="np" id="np"></div>
 </div>
 <script>
 'use strict';
@@ -81,53 +85,55 @@ const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const SHORT_RE = /suno\.com\/s\/([A-Za-z0-9_-]+)/;
 const CDN = 'https://cdn1.suno.ai/';
 
-// Each entry: { id: uuid|null, shortCode: string|null, resolved: bool, idx: number }
-let playlist = [];
+let tracks = []; // { id, shortCode, resolved }
 let audio = null;
-let playingIdx = -1;
+let playIdx = -1;
 
 function cdnUrl(id) { return CDN + id + '.mp3'; }
 
-function build() {
-  const raw = document.getElementById('urls').value;
-  const lines = raw.split('\n').filter(l => l.trim());
-  if (!lines.length) {
-    document.getElementById('stats').innerHTML = '<span class="error">Paste some URLs first.</span>';
-    return;
+document.getElementById('inp').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addSong();
+});
+
+function addSong() {
+  const inp = document.getElementById('inp');
+  const val = inp.value.trim();
+  if (!val) return;
+
+  const id = (val.match(UUID_RE) || [])[0];
+  const sm = (val.match(SHORT_RE) || [])[1];
+
+  if (id) {
+    tracks.push({ id, shortCode: null, resolved: true });
+    inp.value = '';
+    msg('');
+    render();
+  } else if (sm) {
+    tracks.push({ id: null, shortCode: sm, resolved: false });
+    inp.value = '';
+    msg('<span class="warn">Short URL added — click the link to get the full URL</span>');
+    render();
+  } else {
+    msg('<span class="error">Not a valid Suno URL or UUID</span>');
   }
 
-  if (audio) { audio.pause(); audio = null; playingIdx = -1; }
+  inp.focus();
+}
 
-  playlist = [];
-  let bad = 0;
+function msg(html) { document.getElementById('msg').innerHTML = html; }
 
-  lines.forEach(line => {
-    const id = (line.trim().match(UUID_RE) || [])[0];
-    if (id) {
-      playlist.push({ id, shortCode: null, resolved: true });
-      return;
-    }
-    const sm = line.trim().match(SHORT_RE);
-    if (sm) {
-      playlist.push({ id: null, shortCode: sm[1], resolved: false });
-      return;
-    }
-    bad++;
-  });
+function remove(i) {
+  if (playIdx === i && audio) { audio.pause(); audio = null; playIdx = -1; document.getElementById('np').textContent = ''; }
+  if (playIdx > i) playIdx--;
+  tracks.splice(i, 1);
+  render();
+}
 
-  if (playlist.length === 0) {
-    document.getElementById('stats').innerHTML = '<span class="error">No valid Suno URLs found.</span>';
-    return;
-  }
-
-  const ready = playlist.filter(t => t.resolved).length;
-  const shorts = playlist.filter(t => !t.resolved).length;
-  let msg = '';
-  if (ready) msg += `<span class="ok">${ready} ready</span> `;
-  if (shorts) msg += `<span class="warn">${shorts} need resolving</span> `;
-  if (bad) msg += `<span class="error">${bad} skipped</span>`;
-  document.getElementById('stats').innerHTML = msg;
-
+function resolve(i, input) {
+  const id = (input.value.trim().match(UUID_RE) || [])[0];
+  if (!id) return;
+  tracks[i].id = id;
+  tracks[i].resolved = true;
   render();
 }
 
@@ -135,150 +141,118 @@ function render() {
   const el = document.getElementById('tracks');
   el.innerHTML = '';
 
-  playlist.forEach((t, i) => {
+  tracks.forEach((t, i) => {
     if (t.resolved) {
-      el.appendChild(makeReadyRow(t, i));
+      const row = document.createElement('div');
+      row.className = 'track';
+      row.innerHTML = `
+        <span class="t-num">${i + 1}</span>
+        <span class="t-id" title="${t.id}">${t.id.slice(0, 8)}...</span>
+        <button class="sb" id="p${i}" onclick="play(${i})">Play</button>
+        <button class="sb dl" id="d${i}" onclick="dl(${i})">MP3</button>
+        <button class="sb rm" onclick="remove(${i})">&#128465;</button>
+      `;
+      el.appendChild(row);
     } else {
-      el.appendChild(makeUnresolvedRow(t, i));
+      const row = document.createElement('div');
+      row.className = 'track-short';
+      row.innerHTML = `
+        <div class="row1">
+          <span class="t-num">${i + 1}</span>
+          <a href="https://suno.com/s/${t.shortCode}" target="_blank">/s/${t.shortCode}</a>
+          <span class="hint">click link, copy address bar URL</span>
+          <button class="sb rm" onclick="remove(${i})">&#128465;</button>
+        </div>
+        <div class="row2">
+          <input type="text" placeholder="Paste full song URL here" onpaste="setTimeout(()=>resolve(${i},this),0)" oninput="resolve(${i},this)">
+        </div>
+      `;
+      el.appendChild(row);
     }
   });
 
-  const hasReady = playlist.some(t => t.resolved);
-  document.getElementById('actionBar').style.display = hasReady ? 'flex' : 'none';
+  // Update playing state
+  if (playIdx >= 0) {
+    const pb = document.getElementById('p' + playIdx);
+    if (pb) { pb.textContent = 'Stop'; pb.classList.add('playing'); }
+  }
+
+  document.getElementById('bottom').style.display = tracks.some(t => t.resolved) ? 'flex' : 'none';
 }
 
-function makeReadyRow(t, i) {
-  const row = document.createElement('div');
-  row.className = 'track';
-  row.id = 'row-' + i;
-  const shortId = t.id.slice(0, 8);
-  row.innerHTML = `
-    <span class="track-num">${i + 1}</span>
-    <span class="track-id" title="${t.id}">${shortId}...</span>
-    <button class="sm-btn" onclick="togglePlay(${i})" id="play-${i}">Play</button>
-    <button class="sm-btn dl" onclick="dlMp3(${i})" id="dl-${i}">MP3</button>
-  `;
-  return row;
-}
-
-function makeUnresolvedRow(t, i) {
-  const row = document.createElement('div');
-  row.className = 'track-unresolved';
-  row.id = 'row-' + i;
-  row.innerHTML = `
-    <div class="top">
-      <span class="track-num">${i + 1}</span>
-      <a href="https://suno.com/s/${t.shortCode}" target="_blank" rel="noopener">Open /s/${t.shortCode}</a>
-      <span class="hint">click, then copy URL from address bar</span>
-    </div>
-    <div class="resolve-row">
-      <input type="text" placeholder="Paste full song URL here" oninput="tryResolve(${i}, this)">
-    </div>
-  `;
-  return row;
-}
-
-function tryResolve(i, input) {
-  const val = input.value.trim();
-  const id = (val.match(UUID_RE) || [])[0];
-  if (!id) return;
-
-  playlist[i].id = id;
-  playlist[i].resolved = true;
-
-  // Replace the unresolved row with a ready row in-place
-  const old = document.getElementById('row-' + i);
-  old.replaceWith(makeReadyRow(playlist[i], i));
-
-  // Update stats
-  const ready = playlist.filter(t => t.resolved).length;
-  const shorts = playlist.filter(t => !t.resolved).length;
-  let msg = `<span class="ok">${ready} ready</span> `;
-  if (shorts) msg += `<span class="warn">${shorts} remaining</span>`;
-  document.getElementById('stats').innerHTML = msg;
-  document.getElementById('actionBar').style.display = 'flex';
-}
-
-function togglePlay(idx) {
+function play(i) {
   const np = document.getElementById('np');
-  const btn = document.getElementById('play-' + idx);
-  if (!btn) return;
 
-  if (playingIdx === idx && audio && !audio.paused) {
-    audio.pause(); audio = null; playingIdx = -1;
-    btn.textContent = 'Play'; btn.classList.remove('playing');
+  if (playIdx === i && audio && !audio.paused) {
+    audio.pause(); audio = null; playIdx = -1;
+    const b = document.getElementById('p' + i);
+    if (b) { b.textContent = 'Play'; b.classList.remove('playing'); }
     np.textContent = '';
     return;
   }
 
-  // Stop current
   if (audio) {
     audio.pause();
-    const ob = document.getElementById('play-' + playingIdx);
+    const ob = document.getElementById('p' + playIdx);
     if (ob) { ob.textContent = 'Play'; ob.classList.remove('playing'); }
   }
 
-  audio = new Audio(cdnUrl(playlist[idx].id));
-  playingIdx = idx;
-  btn.textContent = 'Stop'; btn.classList.add('playing');
-  np.textContent = 'Playing track ' + (idx + 1);
+  audio = new Audio(cdnUrl(tracks[i].id));
+  playIdx = i;
+  const b = document.getElementById('p' + i);
+  if (b) { b.textContent = 'Stop'; b.classList.add('playing'); }
+  np.textContent = 'Playing track ' + (i + 1);
 
-  audio.play().catch(() => { btn.textContent = 'Error'; np.textContent = ''; });
+  audio.play().catch(() => { if (b) b.textContent = 'Error'; np.textContent = ''; });
 
   audio.onended = () => {
-    btn.textContent = 'Play'; btn.classList.remove('playing');
-    playingIdx = -1;
-    // Auto-advance to next resolved track
-    for (let n = idx + 1; n < playlist.length; n++) {
-      if (playlist[n].resolved) { togglePlay(n); return; }
+    if (b) { b.textContent = 'Play'; b.classList.remove('playing'); }
+    playIdx = -1;
+    for (let n = i + 1; n < tracks.length; n++) {
+      if (tracks[n].resolved) { play(n); return; }
     }
     np.textContent = '';
   };
 }
 
-async function dlMp3(idx) {
-  const btn = document.getElementById('dl-' + idx);
-  if (!btn) return;
-  btn.textContent = '...'; btn.classList.add('busy');
+async function dl(i) {
+  const b = document.getElementById('d' + i);
+  if (!b) return;
+  b.textContent = '...'; b.classList.add('busy');
   try {
-    const resp = await fetch(cdnUrl(playlist[idx].id));
-    const blob = await resp.blob();
+    const r = await fetch(cdnUrl(tracks[i].id));
+    const blob = await r.blob();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'suno-' + playlist[idx].id.slice(0, 8) + '.mp3';
+    a.download = 'suno-' + tracks[i].id.slice(0, 8) + '.mp3';
     a.click();
     URL.revokeObjectURL(a.href);
-    btn.textContent = 'Done'; btn.classList.remove('busy'); btn.classList.add('done');
-    setTimeout(() => { btn.textContent = 'MP3'; btn.classList.remove('done'); }, 2000);
+    b.textContent = 'Done'; b.classList.remove('busy'); b.classList.add('done');
+    setTimeout(() => { b.textContent = 'MP3'; b.classList.remove('done'); }, 2000);
   } catch {
-    btn.textContent = 'Fail'; btn.classList.remove('busy');
-    setTimeout(() => { btn.textContent = 'MP3'; }, 2000);
+    b.textContent = 'Fail'; b.classList.remove('busy');
+    setTimeout(() => { b.textContent = 'MP3'; }, 2000);
   }
 }
 
-async function downloadAllMp3() {
-  for (let i = 0; i < playlist.length; i++) {
-    if (playlist[i].resolved) {
-      await dlMp3(i);
-      if (i < playlist.length - 1) await new Promise(r => setTimeout(r, 500));
+async function dlAll() {
+  for (let i = 0; i < tracks.length; i++) {
+    if (tracks[i].resolved) {
+      await dl(i);
+      if (i < tracks.length - 1) await new Promise(r => setTimeout(r, 500));
     }
   }
 }
 
-function downloadM3U() {
-  const ready = playlist.filter(t => t.resolved);
+function dlM3U() {
+  const ready = tracks.filter(t => t.resolved);
   if (!ready.length) return;
   let m3u = '#EXTM3U\n';
-  ready.forEach((t, i) => {
-    m3u += `#EXTINF:-1,Track ${i + 1}\n` + cdnUrl(t.id) + '\n';
-  });
-  const blob = new Blob([m3u], { type: 'audio/x-mpegurl' });
+  ready.forEach((t, i) => { m3u += `#EXTINF:-1,Track ${i + 1}\n` + cdnUrl(t.id) + '\n'; });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = URL.createObjectURL(new Blob([m3u], { type: 'audio/x-mpegurl' }));
   a.download = 'suno-playlist-' + ready.length + 'tracks.m3u';
   a.click();
-  URL.revokeObjectURL(a.href);
-  document.getElementById('stats').innerHTML = `<span class="ok">M3U downloaded (${ready.length} tracks)</span>`;
 }
 </script>
 </body>
