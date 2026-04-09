@@ -97,7 +97,7 @@ let tracks = []; // { id, shortCode, resolved }
 let audio = null;
 let playIdx = -1;
 
-function cdnUrl(id) { return CDN + id + '.mp3'; }
+function trackUrl(t) { return t.directUrl || (CDN + t.id + '.mp3'); }
 
 const ta = document.getElementById('inp');
 
@@ -129,12 +129,25 @@ function addLine(line) {
   line = line.trim();
   if (!line || line.startsWith('#EXTM3U') || line.startsWith('#EXTINF')) return 'skip';
 
-  // If it's a CDN URL from an M3U file, extract the UUID
+  // Direct MP3/audio URL from anywhere — just use it as-is
+  if (/^https?:\/\/.+\.(mp3|m4a|ogg|wav|flac|aac)(\?.*)?$/i.test(line)) {
+    tracks.push({ id: null, directUrl: line, shortCode: null, resolved: true });
+    return 'ok';
+  }
+
+  // Any other direct URL (might be a stream or CDN link without extension)
+  if (/^https?:\/\/.+/i.test(line) && !line.includes('suno.com')) {
+    tracks.push({ id: null, directUrl: line, shortCode: null, resolved: true });
+    return 'ok';
+  }
+
+  // Suno CDN URL — extract UUID
   if (line.startsWith('http') && line.includes('cdn1.suno.ai')) {
     const id = (line.match(UUID_RE) || [])[0];
     if (id) { tracks.push({ id, shortCode: null, resolved: true }); return 'ok'; }
   }
 
+  // Suno song page or bare UUID
   const id = (line.match(UUID_RE) || [])[0];
   if (id) { tracks.push({ id, shortCode: null, resolved: true }); return 'ok'; }
 
@@ -211,7 +224,7 @@ function render() {
       row.className = 'track';
       row.innerHTML = `
         <span class="t-num">${i + 1}</span>
-        <span class="t-id" title="${t.id}">${t.id.slice(0, 8)}...</span>
+        <span class="t-id" title="${t.directUrl || t.id}">${t.directUrl ? t.directUrl.replace(/^https?:\/\//, '').slice(0, 40) : t.id.slice(0, 8)}...</span>
         <button class="sb" id="p${i}" onclick="play(${i})">Play</button>
         <button class="sb dl" id="d${i}" onclick="dl(${i})">MP3</button>
         <button class="sb rm" onclick="remove(${i})">&#128465;</button>
@@ -261,7 +274,7 @@ function play(i) {
     if (ob) { ob.textContent = 'Play'; ob.classList.remove('playing'); }
   }
 
-  audio = new Audio(cdnUrl(tracks[i].id));
+  audio = new Audio(trackUrl(tracks[i]));
   playIdx = i;
   const b = document.getElementById('p' + i);
   if (b) { b.textContent = 'Stop'; b.classList.add('playing'); }
@@ -290,11 +303,13 @@ async function dl(i) {
   if (!b) return;
   b.textContent = '...'; b.classList.add('busy');
   try {
-    const r = await fetch(cdnUrl(tracks[i].id));
+    const r = await fetch(trackUrl(tracks[i]));
     const blob = await r.blob();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'suno-' + tracks[i].id.slice(0, 8) + '.mp3';
+    const t = tracks[i];
+    const fname = t.directUrl ? t.directUrl.split('/').pop().split('?')[0] || 'track.mp3' : 'suno-' + t.id.slice(0, 8) + '.mp3';
+    a.download = fname;
     a.click();
     URL.revokeObjectURL(a.href);
     b.textContent = 'Done'; b.classList.remove('busy'); b.classList.add('done');
@@ -318,7 +333,7 @@ function dlM3U() {
   const ready = tracks.filter(t => t.resolved);
   if (!ready.length) return;
   let m3u = '#EXTM3U\n';
-  ready.forEach((t, i) => { m3u += `#EXTINF:-1,Track ${i + 1}\n` + cdnUrl(t.id) + '\n'; });
+  ready.forEach((t, i) => { m3u += `#EXTINF:-1,Track ${i + 1}\n` + trackUrl(t) + '\n'; });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([m3u], { type: 'audio/x-mpegurl' }));
   a.download = 'suno-playlist-' + ready.length + 'tracks.m3u';
