@@ -12,14 +12,17 @@ h1 { font-size: 1.5rem; margin-bottom: 8px; background: linear-gradient(135deg, 
 p.sub { font-size: 0.85rem; color: #888; margin-bottom: 20px; line-height: 1.5; }
 code { color: #7c5cfc; }
 
-/* Input bar */
-.input-bar { display: flex; gap: 8px; }
-.input-bar input { flex: 1; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px; color: #e0e0e0; padding: 10px 14px; font-family: monospace; font-size: 0.85rem; }
-.input-bar input:focus { outline: none; border-color: #7c5cfc; }
-.input-bar input::placeholder { color: #555; }
-.add-btn { background: linear-gradient(135deg, #7c5cfc, #5c3cdc); color: #fff; border: none; border-radius: 6px; padding: 10px 18px; font-weight: 700; font-size: 0.9rem; cursor: pointer; min-height: 44px; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; flex-shrink: 0; }
+/* Input area */
+.input-area { display: flex; gap: 8px; align-items: flex-start; }
+.input-area textarea { flex: 1; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px; color: #e0e0e0; padding: 10px 14px; font-family: monospace; font-size: 0.85rem; resize: none; min-height: 44px; height: 80px; }
+.input-area textarea:focus { outline: none; border-color: #7c5cfc; }
+.input-area textarea::placeholder { color: #555; }
+.input-btns { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.add-btn { background: linear-gradient(135deg, #7c5cfc, #5c3cdc); color: #fff; border: none; border-radius: 6px; padding: 10px 18px; font-weight: 700; font-size: 0.9rem; cursor: pointer; min-height: 44px; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; }
 .add-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(124, 92, 252, 0.4); }
 .add-btn:active { transform: translateY(0); }
+.import-btn { background: #22223a; color: #888; border: 1px solid #2a2a4a; border-radius: 6px; padding: 6px 14px; font-size: 0.75rem; cursor: pointer; transition: border-color 0.15s, color 0.15s; min-height: 30px; }
+.import-btn:hover { border-color: #7c5cfc; color: #e8e8f0; }
 
 .msg { margin-top: 8px; font-size: 0.8rem; min-height: 1.2em; }
 
@@ -65,10 +68,14 @@ code { color: #7c5cfc; }
 <body>
 <div class="container">
   <h1>Suno Playlist Tool</h1>
-  <p class="sub">Paste a Suno URL and hit Add. Builds your playlist one song at a time.</p>
-  <div class="input-bar">
-    <input type="text" id="inp" placeholder="Paste a Suno URL or UUID..." autofocus>
-    <button class="add-btn" onclick="addSong()">Add</button>
+  <p class="sub">Paste Suno URLs and hit Add. One per line, or a whole list at once.</p>
+  <div class="input-area">
+    <textarea id="inp" placeholder="Paste URLs here — one per line&#10;https://suno.com/song/uuid...&#10;or drop an .m3u file" autofocus></textarea>
+    <div class="input-btns">
+      <button class="add-btn" onclick="addFromInput()">Add</button>
+      <button class="import-btn" onclick="document.getElementById('m3uFile').click()">Import M3U</button>
+      <input type="file" id="m3uFile" accept=".m3u,.m3u8" style="display:none" onchange="importM3U(this)">
+    </div>
   </div>
   <div class="msg" id="msg"></div>
   <div class="tracks" id="tracks"></div>
@@ -92,43 +99,89 @@ let playIdx = -1;
 
 function cdnUrl(id) { return CDN + id + '.mp3'; }
 
-const inp = document.getElementById('inp');
-inp.addEventListener('keydown', e => { if (e.key === 'Enter') addSong(); });
-inp.addEventListener('paste', e => {
-  // If pasting multiple lines, intercept and batch-add
-  const text = (e.clipboardData || window.clipboardData).getData('text');
-  if (text.includes('\n')) {
-    e.preventDefault();
-    text.split('\n').filter(l => l.trim()).forEach(line => {
-      inp.value = line;
-      addSong();
-    });
+const ta = document.getElementById('inp');
+
+// Ctrl+Enter or Cmd+Enter to add
+ta.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) addFromInput();
+});
+
+// Drag and drop M3U files onto textarea
+ta.addEventListener('dragover', e => { e.preventDefault(); ta.style.borderColor = '#7c5cfc'; });
+ta.addEventListener('dragleave', () => { ta.style.borderColor = '#2a2a4a'; });
+ta.addEventListener('drop', e => {
+  e.preventDefault();
+  ta.style.borderColor = '#2a2a4a';
+  const file = e.dataTransfer.files[0];
+  if (file && (file.name.endsWith('.m3u') || file.name.endsWith('.m3u8'))) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      let added = 0;
+      reader.result.split('\n').filter(l => l.trim()).forEach(line => { if (addLine(line) === 'ok') added++; });
+      msg(`<span class="ok">Imported ${added} track${added !== 1 ? 's' : ''} from ${file.name}</span>`);
+      render();
+    };
+    reader.readAsText(file);
   }
 });
 
-function addSong() {
-  const inp = document.getElementById('inp');
-  const val = inp.value.trim();
-  if (!val) return;
+function addLine(line) {
+  line = line.trim();
+  if (!line || line.startsWith('#EXTM3U') || line.startsWith('#EXTINF')) return 'skip';
 
-  const id = (val.match(UUID_RE) || [])[0];
-  const sm = (val.match(SHORT_RE) || [])[1];
-
-  if (id) {
-    tracks.push({ id, shortCode: null, resolved: true });
-    inp.value = '';
-    msg('');
-    render();
-  } else if (sm) {
-    tracks.push({ id: null, shortCode: sm, resolved: false });
-    inp.value = '';
-    msg('<span class="warn">Short URL added — click the link to get the full URL</span>');
-    render();
-  } else {
-    msg('<span class="error">Not a valid Suno URL or UUID</span>');
+  // If it's a CDN URL from an M3U file, extract the UUID
+  if (line.startsWith('http') && line.includes('cdn1.suno.ai')) {
+    const id = (line.match(UUID_RE) || [])[0];
+    if (id) { tracks.push({ id, shortCode: null, resolved: true }); return 'ok'; }
   }
 
-  inp.focus();
+  const id = (line.match(UUID_RE) || [])[0];
+  if (id) { tracks.push({ id, shortCode: null, resolved: true }); return 'ok'; }
+
+  const sm = (line.match(SHORT_RE) || [])[1];
+  if (sm) { tracks.push({ id: null, shortCode: sm, resolved: false }); return 'short'; }
+
+  return 'bad';
+}
+
+function addFromInput() {
+  const ta = document.getElementById('inp');
+  const lines = ta.value.split('\n').filter(l => l.trim());
+  if (!lines.length) return;
+
+  let added = 0, shorts = 0, bad = 0;
+  lines.forEach(line => {
+    const r = addLine(line);
+    if (r === 'ok') added++;
+    else if (r === 'short') shorts++;
+    else if (r === 'bad') bad++;
+  });
+
+  ta.value = '';
+  ta.focus();
+
+  let m = '';
+  if (added) m += `<span class="ok">${added} added</span> `;
+  if (shorts) m += `<span class="warn">${shorts} need resolving</span> `;
+  if (bad) m += `<span class="error">${bad} skipped</span>`;
+  msg(m || '');
+
+  render();
+}
+
+function importM3U(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const lines = reader.result.split('\n').filter(l => l.trim());
+    let added = 0;
+    lines.forEach(line => { if (addLine(line) === 'ok') added++; });
+    msg(`<span class="ok">Imported ${added} track${added !== 1 ? 's' : ''} from ${file.name}</span>`);
+    render();
+  };
+  reader.readAsText(file);
+  input.value = ''; // reset so same file can be re-imported
 }
 
 function msg(html) { document.getElementById('msg').innerHTML = html; }
