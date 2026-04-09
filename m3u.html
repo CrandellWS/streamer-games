@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Suno M3U Generator</title>
+<title>Suno Playlist Tool</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0d0d14; color: #e8e8f0; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0d0d14; color: #e8e8f0; min-height: 100vh; display: flex; justify-content: center; padding: 40px 20px; }
 .container { max-width: 640px; width: 100%; }
 h1 { font-size: 1.5rem; margin-bottom: 8px; background: linear-gradient(135deg, #7c5cfc, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 p.sub { font-size: 0.85rem; color: #888; margin-bottom: 20px; line-height: 1.5; }
-textarea { width: 100%; height: 180px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; padding: 12px; font-family: monospace; font-size: 0.85rem; resize: vertical; }
+textarea { width: 100%; height: 160px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; padding: 12px; font-family: monospace; font-size: 0.85rem; resize: vertical; }
 textarea:focus { outline: none; border-color: #7c5cfc; }
 textarea::placeholder { color: #555; }
 .btn { margin-top: 12px; padding: 12px 24px; min-height: 44px; background: linear-gradient(135deg, #7c5cfc, #5c3cdc); color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; width: 100%; }
@@ -22,7 +22,26 @@ textarea::placeholder { color: #555; }
 .warn { color: #ffaa00; }
 .ok { color: #44ff88; }
 
-/* Short URL resolution panel */
+/* Song list */
+.song-list { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.song-row { display: flex; align-items: center; gap: 8px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px; padding: 8px 12px; }
+.song-num { color: #555; font-size: 0.75rem; font-weight: 700; width: 24px; text-align: center; flex-shrink: 0; }
+.song-id { flex: 1; font-family: monospace; font-size: 0.8rem; color: #7c5cfc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.song-play { background: none; border: 1px solid #2a2a4a; color: #e8e8f0; border-radius: 4px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; transition: border-color 0.15s, color 0.15s; min-height: 32px; }
+.song-play:hover { border-color: #7c5cfc; color: #7c5cfc; }
+.song-play.playing { border-color: #44ff88; color: #44ff88; }
+.song-dl { background: none; border: 1px solid #2a2a4a; color: #e8e8f0; border-radius: 4px; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; transition: border-color 0.15s, color 0.15s; min-height: 32px; }
+.song-dl:hover { border-color: #ffd700; color: #ffd700; }
+.song-dl.downloading { border-color: #ffaa00; color: #ffaa00; pointer-events: none; }
+.song-dl.done { border-color: #44ff88; color: #44ff88; }
+
+/* Action bar */
+.actions { display: flex; gap: 8px; margin-top: 12px; }
+.actions .btn { flex: 1; font-size: 0.9rem; padding: 10px 16px; }
+.btn-secondary { background: linear-gradient(135deg, #2a2a4a, #22223a) !important; }
+.btn-secondary:hover { box-shadow: 0 4px 20px rgba(255,255,255,0.05) !important; }
+
+/* Resolve panel */
 .resolve-panel { margin-top: 16px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; padding: 16px; display: none; }
 .resolve-panel.show { display: block; }
 .resolve-panel h3 { font-size: 0.95rem; color: #ffaa00; margin-bottom: 8px; }
@@ -38,23 +57,34 @@ textarea::placeholder { color: #555; }
 .resolve-done { margin-top: 8px; padding: 8px 16px; min-height: 36px; background: #44ff88; color: #0d0d14; border: none; border-radius: 4px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: transform 0.15s, opacity 0.15s; }
 .resolve-done:hover { transform: translateY(-1px); }
 .resolve-done:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+/* Audio player */
+.now-playing { margin-top: 12px; font-size: 0.8rem; color: #44ff88; display: none; }
+.now-playing.show { display: block; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>Suno M3U Generator</h1>
+  <h1>Suno Playlist Tool</h1>
   <p class="sub">Paste Suno song URLs (one per line). Use the full URL from your browser address bar:<br>
   <code style="color:#7c5cfc">suno.com/song/uuid...</code> or just bare UUIDs.</p>
   <textarea id="urls" placeholder="https://suno.com/song/cd71ebad-7358-4c72-8e68-72c2f51879e5
 cd71ebad-7358-4c72-8e68-72c2f51879e5"></textarea>
-  <button class="btn" id="btn" onclick="generate()">Download M3U</button>
+  <button class="btn" id="btn" onclick="generate()">Build Playlist</button>
   <div class="stats" id="stats"></div>
+
+  <div class="song-list" id="songList"></div>
+  <div class="actions" id="actionBar" style="display:none">
+    <button class="btn" onclick="downloadM3U()">Download M3U</button>
+    <button class="btn btn-secondary" onclick="downloadAllMp3()">Download All MP3s</button>
+  </div>
+  <div class="now-playing" id="nowPlaying"></div>
 
   <div class="resolve-panel" id="resolvePanel">
     <h3>These need full URLs</h3>
-    <p>Short links (<code>/s/...</code>) don't contain the song ID. Click each link below &mdash; it opens the song page in the same tab. Copy the URL from your address bar and paste it into the box next to it.</p>
+    <p>Short links (<code>/s/...</code>) don't contain the song ID. Click each link below to open the song page. Copy the URL from your address bar and paste it into the box.</p>
     <ol class="resolve-list" id="resolveList"></ol>
-    <button class="resolve-done" id="resolveBtn" onclick="applyResolved()" disabled>Add resolved songs &amp; download</button>
+    <button class="resolve-done" id="resolveBtn" onclick="applyResolved()" disabled>Add resolved songs</button>
   </div>
 </div>
 <script>
@@ -62,8 +92,11 @@ cd71ebad-7358-4c72-8e68-72c2f51879e5"></textarea>
 
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const SHORT_RE = /suno\.com\/s\/([A-Za-z0-9_-]+)/;
+const CDN = 'https://cdn1.suno.ai/';
 
-let pendingIds = [];
+let songIds = [];
+let audio = null;
+let playingIdx = -1;
 
 function extractId(line) {
   line = line.trim();
@@ -72,62 +105,159 @@ function extractId(line) {
   return m ? m[0] : null;
 }
 
-function isShortUrl(line) {
-  return SHORT_RE.test(line.trim());
+function isShortUrl(line) { return SHORT_RE.test(line.trim()); }
+function getShortCode(line) { const m = line.trim().match(SHORT_RE); return m ? m[1] : null; }
+
+function cdnUrl(id) { return CDN + id + '.mp3'; }
+
+function renderSongList() {
+  const list = document.getElementById('songList');
+  const bar = document.getElementById('actionBar');
+  list.innerHTML = '';
+
+  if (songIds.length === 0) {
+    bar.style.display = 'none';
+    return;
+  }
+
+  songIds.forEach((id, i) => {
+    const row = document.createElement('div');
+    row.className = 'song-row';
+    row.innerHTML = `
+      <span class="song-num">${i + 1}</span>
+      <span class="song-id" title="${id}">${id}</span>
+      <button class="song-play" data-idx="${i}" onclick="togglePlay(${i})">Play</button>
+      <button class="song-dl" data-idx="${i}" onclick="downloadMp3(${i})">MP3</button>
+    `;
+    list.appendChild(row);
+  });
+
+  bar.style.display = 'flex';
 }
 
-function getShortCode(line) {
-  const m = line.trim().match(SHORT_RE);
-  return m ? m[1] : null;
+function togglePlay(idx) {
+  const btns = document.querySelectorAll('.song-play');
+  const np = document.getElementById('nowPlaying');
+
+  // If clicking the currently playing track, stop it
+  if (playingIdx === idx && audio && !audio.paused) {
+    audio.pause();
+    audio = null;
+    playingIdx = -1;
+    btns[idx].textContent = 'Play';
+    btns[idx].classList.remove('playing');
+    np.classList.remove('show');
+    return;
+  }
+
+  // Stop any current playback
+  if (audio) {
+    audio.pause();
+    if (playingIdx >= 0 && btns[playingIdx]) {
+      btns[playingIdx].textContent = 'Play';
+      btns[playingIdx].classList.remove('playing');
+    }
+  }
+
+  // Start new
+  audio = new Audio(cdnUrl(songIds[idx]));
+  playingIdx = idx;
+  btns[idx].textContent = 'Stop';
+  btns[idx].classList.add('playing');
+  np.textContent = 'Now playing track ' + (idx + 1);
+  np.classList.add('show');
+
+  audio.play().catch(() => {
+    btns[idx].textContent = 'Error';
+    np.classList.remove('show');
+  });
+
+  audio.onended = () => {
+    btns[idx].textContent = 'Play';
+    btns[idx].classList.remove('playing');
+    np.classList.remove('show');
+    playingIdx = -1;
+    // Auto-advance to next track
+    if (idx + 1 < songIds.length) togglePlay(idx + 1);
+  };
+}
+
+async function downloadMp3(idx) {
+  const btn = document.querySelectorAll('.song-dl')[idx];
+  btn.textContent = '...';
+  btn.classList.add('downloading');
+
+  try {
+    const resp = await fetch(cdnUrl(songIds[idx]));
+    const blob = await resp.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `suno-${songIds[idx].slice(0, 8)}.mp3`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    btn.textContent = 'Done';
+    btn.classList.remove('downloading');
+    btn.classList.add('done');
+    setTimeout(() => { btn.textContent = 'MP3'; btn.classList.remove('done'); }, 2000);
+  } catch {
+    btn.textContent = 'Fail';
+    btn.classList.remove('downloading');
+    setTimeout(() => { btn.textContent = 'MP3'; }, 2000);
+  }
+}
+
+async function downloadAllMp3() {
+  for (let i = 0; i < songIds.length; i++) {
+    await downloadMp3(i);
+    // Small delay between downloads so browser doesn't choke
+    if (i < songIds.length - 1) await new Promise(r => setTimeout(r, 500));
+  }
+}
+
+function downloadM3U() {
+  if (songIds.length === 0) return;
+
+  let m3u = '#EXTM3U\n';
+  songIds.forEach((id, i) => {
+    m3u += `#EXTINF:-1,Track ${i + 1}\n`;
+    m3u += cdnUrl(id) + '\n';
+  });
+
+  const blob = new Blob([m3u], { type: 'audio/x-mpegurl' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `suno-playlist-${songIds.length}tracks.m3u`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  document.getElementById('stats').innerHTML =
+    `<span class="ok">M3U downloaded (${songIds.length} tracks)</span>`;
 }
 
 function checkResolveInputs() {
   const inputs = document.querySelectorAll('.resolve-input');
-  let allDone = true;
   inputs.forEach(inp => {
-    const val = inp.value.trim();
-    const id = extractId(val);
+    const id = extractId(inp.value);
     if (id) {
       inp.classList.add('resolved');
       inp.nextElementSibling.textContent = '\u2705';
     } else {
       inp.classList.remove('resolved');
-      inp.nextElementSibling.textContent = val ? '\u274c' : '';
-      allDone = false;
+      inp.nextElementSibling.textContent = inp.value.trim() ? '\u274c' : '';
     }
   });
   document.getElementById('resolveBtn').disabled = !document.querySelector('.resolve-input.resolved');
 }
 
 function applyResolved() {
-  const inputs = document.querySelectorAll('.resolve-input');
-  inputs.forEach(inp => {
+  document.querySelectorAll('.resolve-input').forEach(inp => {
     const id = extractId(inp.value);
-    if (id) pendingIds.push(id);
+    if (id) songIds.push(id);
   });
-
   document.getElementById('resolvePanel').classList.remove('show');
-  downloadM3U(pendingIds);
-}
-
-function downloadM3U(ids) {
-  if (ids.length === 0) return;
-
-  let m3u = '#EXTM3U\n';
-  ids.forEach((id, i) => {
-    m3u += `#EXTINF:-1,Track ${i + 1}\n`;
-    m3u += `https://cdn1.suno.ai/${id}.mp3\n`;
-  });
-
-  const blob = new Blob([m3u], { type: 'audio/x-mpegurl' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `suno-playlist-${ids.length}tracks.m3u`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-
+  renderSongList();
   document.getElementById('stats').innerHTML =
-    `<span class="ok">Downloaded ${ids.length} track${ids.length > 1 ? 's' : ''}</span>`;
+    `<span class="ok">${songIds.length} track${songIds.length > 1 ? 's' : ''} ready</span>`;
 }
 
 function generate() {
@@ -142,53 +272,43 @@ function generate() {
     return;
   }
 
-  pendingIds = [];
+  // Stop any playback
+  if (audio) { audio.pause(); audio = null; playingIdx = -1; }
+
+  songIds = [];
   const shorts = [];
   const bad = [];
 
   lines.forEach((line, i) => {
     const id = extractId(line);
-    if (id) {
-      pendingIds.push(id);
-      return;
-    }
-    if (isShortUrl(line)) {
-      shorts.push({ code: getShortCode(line), raw: line.trim(), lineNum: i + 1 });
-      return;
-    }
+    if (id) { songIds.push(id); return; }
+    if (isShortUrl(line)) { shorts.push({ code: getShortCode(line), lineNum: i + 1 }); return; }
     bad.push(i + 1);
   });
 
-  // If no short URLs, just download
-  if (shorts.length === 0 && pendingIds.length > 0) {
-    if (bad.length) {
-      stats.innerHTML = `<span class="warn">${bad.length} line${bad.length > 1 ? 's' : ''} skipped (not a valid Suno URL)</span>`;
-    }
-    downloadM3U(pendingIds);
-    panel.classList.remove('show');
-    return;
-  }
+  // Show song list for valid IDs
+  renderSongList();
 
-  // If only bad lines, error
-  if (shorts.length === 0 && pendingIds.length === 0) {
-    stats.innerHTML = '<span class="error">No valid song URLs found. Use the full URL from your browser address bar.</span>';
+  // Status message
+  let msg = '';
+  if (songIds.length > 0) msg += `<span class="ok">${songIds.length} track${songIds.length > 1 ? 's' : ''} ready</span> `;
+  if (bad.length) msg += `<span class="warn">${bad.length} skipped</span> `;
+
+  if (shorts.length === 0) {
+    if (songIds.length === 0) {
+      msg = '<span class="error">No valid song URLs found. Use the full URL from your browser address bar.</span>';
+    }
+    stats.innerHTML = msg;
     panel.classList.remove('show');
     return;
   }
 
   // Show resolve panel for short URLs
-  let readyMsg = '';
-  if (pendingIds.length > 0) {
-    readyMsg = `<span class="ok">${pendingIds.length} song${pendingIds.length > 1 ? 's' : ''} ready.</span> `;
-  }
-  if (bad.length) {
-    readyMsg += `<span class="warn">${bad.length} skipped.</span> `;
-  }
-  readyMsg += `<span class="warn">${shorts.length} short URL${shorts.length > 1 ? 's' : ''} need full song pages &darr;</span>`;
-  stats.innerHTML = readyMsg;
+  msg += `<span class="warn">${shorts.length} short URL${shorts.length > 1 ? 's' : ''} need full song pages</span>`;
+  stats.innerHTML = msg;
 
   list.innerHTML = '';
-  shorts.forEach((s, i) => {
+  shorts.forEach(s => {
     const li = document.createElement('li');
     li.className = 'resolve-item';
     li.innerHTML = `
