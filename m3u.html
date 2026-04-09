@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suno M3U Generator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0d0d14; color: #e8e8f0; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+.container { max-width: 600px; width: 100%; }
+h1 { font-size: 1.5rem; margin-bottom: 8px; background: linear-gradient(135deg, #7c5cfc, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+p.sub { font-size: 0.85rem; color: #888; margin-bottom: 20px; }
+textarea { width: 100%; height: 200px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; padding: 12px; font-family: monospace; font-size: 0.85rem; resize: vertical; }
+textarea:focus { outline: none; border-color: #ffd700; }
+textarea::placeholder { color: #555; }
+button { margin-top: 12px; padding: 12px 24px; min-height: 44px; background: linear-gradient(135deg, #7c5cfc, #5c3cdc); color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; }
+button:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(124, 92, 252, 0.4); }
+button:active { transform: translateY(0); }
+.stats { margin-top: 12px; font-size: 0.85rem; color: #888; }
+.error { color: #ff4444; }
+.formats { display: flex; gap: 8px; margin-top: 12px; }
+.formats label { font-size: 0.85rem; cursor: pointer; padding: 6px 12px; border: 1px solid #333; border-radius: 4px; transition: border-color 0.15s; }
+.formats input:checked + span { color: #ffd700; }
+.formats label:has(input:checked) { border-color: #ffd700; }
+.formats input { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Suno M3U Generator</h1>
+  <p class="sub">Paste Suno URLs (one per line) — song pages, short links, or just UUIDs.</p>
+  <textarea id="urls" placeholder="https://suno.com/song/cd71ebad-7358-4c72-8e68-72c2f51879e5
+https://suno.com/s/4F2a6OBXdyOw6pcr
+cd71ebad-7358-4c72-8e68-72c2f51879e5"></textarea>
+  <div class="formats">
+    <label><input type="radio" name="fmt" value="mp3" checked><span>MP3</span></label>
+    <label><input type="radio" name="fmt" value="mp4"><span>MP4</span></label>
+  </div>
+  <button onclick="generate()">Download M3U</button>
+  <div class="stats" id="stats"></div>
+</div>
+<script>
+'use strict';
+
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+function extractId(line) {
+  line = line.trim();
+  if (!line || line.startsWith('#')) return null;
+  const m = line.match(UUID_RE);
+  return m ? m[0] : null;
+}
+
+function generate() {
+  const raw = document.getElementById('urls').value;
+  const lines = raw.split('\n');
+  const fmt = document.querySelector('input[name="fmt"]:checked').value;
+  const ids = [];
+  const bad = [];
+
+  lines.forEach((line, i) => {
+    if (!line.trim()) return;
+    const id = extractId(line);
+    if (id) ids.push(id);
+    else bad.push(i + 1);
+  });
+
+  const stats = document.getElementById('stats');
+
+  if (ids.length === 0) {
+    stats.innerHTML = '<span class="error">No valid Suno URLs or UUIDs found.</span>';
+    return;
+  }
+
+  let m3u = '#EXTM3U\n';
+  ids.forEach((id, i) => {
+    m3u += `#EXTINF:-1,Track ${i + 1}\n`;
+    m3u += `https://cdn1.suno.ai/${id}.${fmt}\n`;
+  });
+
+  const blob = new Blob([m3u], { type: 'audio/x-mpegurl' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `suno-playlist-${ids.length}tracks.m3u`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  let msg = `Downloaded ${ids.length} track${ids.length > 1 ? 's' : ''} as .m3u (${fmt.toUpperCase()})`;
+  if (bad.length) msg += ` <span class="error">| ${bad.length} skipped (lines ${bad.join(', ')})</span>`;
+  stats.innerHTML = msg;
+}
+</script>
+</body>
+</html>
