@@ -11,71 +11,127 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 h1 { font-size: 1.5rem; margin-bottom: 8px; background: linear-gradient(135deg, #7c5cfc, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 p.sub { font-size: 0.85rem; color: #888; margin-bottom: 20px; }
 textarea { width: 100%; height: 200px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; padding: 12px; font-family: monospace; font-size: 0.85rem; resize: vertical; }
-textarea:focus { outline: none; border-color: #ffd700; }
+textarea:focus { outline: none; border-color: #7c5cfc; }
 textarea::placeholder { color: #555; }
-button { margin-top: 12px; padding: 12px 24px; min-height: 44px; background: linear-gradient(135deg, #7c5cfc, #5c3cdc); color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; }
+button { margin-top: 12px; padding: 12px 24px; min-height: 44px; background: linear-gradient(135deg, #7c5cfc, #5c3cdc); color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), box-shadow 0.15s; width: 100%; }
 button:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(124, 92, 252, 0.4); }
 button:active { transform: translateY(0); }
+button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .stats { margin-top: 12px; font-size: 0.85rem; color: #888; }
 .error { color: #ff4444; }
-.formats { display: flex; gap: 8px; margin-top: 12px; }
-.formats label { font-size: 0.85rem; cursor: pointer; padding: 6px 12px; border: 1px solid #333; border-radius: 4px; transition: border-color 0.15s; }
-.formats input:checked + span { color: #ffd700; }
-.formats label:has(input:checked) { border-color: #ffd700; }
-.formats input { display: none; }
+.warn { color: #ffaa00; }
+.ok { color: #44ff88; }
+.resolving { display: inline-block; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>Suno M3U Generator</h1>
-  <p class="sub">Paste Suno URLs (one per line) — song pages, short links, or just UUIDs.</p>
+  <p class="sub">Paste Suno URLs (one per line) — song pages, short links, or bare UUIDs.</p>
   <textarea id="urls" placeholder="https://suno.com/song/cd71ebad-7358-4c72-8e68-72c2f51879e5
 https://suno.com/s/4F2a6OBXdyOw6pcr
 cd71ebad-7358-4c72-8e68-72c2f51879e5"></textarea>
-  <div class="formats">
-    <label><input type="radio" name="fmt" value="mp3" checked><span>MP3</span></label>
-    <label><input type="radio" name="fmt" value="mp4"><span>MP4</span></label>
-  </div>
-  <button onclick="generate()">Download M3U</button>
+  <button id="btn" onclick="generate()">Download M3U</button>
   <div class="stats" id="stats"></div>
 </div>
 <script>
 'use strict';
 
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+const SHORT_RE = /suno\.com\/s\/([A-Za-z0-9_-]+)/;
 
 function extractId(line) {
   line = line.trim();
   if (!line || line.startsWith('#')) return null;
   const m = line.match(UUID_RE);
-  return m ? m[0] : null;
+  return m ? { type: 'uuid', id: m[0] } : null;
 }
 
-function generate() {
-  const raw = document.getElementById('urls').value;
-  const lines = raw.split('\n');
-  const fmt = document.querySelector('input[name="fmt"]:checked').value;
-  const ids = [];
-  const bad = [];
+function extractShortCode(line) {
+  const m = line.trim().match(SHORT_RE);
+  return m ? m[1] : null;
+}
 
-  lines.forEach((line, i) => {
-    if (!line.trim()) return;
-    const id = extractId(line);
-    if (id) ids.push(id);
-    else bad.push(i + 1);
-  });
+async function resolveShortUrl(code) {
+  // Fetch the short URL page and extract the UUID from the redirect/meta
+  try {
+    const resp = await fetch(`https://suno.com/s/${code}`, { redirect: 'follow' });
+    const url = resp.url;
+    const m = url.match(UUID_RE);
+    if (m) return m[0];
+    // If URL didn't have it, check the HTML
+    const html = await resp.text();
+    const hm = html.match(UUID_RE);
+    return hm ? hm[0] : null;
+  } catch {
+    // CORS will likely block this — try alternate approach
+    // Fetch the song page via opengraph or just warn the user
+    return null;
+  }
+}
 
+async function generate() {
+  const btn = document.getElementById('btn');
   const stats = document.getElementById('stats');
+  const raw = document.getElementById('urls').value;
+  const lines = raw.split('\n').filter(l => l.trim());
 
-  if (ids.length === 0) {
-    stats.innerHTML = '<span class="error">No valid Suno URLs or UUIDs found.</span>';
+  if (!lines.length) {
+    stats.innerHTML = '<span class="error">Paste some URLs first.</span>';
     return;
   }
 
+  btn.disabled = true;
+  const ids = [];
+  const shorts = [];
+  const bad = [];
+
+  // First pass: extract UUIDs directly, collect short codes
+  lines.forEach((line, i) => {
+    const direct = extractId(line);
+    if (direct) {
+      ids.push(direct.id);
+      return;
+    }
+    const code = extractShortCode(line);
+    if (code) {
+      shorts.push({ code, lineNum: i + 1 });
+      return;
+    }
+    bad.push(i + 1);
+  });
+
+  // Second pass: try to resolve short URLs
+  if (shorts.length > 0) {
+    stats.innerHTML = `<span class="resolving">Resolving ${shorts.length} short URL${shorts.length > 1 ? 's' : ''}...</span>`;
+
+    for (const s of shorts) {
+      const resolved = await resolveShortUrl(s.code);
+      if (resolved) {
+        ids.push(resolved);
+      } else {
+        bad.push(s.lineNum);
+      }
+    }
+  }
+
+  btn.disabled = false;
+
+  if (ids.length === 0) {
+    let msg = '<span class="error">No valid song IDs found.</span>';
+    if (shorts.length > 0 && bad.length > 0) {
+      msg += '<br><span class="warn">Short URLs (/s/) can\'t be resolved from the browser (CORS). Use the full song page URL instead:<br>suno.com/song/uuid...</span>';
+    }
+    stats.innerHTML = msg;
+    return;
+  }
+
+  // Build M3U (MP3 only — CDN doesn't serve MP4)
   let m3u = '#EXTM3U\n';
   ids.forEach((id, i) => {
     m3u += `#EXTINF:-1,Track ${i + 1}\n`;
-    m3u += `https://cdn1.suno.ai/${id}.${fmt}\n`;
+    m3u += `https://cdn1.suno.ai/${id}.mp3\n`;
   });
 
   const blob = new Blob([m3u], { type: 'audio/x-mpegurl' });
@@ -85,8 +141,13 @@ function generate() {
   a.click();
   URL.revokeObjectURL(a.href);
 
-  let msg = `Downloaded ${ids.length} track${ids.length > 1 ? 's' : ''} as .m3u (${fmt.toUpperCase()})`;
-  if (bad.length) msg += ` <span class="error">| ${bad.length} skipped (lines ${bad.join(', ')})</span>`;
+  let msg = `<span class="ok">Downloaded ${ids.length} track${ids.length > 1 ? 's' : ''}</span>`;
+  if (bad.length) {
+    msg += `<br><span class="warn">${bad.length} skipped (line${bad.length > 1 ? 's' : ''} ${bad.join(', ')})</span>`;
+    if (shorts.length > 0) {
+      msg += '<br><span class="warn">Tip: Short URLs (/s/) may not resolve from browser. Use full song URLs instead.</span>';
+    }
+  }
   stats.innerHTML = msg;
 }
 </script>
