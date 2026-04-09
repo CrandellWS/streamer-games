@@ -92,8 +92,18 @@ let playIdx = -1;
 
 function cdnUrl(id) { return CDN + id + '.mp3'; }
 
-document.getElementById('inp').addEventListener('keydown', e => {
-  if (e.key === 'Enter') addSong();
+const inp = document.getElementById('inp');
+inp.addEventListener('keydown', e => { if (e.key === 'Enter') addSong(); });
+inp.addEventListener('paste', e => {
+  // If pasting multiple lines, intercept and batch-add
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  if (text.includes('\n')) {
+    e.preventDefault();
+    text.split('\n').filter(l => l.trim()).forEach(line => {
+      inp.value = line;
+      addSong();
+    });
+  }
 });
 
 function addSong() {
