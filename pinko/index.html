@@ -129,7 +129,9 @@ select {
 .slider-row input[type="range"] { flex:1; accent-color:var(--accent-pink); }
 .slider-row .slider-val { font-size:12px; color:var(--text); min-width:32px; text-align:right; }
 
-.player-list { max-height:180px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+.player-list { max-height:220px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+.player-list.compact .player-item { padding:3px 8px; font-size:12px; gap:6px; }
+.player-list.compact .player-color { width:8px; height:8px; }
 .player-item {
   display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px;
   font-size:13px; transition:background .15s;
@@ -168,9 +170,21 @@ select {
       <p>Pinball chaos &mdash; drop it and find a winner!</p>
     </div>
     <div class="panel-scroll">
+      <!-- 1. Players first — streamers add names immediately -->
       <div class="panel-section">
-        <h3>Drop</h3>
-        <button class="btn btn-primary" id="btn-drop" style="width:100%;margin-bottom:10px;">Drop Ball</button>
+        <h3 id="players-label">Players</h3>
+        <div class="input-group">
+          <input type="text" id="name-input" placeholder="Enter name...">
+          <button class="btn btn-sm" id="btn-add-name">+ Add</button>
+        </div>
+        <textarea id="bulk-names" placeholder="Paste names — one per line, comma-separated, or @mentions"></textarea>
+        <button class="btn btn-sm" id="btn-add-bulk" style="width:100%;margin-top:6px;">+ Add All</button>
+        <div class="player-list" id="player-list"></div>
+        <div class="player-count" id="player-count">0 players</div>
+      </div>
+      <!-- 2. Drop — the main action, big and prominent -->
+      <div class="panel-section">
+        <button class="btn btn-primary" id="btn-drop" style="width:100%;margin-bottom:10px;font-size:15px;min-height:46px;">Drop Ball</button>
         <div class="slider-row">
           <label>Drama</label>
           <input type="range" id="slider-drama" min="0" max="100" value="50">
@@ -182,6 +196,7 @@ select {
           <span class="slider-val" id="timeout-val">12s</span>
         </div>
       </div>
+      <!-- 3. Game Type -->
       <div class="panel-section">
         <h3>Game Type</h3>
         <div class="toggle-group" id="gametype-toggle" style="margin-bottom:8px;">
@@ -194,30 +209,7 @@ select {
         <textarea id="prizes-input" placeholder="One prize per line (one per slot)"></textarea>
         <button class="btn btn-sm" id="btn-set-prizes" style="width:100%;margin-top:6px;">Set Prizes</button>
       </div>
-      <div class="panel-section">
-        <h3>Mode</h3>
-        <div class="toggle-group" id="mode-toggle" style="margin-bottom:8px;">
-          <button class="tg-btn active" data-val="random">Random</button>
-          <button class="tg-btn" data-val="click">Click</button>
-        </div>
-        <div class="toggle-group" id="balls-toggle">
-          <button class="tg-btn active" data-val="1">x1</button>
-          <button class="tg-btn" data-val="3">x3</button>
-          <button class="tg-btn" data-val="5">x5</button>
-          <button class="tg-btn" data-val="10">x10</button>
-        </div>
-      </div>
-      <div class="panel-section">
-        <h3 id="players-label">Players</h3>
-        <div class="input-group">
-          <input type="text" id="name-input" placeholder="Enter name...">
-          <button class="btn btn-sm" id="btn-add-name">+ Add</button>
-        </div>
-        <textarea id="bulk-names" placeholder="Paste names (one per line)"></textarea>
-        <button class="btn btn-sm" id="btn-add-bulk" style="width:100%;margin-top:6px;">+ Add All</button>
-        <div class="player-list" id="player-list"></div>
-        <div class="player-count" id="player-count">0 players</div>
-      </div>
+      <!-- 4. Board settings -->
       <div class="panel-section">
         <h3>Board</h3>
         <div style="display:flex;gap:8px;margin-bottom:8px;">
@@ -241,6 +233,21 @@ select {
         </div>
         <button class="btn btn-sm" id="btn-regen" style="width:100%;">Regenerate Board</button>
       </div>
+      <!-- 5. Mode & Balls -->
+      <div class="panel-section">
+        <h3>Mode</h3>
+        <div class="toggle-group" id="mode-toggle" style="margin-bottom:8px;">
+          <button class="tg-btn active" data-val="random">Random</button>
+          <button class="tg-btn" data-val="click">Click</button>
+        </div>
+        <div class="toggle-group" id="balls-toggle">
+          <button class="tg-btn active" data-val="1">x1</button>
+          <button class="tg-btn" data-val="3">x3</button>
+          <button class="tg-btn" data-val="5">x5</button>
+          <button class="tg-btn" data-val="10">x10</button>
+        </div>
+      </div>
+      <!-- 6. Winner Mode -->
       <div class="panel-section">
         <h3>Winner Mode</h3>
         <div class="toggle-group" id="winner-mode-toggle">
@@ -249,6 +256,7 @@ select {
           <button class="tg-btn active" data-val="escalating">Escalating</button>
         </div>
       </div>
+      <!-- 7. Settings -->
       <div class="panel-section">
         <h3>Settings</h3>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
@@ -264,6 +272,7 @@ select {
           </select>
         </div>
       </div>
+      <!-- 8. Actions & Results -->
       <div class="panel-section">
         <h3>Actions</h3>
         <div style="display:flex;gap:8px;">
@@ -292,16 +301,69 @@ function escHtml(s) {
   return d.innerHTML;
 }
 function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+// Smart name list parser — handles common bot/chat formats:
+// - One per line: "alice\nbob\ncharlie"
+// - Comma-separated: "alice, bob, charlie"
+// - @mentions: "@alice @bob @charlie"
+// - Numbered lists: "1. alice\n2. bob"
+// - Mixed: "1. @alice, @bob\n2. charlie"
+function parseNameList(raw) {
+  var results = [];
+  // Split on newlines first
+  var lines = raw.split(/\r?\n/);
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    // Strip leading numbers/bullets: "1. ", "1) ", "- ", "* "
+    line = line.replace(/^\d+[\.\)]\s*/, '').replace(/^[-*]\s+/, '');
+    // Split on commas if present
+    var parts = line.indexOf(',') >= 0 ? line.split(',') : [line];
+    for (var j = 0; j < parts.length; j++) {
+      var name = parts[j].trim();
+      // Strip @ prefix
+      name = name.replace(/^@/, '');
+      // Strip trailing punctuation bots sometimes add
+      name = name.replace(/[;:!]+$/, '').trim();
+      if (name && name.length <= 40) results.push(name);
+    }
+  }
+  return results;
+}
 function lerp(a, b, t) { return a + (b - a) * t; }
 function rand(lo, hi) { return lo + Math.random() * (hi - lo); }
 function dist(x1, y1, x2, y2) { var dx = x1 - x2, dy = y1 - y2; return Math.sqrt(dx * dx + dy * dy); }
 function vec2Len(x, y) { return Math.sqrt(x * x + y * y); }
 
-var PLAYER_COLORS = [
+/* Color tiers: 6 default, 12 at 26+ names, 20 at 50+ names
+   Selected for maximum distinction on dark backgrounds + colorblind safety */
+var COLOR_TIER_6 = [
+  '#5c7cfa','#ff6b6b','#51cf66','#fcc419','#cc5de8','#22b8cf'
+];
+var COLOR_TIER_12 = [
+  '#5c7cfa','#ff6b6b','#51cf66','#fcc419','#cc5de8','#22b8cf',
+  '#ff922b','#20c997','#f06595','#7950f2','#74c0fc','#ffe066'
+];
+var COLOR_TIER_20 = [
   '#5c7cfa','#ff6b6b','#51cf66','#fcc419','#cc5de8','#22b8cf',
   '#ff922b','#20c997','#f06595','#7950f2','#74c0fc','#ffe066',
-  '#3bc9db','#a9e34b','#e599f7','#f783ac'
+  '#3bc9db','#a9e34b','#e599f7','#f783ac','#ff8787','#69db7c',
+  '#da77f2','#4dabf7'
 ];
+
+function getColorPalette(playerCount) {
+  if (playerCount >= 50) return COLOR_TIER_20;
+  if (playerCount >= 26) return COLOR_TIER_12;
+  return COLOR_TIER_6;
+}
+
+function getPlayerColor(index, totalPlayers) {
+  var palette = getColorPalette(totalPlayers);
+  return palette[index % palette.length];
+}
+
+// Legacy alias used in confetti and rendering
+var PLAYER_COLORS = COLOR_TIER_20;
 
 /* =====================================================================
    STATE
@@ -344,6 +406,7 @@ var STUCK_TIME = 1500;
 var STUCK_THRESHOLD = 3;
 var HARD_TIMEOUT = 8000; // 8 seconds max — if stuck, force into slot
 var TRAIL_LEN = 12;
+var COLLISION_COOLDOWN_FRAMES = 4; // frames to skip after hitting an obstacle
 
 /* =====================================================================
    RUNTIME VARIABLES
@@ -371,6 +434,26 @@ var lastPegSoundMs = 0;
 var lastBumperSoundMs = 0;
 var lastSpinnerSoundMs = 0;
 var lastFlipperSoundMs = 0;
+
+/* =====================================================================
+   VFX STATE — combo counter, lane lights, tilt, bumper rings
+   ===================================================================== */
+var combo = { count: 0, lastHitMs: 0, displayTimer: 0, peakCount: 0 };
+var COMBO_WINDOW_MS = 500;
+var COMBO_DISPLAY_MS = 1000;
+
+var laneLights = [];
+var LANE_COUNT = 8;
+var LANE_FADE_RATE = 0.006;
+
+var tiltState = { phase: 'none', shakeX: 0, shakeY: 0, flashAlpha: 0 };
+
+var bumperRings = [];
+
+var drainFlippers = {
+  left: { angle: 0, active: false, timer: 0 },
+  right: { angle: 0, active: false, timer: 0 }
+};
 
 /* =====================================================================
    CANVAS SIZING
@@ -545,17 +628,85 @@ function getMinPegRows(size) {
 }
 
 /* =====================================================================
-   BOARD BUILDER — Dense peg grids + small chaos obstacles
+   SYMMETRIC OBSTACLE PLACEMENT — mirror left-to-right
+   ===================================================================== */
+function mirrorBumpers(bumpers, centerX) {
+  var result = [];
+  for (var i = 0; i < bumpers.length; i++) {
+    var b = bumpers[i];
+    result.push(b);
+    var mx = centerX + (centerX - b.x);
+    if (Math.abs(b.x - centerX) > 10) {
+      result.push({ x: mx, y: b.y, r: b.r, flash: 0, flashTimer: 0, chainCount: 0, lastHitMs: 0 });
+    }
+  }
+  return result;
+}
+
+function mirrorFlippers(flippers, centerX) {
+  var result = [];
+  for (var i = 0; i < flippers.length; i++) {
+    var fl = flippers[i];
+    result.push(fl);
+    var mx = centerX + (centerX - fl.x);
+    if (Math.abs(fl.x - centerX) > 10) {
+      result.push({
+        x: mx, y: fl.y, length: fl.length,
+        angle: Math.PI - fl.angle, speed: -fl.speed,
+        flash: 0, flashTimer: 0
+      });
+    }
+  }
+  return result;
+}
+
+function mirrorSpinners(spinners, centerX) {
+  var result = [];
+  for (var i = 0; i < spinners.length; i++) {
+    var sp = spinners[i];
+    result.push(sp);
+    var mx = centerX + (centerX - sp.x);
+    if (Math.abs(sp.x - centerX) > 10) {
+      result.push({
+        x: mx, y: sp.y, length: sp.length,
+        angle: Math.PI - sp.angle, speed: -sp.speed,
+        flash: 0, flashTimer: 0
+      });
+    }
+  }
+  return result;
+}
+
+/* =====================================================================
+   BUMPER TRIANGLE — always present on ALL chaos levels
+   ===================================================================== */
+function createBumperTriangle(centerX, boardTop, boardHeight) {
+  var topY = boardTop + boardHeight * 0.15;
+  var botY = boardTop + boardHeight * 0.22;
+  var spacing = 40;
+  var r = 22;
+  return [
+    { x: centerX, y: topY, r: r, flash: 0, flashTimer: 0, chainCount: 0, lastHitMs: 0 },
+    { x: centerX - spacing, y: botY, r: r, flash: 0, flashTimer: 0, chainCount: 0, lastHitMs: 0 },
+    { x: centerX + spacing, y: botY, r: r, flash: 0, flashTimer: 0, chainCount: 0, lastHitMs: 0 }
+  ];
+}
+
+/* =====================================================================
+   BOARD BUILDER — Peg grids + symmetric chaos + bumper triangle + 27 slots
    ===================================================================== */
 function buildBoard() {
   if (W === 0 || H === 0) return;
 
-  var numSlots;
+  var nameCount;
   if (state.gameType === 'prize') {
-    numSlots = Math.max(state.prizes.length, 1);
+    nameCount = Math.max(state.prizes.length, 1);
   } else {
-    numSlots = Math.max(state.players.length, 1);
+    nameCount = Math.max(state.players.length, 1);
   }
+
+  // 27-slot system: 25 active name slots + 2 retrigger gutters
+  var TOTAL_SLOTS = 27;
 
   var margin = 20;
   var boardLeft = margin;
@@ -565,42 +716,46 @@ function buildBoard() {
   var slotHeight = 50;
   var funnelHeight = 40;
   var boardBottom = H - slotHeight - funnelHeight;
+  var centerX = boardLeft + boardWidth / 2;
 
   var sRand = seededRand(state.boardSeed);
   var availHeight = boardBottom - boardTop;
 
-  // Calculate peg spacing to achieve minimum row count
   var minRows = getMinPegRows(state.boardSize);
   var rowH = availHeight / (minRows + 1);
-  var pegSpacing = rowH / 0.866; // reverse of equilateral height
+  var pegSpacing = rowH / 0.866;
   pegSpacing = Math.max(18, Math.min(38, pegSpacing));
 
-  // Generate the dense peg grid as foundation
-  var allPegs = generatePegGrid(boardWidth, boardLeft, boardTop, boardBottom, PEG_RADIUS, pegSpacing, 0);
+  // Peg grid starts below bumper triangle zone
+  var pegStartY = boardTop + availHeight * 0.28;
+  var allPegs = generatePegGrid(boardWidth, boardLeft, pegStartY, boardBottom, PEG_RADIUS, pegSpacing, 0);
 
-  var allBumpers = [];
+  // Bumper triangle — ALWAYS present on all chaos levels
+  var triangleBumpers = createBumperTriangle(centerX, boardTop, availHeight);
+  var allBumpers = triangleBumpers.slice();
   var allSpinners = [];
   var allFlippers = [];
   var allRails = [];
 
-  // Add chaos obstacles on top of the peg grid
-  // Off = clean pegs only
-  // Mild = pegs + small bumpers
-  // Wild = pegs + bumpers + flippers + spinners
-  // Insane = pegs + lots of bumpers + lots of flippers + lots of fast spinners
+  // Chaos obstacles — scatter on LEFT half, then mirror for symmetry
   if (state.chaos === 'mild' || state.chaos === 'wild' || state.chaos === 'insane') {
-    var bumperCount = state.chaos === 'insane' ? 12 : state.chaos === 'wild' ? 6 : 4;
-    allBumpers = scatterSmallBumpers(boardWidth, boardLeft, boardTop, boardBottom, bumperCount, sRand);
+    var bumperCount = state.chaos === 'insane' ? 6 : state.chaos === 'wild' ? 3 : 2;
+    var halfWidth = boardWidth / 2;
+    var leftBumpers = scatterSmallBumpers(halfWidth, boardLeft, pegStartY, boardBottom, bumperCount, sRand);
+    var mirroredB = mirrorBumpers(leftBumpers, centerX);
+    for (var mb = 0; mb < mirroredB.length; mb++) allBumpers.push(mirroredB[mb]);
   }
 
   if (state.chaos === 'wild' || state.chaos === 'insane') {
-    var flipperCount = state.chaos === 'insane' ? 8 : 4;
-    var spinnerCount = state.chaos === 'insane' ? 6 : 3;
-    allFlippers = scatterTinyFlippers(boardWidth, boardLeft, boardTop, boardBottom, flipperCount, sRand);
-    allSpinners = scatterSpinners(boardWidth, boardLeft, boardTop, boardBottom, spinnerCount, sRand);
+    var flipperCount = state.chaos === 'insane' ? 4 : 2;
+    var spinnerCount = state.chaos === 'insane' ? 3 : 2;
+    var halfW2 = boardWidth / 2;
+    var leftFlippers = scatterTinyFlippers(halfW2, boardLeft, pegStartY, boardBottom, flipperCount, sRand);
+    allFlippers = mirrorFlippers(leftFlippers, centerX);
+    var leftSpinners = scatterSpinners(halfW2, boardLeft, pegStartY, boardBottom, spinnerCount, sRand);
+    allSpinners = mirrorSpinners(leftSpinners, centerX);
   }
 
-  // Insane: make spinners faster
   if (state.chaos === 'insane') {
     for (var si = 0; si < allSpinners.length; si++) {
       allSpinners[si].speed *= 2;
@@ -608,10 +763,8 @@ function buildBoard() {
     }
   }
 
-  // Remove pegs that overlap with obstacles
   allPegs = removePegsNearObstacles(allPegs, allBumpers, allSpinners, allFlippers, BALL_RADIUS);
 
-  // Clamp all objects within bounds
   var ballR = BALL_RADIUS;
   for (var i = 0; i < allPegs.length; i++) {
     var p = allPegs[i];
@@ -624,64 +777,63 @@ function buildBoard() {
     b.y = clamp(b.y, boardTop + b.r, boardBottom - b.r);
   }
 
-  // Funnel guides between slots
+  // === 27-SLOT SYSTEM with retrigger gutters ===
   var slotZoneY = boardBottom;
-  var slotWidth = boardWidth / numSlots;
+  var slotWidth = boardWidth / TOTAL_SLOTS;
   var funnelGuides = [];
-  for (var i = 1; i < numSlots; i++) {
+
+  for (var i = 1; i < TOTAL_SLOTS; i++) {
     var gx = boardLeft + i * slotWidth;
     funnelGuides.push({
       x1: gx - slotWidth * 0.15, y1: slotZoneY - funnelHeight,
-      x2: gx, y2: slotZoneY + 5,
-      flash: 0
+      x2: gx, y2: slotZoneY + 5, flash: 0
     });
     funnelGuides.push({
       x1: gx + slotWidth * 0.15, y1: slotZoneY - funnelHeight,
-      x2: gx, y2: slotZoneY + 5,
-      flash: 0
+      x2: gx, y2: slotZoneY + 5, flash: 0
     });
   }
 
-  // Build slots
+  // Retrigger gutter slopes — V-shaped walls angling inward
+  var gL = boardLeft, gR = boardLeft + slotWidth, gC = gL + slotWidth * 0.5;
+  funnelGuides.push({ x1: gL + 2, y1: slotZoneY - funnelHeight * 0.8, x2: gC, y2: slotZoneY + slotHeight * 0.3, flash: 0 });
+  funnelGuides.push({ x1: gR - 2, y1: slotZoneY - funnelHeight * 0.8, x2: gC, y2: slotZoneY + slotHeight * 0.3, flash: 0 });
+  var rgL = boardLeft + (TOTAL_SLOTS - 1) * slotWidth, rgC = rgL + slotWidth * 0.5;
+  funnelGuides.push({ x1: rgL + 2, y1: slotZoneY - funnelHeight * 0.8, x2: rgC, y2: slotZoneY + slotHeight * 0.3, flash: 0 });
+  funnelGuides.push({ x1: boardRight - 2, y1: slotZoneY - funnelHeight * 0.8, x2: rgC, y2: slotZoneY + slotHeight * 0.3, flash: 0 });
+
+  // Build 27 slots — gutters at index 0 and 26, active names at 1-25
   var slots = [];
-  for (var i = 0; i < numSlots; i++) {
-    var slotName;
-    if (state.gameType === 'prize') {
-      slotName = state.prizes[i] || ('Prize ' + (i + 1));
-    } else {
-      slotName = state.players[i] || '';
+  for (var i = 0; i < TOTAL_SLOTS; i++) {
+    var slotName = '';
+    var slotColor = 'rgba(60,60,80,0.3)';
+    var isGutter = (i === 0 || i === TOTAL_SLOTS - 1);
+
+    if (!isGutter) {
+      var nameIdx = i - 1;
+      if (state.gameType === 'prize') {
+        slotName = (nameIdx < state.prizes.length) ? state.prizes[nameIdx] : '';
+      } else {
+        slotName = (nameIdx < state.players.length) ? state.players[nameIdx] : '';
+      }
+      if (slotName) slotColor = getPlayerColor(nameIdx, nameCount);
     }
+
     slots.push({
-      x: boardLeft + i * slotWidth,
-      y: slotZoneY,
-      width: slotWidth,
-      height: slotHeight,
-      name: slotName,
-      color: PLAYER_COLORS[i % PLAYER_COLORS.length],
-      glow: 0
+      x: boardLeft + i * slotWidth, y: slotZoneY,
+      width: slotWidth, height: slotHeight,
+      name: slotName, color: slotColor, glow: 0, isGutter: isGutter
     });
   }
 
   board = {
-    pegs: allPegs,
-    bumpers: allBumpers,
-    spinners: allSpinners,
-    flippers: allFlippers,
-    rails: allRails,
-    funnelGuides: funnelGuides,
-    slots: slots,
-    left: boardLeft,
-    right: boardRight,
-    top: boardTop,
-    bottom: boardBottom,
-    width: boardWidth,
-    height: availHeight,
-    slotZoneY: slotZoneY,
-    funnelHeight: funnelHeight,
-    slotHeight: slotHeight,
-    slotWidth: slotWidth,
-    pegSpacing: pegSpacing,
-    numSlots: numSlots
+    pegs: allPegs, bumpers: allBumpers, spinners: allSpinners,
+    flippers: allFlippers, rails: allRails, funnelGuides: funnelGuides,
+    slots: slots, left: boardLeft, right: boardRight,
+    top: boardTop, bottom: boardBottom, width: boardWidth,
+    height: availHeight, slotZoneY: slotZoneY, funnelHeight: funnelHeight,
+    slotHeight: slotHeight, slotWidth: slotWidth, pegSpacing: pegSpacing,
+    numSlots: TOTAL_SLOTS, activeSlots: 25
   };
 }
 
@@ -710,73 +862,100 @@ function createBall(xFrac, dropIdx) {
     stuckSince: 0,
     dropIdx: dropIdx,
     teleporting: false,
-    playerLabel: playerLabel
+    playerLabel: playerLabel,
+    recentHits: {} // key: obstacle id string, value: frames remaining to skip
   };
 }
 
 /* =====================================================================
-   CLAW MACHINE
+   LAUNCHER CHUTE — spring-loaded plunger on right side
+   Ball shoots UP and arcs over the top of the board
    ===================================================================== */
 function startClaw(xFrac, dropIdx) {
   var dramaLevel = state.drama / 100;
-  var baseDuration = lerp(2000, 8000, dramaLevel);
-  var duration = baseDuration + rand(-300, 300);
-  var startX = board.left + rand(0.2, 0.8) * board.width;
-  var targetX = board.left + clamp(xFrac, 0.05, 0.95) * board.width;
+  // Drama controls spring pull distance = arc height and duration
+  var pullDuration = lerp(800, 3000, dramaLevel); // how long the spring compresses
+  var launchSpeed = lerp(400, 700, dramaLevel); // initial upward velocity
+  var targetX = board.left + clamp(xFrac, 0.1, 0.9) * board.width;
 
   clawState = {
-    phase: 'swinging',
-    x: startX,
-    y: board.top - 10,
+    phase: 'pulling', // pulling -> launching -> arcing -> done
+    x: board.right - 15, // chute on right side
+    y: board.bottom - 30, // bottom of board
     targetX: targetX,
-    startX: startX,
     timer: 0,
-    duration: duration,
+    pullDuration: pullDuration,
+    launchSpeed: launchSpeed,
     dropIdx: dropIdx,
-    gripOpen: false,
-    fakeOuts: Math.floor(dramaLevel * 4) + 1,
-    amplitude: board.width * 0.3,
+    springCompress: 0, // 0-1 compression amount
+    ballX: board.right - 15,
+    ballY: board.bottom - 30,
+    ballVx: 0,
+    ballVy: 0,
     released: false,
     fadeTimer: 0
   };
+  sndLauncherSpring();
 }
 
 function updateClaw(dtSec) {
   if (!clawState) return;
+  var c = clawState;
 
-  if (clawState.phase === 'swinging') {
-    clawState.timer += dtSec * 1000;
-    var progress = clamp(clawState.timer / clawState.duration, 0, 1);
+  if (c.phase === 'pulling') {
+    c.timer += dtSec * 1000;
+    c.springCompress = clamp(c.timer / c.pullDuration, 0, 1);
+    // Ball stays at plunger position
+    c.ballY = c.y - c.springCompress * 20; // slight visual compression
 
-    var eased = 1 - Math.pow(1 - progress, 3);
-    var swing = Math.sin(progress * Math.PI * (2 + clawState.fakeOuts)) * clawState.amplitude * (1 - eased);
-    var baseX = lerp(clawState.startX, clawState.targetX, eased);
-    clawState.x = clamp(baseX + swing, board.left + 20, board.right - 20);
-
-    if (progress > 0.7 && progress < 0.85) {
-      clawState.timer -= dtSec * 400;
+    if (c.timer >= c.pullDuration) {
+      // Release! Launch ball upward
+      c.phase = 'launching';
+      c.ballVy = -c.launchSpeed;
+      c.ballVx = -(board.right - c.targetX) * 0.8 / (c.launchSpeed / 500); // horizontal to reach target
+      c.timer = 0;
+      sndLauncherRelease();
     }
+  } else if (c.phase === 'launching') {
+    c.timer += dtSec * 1000;
+    // Ball follows arc — gravity pulls it down
+    c.ballVy += GRAVITY * 0.6 * dtSec; // reduced gravity for nice arc
+    c.ballX += c.ballVx * dtSec;
+    c.ballY += c.ballVy * dtSec;
 
-    if (progress >= 1) {
-      clawState.phase = 'dropping';
-      clawState.gripOpen = true;
-      clawState.x = clawState.targetX;
-      var ballXFrac = (clawState.x - board.left) / board.width;
-      var ball = createBall(ballXFrac, clawState.dropIdx);
-      ball.y = clawState.y + 15;
-      ball.vy = 30;
+    // Once ball crosses above board top and starts falling, convert to real ball
+    if (c.ballY < board.top + 20 && c.ballVy > 0) {
+      var ballXFrac = (c.ballX - board.left) / board.width;
+      var ball = createBall(clamp(ballXFrac, 0.05, 0.95), c.dropIdx);
+      ball.x = c.ballX;
+      ball.y = c.ballY;
+      ball.vx = c.ballVx * 0.3;
+      ball.vy = Math.max(c.ballVy, 50);
       balls.push(ball);
-      clawState.released = true;
-      clawState.fadeTimer = 0;
+      c.released = true;
+      c.phase = 'fading';
+      c.fadeTimer = 0;
       sndDrop();
     }
-  } else if (clawState.phase === 'dropping') {
-    clawState.fadeTimer += dtSec * 1000;
-    if (clawState.fadeTimer > 500) {
-      clawState.phase = 'done';
-      // Trigger next ball drop if there are more in the queue
+
+    // Safety: if ball goes way off screen, force create
+    if (c.timer > 3000) {
+      var safeFrac = (c.targetX - board.left) / board.width;
+      var ball2 = createBall(safeFrac, c.dropIdx);
+      ball2.y = board.top + 10;
+      ball2.vy = 100;
+      balls.push(ball2);
+      c.released = true;
+      c.phase = 'fading';
+      c.fadeTimer = 0;
+      sndDrop();
+    }
+  } else if (c.phase === 'fading') {
+    c.fadeTimer += dtSec * 1000;
+    if (c.fadeTimer > 300) {
+      c.phase = 'done';
       if (currentDropIdx < dropQueue.length && state.dropping) {
-        var delay = lerp(300, 1500, state.drama / 100); // shorter delay between drops
+        var delay = lerp(300, 1500, state.drama / 100);
         setTimeout(function() {
           if (state.dropping) dropNext();
         }, delay);
@@ -786,41 +965,63 @@ function updateClaw(dtSec) {
 }
 
 /* =====================================================================
-   COLLISION HELPERS
+   COLLISION HELPERS — with per-ball cooldown to prevent oscillation
    ===================================================================== */
-function collideCircleCircle(ball, cx, cy, cr, restitution) {
+
+// Check if ball is on cooldown for a given obstacle
+function isOnCooldown(ball, obstacleId) {
+  return ball.recentHits[obstacleId] > 0;
+}
+
+// Mark obstacle as recently hit — skip collision for N frames
+function markHit(ball, obstacleId) {
+  ball.recentHits[obstacleId] = COLLISION_COOLDOWN_FRAMES;
+}
+
+// Tick down all cooldowns (called once per physics step per ball)
+function tickCooldowns(ball) {
+  for (var key in ball.recentHits) {
+    if (ball.recentHits[key] > 0) {
+      ball.recentHits[key]--;
+      if (ball.recentHits[key] <= 0) delete ball.recentHits[key];
+    }
+  }
+}
+
+function collideCircleCircle(ball, cx, cy, cr, restitution, obstacleId) {
+  if (obstacleId && isOnCooldown(ball, obstacleId)) return false;
   var dx = ball.x - cx, dy = ball.y - cy;
   var minDist = ball.r + cr;
   var d2 = dx * dx + dy * dy;
   if (d2 >= minDist * minDist) return false;
-  if (d2 < 0.0001) { // dead center — nudge randomly
+  if (d2 < 0.0001) {
     dx = (Math.random() - 0.5) * 2;
     dy = -1;
     d2 = dx * dx + dy * dy;
   }
   var d = Math.sqrt(d2);
   var nx = dx / d, ny = dy / d;
-  // Separate — push ball completely outside
-  ball.x = cx + nx * (minDist + 0.5);
-  ball.y = cy + ny * (minDist + 0.5);
+  // Separate — push ball completely outside with extra margin
+  ball.x = cx + nx * (minDist + 1.0);
+  ball.y = cy + ny * (minDist + 1.0);
   // Reflect velocity only if moving INTO the obstacle
   var dot = ball.vx * nx + ball.vy * ny;
   if (dot < 0) {
     ball.vx -= (1 + restitution) * dot * nx;
     ball.vy -= (1 + restitution) * dot * ny;
   }
-  // Always add a tiny random horizontal nudge to prevent vertical stacking
-  ball.vx += (Math.random() - 0.5) * 3;
-  // Ensure minimum escape velocity
+  // Ensure minimum bounce velocity so ball always escapes
   var speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-  if (speed < 30) {
-    ball.vx += (Math.random() - 0.5) * 60;
-    ball.vy -= 30; // kick upward
+  if (speed < 50) {
+    ball.vx += (Math.random() - 0.5) * 80;
+    ball.vy += 50; // push downward to help reach bottom
   }
+  if (obstacleId) markHit(ball, obstacleId);
   return true;
 }
 
-function collideCircleSegment(ball, x1, y1, x2, y2, restitution, thickness) {
+function collideCircleSegment(ball, x1, y1, x2, y2, restitution, thickness, obstacleId) {
+  if (obstacleId && isOnCooldown(ball, obstacleId)) return false;
   thickness = thickness || 6;
   var sdx = x2 - x1, sdy = y2 - y1;
   var len2 = sdx * sdx + sdy * sdy;
@@ -834,13 +1035,14 @@ function collideCircleSegment(ball, x1, y1, x2, y2, restitution, thickness) {
   if (d2 < 0.0001) { dx = 0; dy = -1; d2 = 1; }
   var d = Math.sqrt(d2);
   var nx = dx / d, ny = dy / d;
-  ball.x = cx + nx * (hitDist + 0.5);
-  ball.y = cy + ny * (hitDist + 0.5);
+  ball.x = cx + nx * (hitDist + 1.0);
+  ball.y = cy + ny * (hitDist + 1.0);
   var dot = ball.vx * nx + ball.vy * ny;
   if (dot < 0) {
     ball.vx -= (1 + restitution) * dot * nx;
     ball.vy -= (1 + restitution) * dot * ny;
   }
+  if (obstacleId) markHit(ball, obstacleId);
   return true;
 }
 
@@ -871,6 +1073,9 @@ function updatePhysics(dtSec) {
   for (var i = 0; i < balls.length; i++) {
     var ball = balls[i];
     if (!ball.active || ball.settled || ball.teleporting) continue;
+
+    // Tick collision cooldowns once per physics step
+    tickCooldowns(ball);
 
     // Gravity
     ball.vy += GRAVITY * dtSec;
@@ -912,9 +1117,10 @@ function updatePhysics(dtSec) {
       // Peg collisions
       for (var pi = 0; pi < board.pegs.length; pi++) {
         var peg = board.pegs[pi];
-        if (collideCircleCircle(ball, peg.x, peg.y, peg.r, REST_PEG)) {
+        if (collideCircleCircle(ball, peg.x, peg.y, peg.r, REST_PEG, 'p' + pi)) {
           peg.flash = 6;
           peg.scaleAnim = 6;
+          vfxLaneLightHit(ball.x);
           if (nowMs - lastPegSoundMs > 50) {
             sndPeg(vec2Len(ball.vx, ball.vy));
             lastPegSoundMs = nowMs;
@@ -925,7 +1131,7 @@ function updatePhysics(dtSec) {
       // Bumper collisions
       for (var bi = 0; bi < board.bumpers.length; bi++) {
         var bmp = board.bumpers[bi];
-        if (collideCircleCircle(ball, bmp.x, bmp.y, bmp.r, REST_BUMPER)) {
+        if (collideCircleCircle(ball, bmp.x, bmp.y, bmp.r, REST_BUMPER, 'b' + bi)) {
           bmp.flashTimer = 10;
           if (nowMs - bmp.lastHitMs < 200) {
             bmp.chainCount++;
@@ -933,6 +1139,9 @@ function updatePhysics(dtSec) {
             bmp.chainCount = 1;
           }
           bmp.lastHitMs = nowMs;
+          vfxComboHit();
+          vfxBumperRing(bmp.x, bmp.y, bmp.r);
+          vfxLaneLightHit(ball.x);
           if (nowMs - lastBumperSoundMs > 80) {
             sndBumper(bmp.chainCount);
             lastBumperSoundMs = nowMs;
@@ -947,12 +1156,15 @@ function updatePhysics(dtSec) {
         var hL = sp2.length / 2;
         if (collideCircleSegment(ball,
           sp2.x - cos2 * hL, sp2.y - sin2 * hL,
-          sp2.x + cos2 * hL, sp2.y + sin2 * hL, REST_RAIL, 6)) {
-          // Fling with tangential velocity from rotation
-          ball.vx += -Math.sin(sp2.angle) * sp2.speed * sp2.length * 2;
-          ball.vy += Math.cos(sp2.angle) * sp2.speed * sp2.length * 2;
-          ball.vy = Math.min(ball.vy, -150); // ensure upward component
+          sp2.x + cos2 * hL, sp2.y + sin2 * hL, REST_RAIL, 6, 'sp' + si2)) {
+          // Fling with tangential velocity — capped to prevent launching into orbit
+          var tangVx = -Math.sin(sp2.angle) * sp2.speed * sp2.length * 1.2;
+          var tangVy = Math.cos(sp2.angle) * sp2.speed * sp2.length * 1.2;
+          ball.vx += clamp(tangVx, -300, 300);
+          ball.vy += clamp(tangVy, -300, 300);
           sp2.flashTimer = 8;
+          vfxComboHit();
+          vfxLaneLightHit(ball.x);
           if (nowMs - lastSpinnerSoundMs > 80) {
             sndSpinner();
             lastSpinnerSoundMs = nowMs;
@@ -967,12 +1179,14 @@ function updatePhysics(dtSec) {
         var flHL = fl.length / 2;
         var flx1 = fl.x - flCos * flHL, fly1 = fl.y - flSin * flHL;
         var flx2 = fl.x + flCos * flHL, fly2 = fl.y + flSin * flHL;
-        if (collideCircleSegment(ball, flx1, fly1, flx2, fly2, REST_FLIPPER, 6)) {
+        if (collideCircleSegment(ball, flx1, fly1, flx2, fly2, REST_FLIPPER, 6, 'fl' + fi)) {
           fl.flashTimer = 8;
-          // Fling with tangential velocity from rotation
-          ball.vx += -Math.sin(fl.angle) * fl.speed * fl.length * 2;
-          ball.vy += Math.cos(fl.angle) * fl.speed * fl.length * 2;
-          ball.vy = Math.min(ball.vy, -150); // ensure upward component
+          var flTangVx = -Math.sin(fl.angle) * fl.speed * fl.length * 1.2;
+          var flTangVy = Math.cos(fl.angle) * fl.speed * fl.length * 1.2;
+          ball.vx += clamp(flTangVx, -300, 300);
+          ball.vy += clamp(flTangVy, -300, 300);
+          vfxComboHit();
+          vfxLaneLightHit(ball.x);
           if (nowMs - lastFlipperSoundMs > 80) {
             sndFlipper();
             lastFlipperSoundMs = nowMs;
@@ -983,7 +1197,7 @@ function updatePhysics(dtSec) {
       // Rail collisions
       for (var ri = 0; ri < board.rails.length; ri++) {
         var rail = board.rails[ri];
-        if (collideCircleSegment(ball, rail.x1, rail.y1, rail.x2, rail.y2, REST_RAIL)) {
+        if (collideCircleSegment(ball, rail.x1, rail.y1, rail.x2, rail.y2, REST_RAIL, 6, 'r' + ri)) {
           rail.flash = 6;
         }
       }
@@ -992,7 +1206,7 @@ function updatePhysics(dtSec) {
       if (ball.y + ball.r < board.slotZoneY) {
         for (var gi = 0; gi < board.funnelGuides.length; gi++) {
           var fg = board.funnelGuides[gi];
-          if (collideCircleSegment(ball, fg.x1, fg.y1, fg.x2, fg.y2, REST_WALL)) {
+          if (collideCircleSegment(ball, fg.x1, fg.y1, fg.x2, fg.y2, REST_WALL, 6, 'fg' + gi)) {
             fg.flash = 4;
           }
         }
@@ -1010,6 +1224,10 @@ function updatePhysics(dtSec) {
       var slotCenterX = slot.x + slot.width / 2;
       var slotCenterY = board.slotZoneY + board.slotHeight / 2;
 
+      // Drain save flipper animation on gutter slots
+      if (slotIdx === 0 && !ball._drainTriggered) { vfxDrainSave('left'); sndDrainSnap(); ball._drainTriggered = true; }
+      if (slotIdx === board.numSlots - 1 && !ball._drainTriggered) { vfxDrainSave('right'); sndDrainSnap(); ball._drainTriggered = true; }
+
       // Kill velocity aggressively in slot zone — no more bouncing
       ball.vx *= 0.7;
       ball.vy *= 0.7;
@@ -1022,13 +1240,31 @@ function updatePhysics(dtSec) {
 
       var dToCenter = dist(ball.x, ball.y, slotCenterX, slotCenterY);
       if (dToCenter < 8 && vec2Len(ball.vx, ball.vy) < 15) {
-        ball.settled = true;
-        ball.settledSlot = slotIdx;
-        ball.x = slotCenterX;
-        ball.y = slotCenterY;
-        slot.glow = 60;
-        sndLand();
-        onBallSettled(ball);
+        // Retrigger gutter — ball landed in gutter slot, auto-drop new ball
+        if (slot.isGutter) {
+          ball.active = false;
+          ball.settled = true;
+          sndGutterDrain();
+          // Auto-drop replacement ball after 500ms
+          (function(dropI) {
+            setTimeout(function() {
+              if (!state.dropping) return;
+              var newBall = createBall(rand(0.15, 0.85), dropI);
+              newBall.y = board.top + 10;
+              newBall.vy = 50;
+              balls.push(newBall);
+              sndRetrigger();
+            }, 500);
+          })(ball.dropIdx);
+        } else {
+          ball.settled = true;
+          ball.settledSlot = slotIdx;
+          ball.x = slotCenterX;
+          ball.y = slotCenterY;
+          slot.glow = 60;
+          sndLand();
+          onBallSettled(ball);
+        }
       }
     }
 
@@ -1044,6 +1280,7 @@ function updatePhysics(dtSec) {
           ball.y = board.top + Math.random() * (board.height * 0.5);
           ball.vx = (Math.random() - 0.5) * 100;
           ball.vy = 200;
+          ball.trail = []; // Clear trail ghost
           ball.stuckSince = 0;
         } else if (stuckFor > STUCK_TIME) {
           // 1.5s stuck: strong random impulse
@@ -1057,9 +1294,13 @@ function updatePhysics(dtSec) {
       ball.lastMoveCheck = nowMs;
     }
 
-    // Hard timeout teleport
+    // Hard timeout teleport — avoid gutter slots
     if (nowMs - ball.spawnTime > HARD_TIMEOUT && !ball.settled) {
       var tSlotIdx = clamp(Math.floor((ball.x - board.left) / board.slotWidth), 0, board.numSlots - 1);
+      // Skip gutter slots — clamp to active range (1 to numSlots-2)
+      if (board.slots[tSlotIdx] && board.slots[tSlotIdx].isGutter) {
+        tSlotIdx = tSlotIdx === 0 ? 1 : board.numSlots - 2;
+      }
       var tSlot = board.slots[tSlotIdx];
       ball.x = tSlot.x + tSlot.width / 2;
       ball.y = board.slotZoneY + board.slotHeight / 2;
@@ -1068,7 +1309,9 @@ function updatePhysics(dtSec) {
       ball.settled = true;
       ball.settledSlot = tSlotIdx;
       ball.teleporting = true;
+      ball.trail = []; // Clear trail to prevent ghost positions
       tSlot.glow = 60;
+      sndTiltAlarm();
       sndLand();
       onBallSettled(ball);
       (function(b) { setTimeout(function() { b.teleporting = false; }, 300); })(ball);
@@ -1259,11 +1502,129 @@ function renderConfetti() {
 }
 
 /* =====================================================================
+   VFX UPDATE FUNCTIONS
+   ===================================================================== */
+function vfxComboHit() {
+  var now = performance.now();
+  if (now - combo.lastHitMs < COMBO_WINDOW_MS) { combo.count++; } else { combo.count = 1; }
+  combo.lastHitMs = now;
+  combo.displayTimer = COMBO_DISPLAY_MS;
+  if (combo.count > combo.peakCount) combo.peakCount = combo.count;
+  if (combo.count >= 3) sndCombo(combo.count);
+}
+function vfxLaneLightHit(ballX) {
+  if (!board) return;
+  var idx = clamp(Math.floor(((ballX - board.left) / board.width) * LANE_COUNT), 0, LANE_COUNT - 1);
+  if (!laneLights[idx]) laneLights[idx] = { alpha: 0 };
+  laneLights[idx].alpha = 1.0;
+}
+function vfxBumperRing(x, y, r) { bumperRings.push({ x: x, y: y, r: r, maxR: r + 30, life: 1.0 }); }
+function vfxDrainSave(side) {
+  var f = (side === 'left') ? drainFlippers.left : drainFlippers.right;
+  f.active = true; f.timer = 0; f.angle = 0;
+}
+function updateVFX(dtMs) {
+  if (combo.displayTimer > 0) { combo.displayTimer -= dtMs; if (combo.displayTimer <= 0) { combo.count = 0; combo.peakCount = 0; } }
+  for (var i = 0; i < LANE_COUNT; i++) { if (!laneLights[i]) laneLights[i] = { alpha: 0 }; if (laneLights[i].alpha > 0) { laneLights[i].alpha -= LANE_FADE_RATE * dtMs; if (laneLights[i].alpha < 0) laneLights[i].alpha = 0; } }
+  for (var j = bumperRings.length - 1; j >= 0; j--) { bumperRings[j].life -= dtMs * 0.003; bumperRings[j].r += dtMs * 0.08; if (bumperRings[j].life <= 0) bumperRings.splice(j, 1); }
+  updateTiltState();
+  var sides = [drainFlippers.left, drainFlippers.right];
+  for (var s = 0; s < 2; s++) { var f = sides[s]; if (f.active) { f.timer += dtMs; f.angle = Math.min(1, f.timer / 200) * 0.7; if (f.timer > 500) { f.active = false; f.timer = 0; f.angle = 0; } } }
+}
+function updateTiltState() {
+  var activeBall = null;
+  for (var i = 0; i < balls.length; i++) { if (balls[i].active && !balls[i].settled) { activeBall = balls[i]; break; } }
+  if (!activeBall) { tiltState.phase = 'none'; tiltState.shakeX = 0; tiltState.shakeY = 0; tiltState.flashAlpha = 0; return; }
+  var pct = (performance.now() - activeBall.spawnTime) / HARD_TIMEOUT;
+  if (pct >= 0.9) { tiltState.phase = 'critical'; var sh = 4 + Math.sin(performance.now() * 0.05) * 3; tiltState.shakeX = (Math.random() - 0.5) * sh * 2; tiltState.shakeY = (Math.random() - 0.5) * sh * 2; tiltState.flashAlpha = 0.5 + Math.sin(performance.now() * 0.015) * 0.3; if (Math.random() < 0.03) playTone(90 + Math.random() * 30, 0.08, 'sawtooth', 0.03); }
+  else if (pct >= 0.75) { tiltState.phase = 'warning'; tiltState.shakeX = (Math.random() - 0.5) * 2; tiltState.shakeY = (Math.random() - 0.5) * 2; tiltState.flashAlpha = 0; }
+  else { tiltState.phase = 'none'; tiltState.shakeX = 0; tiltState.shakeY = 0; tiltState.flashAlpha = 0; }
+}
+
+/* =====================================================================
+   VFX RENDER FUNCTIONS
+   ===================================================================== */
+function renderLaneLights() {
+  if (!board) return;
+  var laneW = board.width / LANE_COUNT;
+  for (var i = 0; i < LANE_COUNT; i++) {
+    if (!laneLights[i] || laneLights[i].alpha <= 0) continue;
+    var alpha = laneLights[i].alpha * 0.25;
+    var hue = 210 + (i / (LANE_COUNT - 1)) * 120;
+    var lx = board.left + i * laneW;
+    var grad = ctx.createLinearGradient(lx, board.top, lx, board.bottom);
+    grad.addColorStop(0, 'hsla(' + hue + ',60%,60%,' + (alpha * 0.3) + ')');
+    grad.addColorStop(0.5, 'hsla(' + hue + ',60%,60%,' + alpha + ')');
+    grad.addColorStop(1, 'hsla(' + hue + ',60%,60%,' + (alpha * 0.3) + ')');
+    ctx.fillStyle = grad;
+    ctx.fillRect(lx, board.top, laneW, board.bottom - board.top);
+  }
+}
+function renderComboCounter() {
+  if (combo.count < 3 || combo.displayTimer <= 0) return;
+  var fadeAlpha = Math.min(1, combo.displayTimer / 300);
+  var scale = Math.min(2.5, 1 + (combo.count - 3) * 0.15);
+  var fontSize = Math.round(28 * scale);
+  ctx.save();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.globalAlpha = fadeAlpha;
+  var cx = W / 2, cy = board ? board.top + 40 : 60;
+  ctx.shadowColor = 'rgba(212,116,138,' + Math.min(0.9, 0.4 + combo.count * 0.05) + ')';
+  ctx.shadowBlur = 4 + combo.count * 2;
+  ctx.font = '900 ' + fontSize + 'px "Segoe UI", system-ui, sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(combo.count + 'x COMBO!', cx, cy);
+  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+  ctx.globalAlpha = fadeAlpha * 0.3; ctx.fillStyle = '#d4748a';
+  ctx.fillText(combo.count + 'x COMBO!', cx + 2, cy + 2);
+  ctx.restore();
+}
+function renderTiltWarning() {
+  if (tiltState.phase === 'none') return;
+  if (tiltState.phase === 'critical' && tiltState.flashAlpha > 0) {
+    ctx.save(); ctx.globalAlpha = tiltState.flashAlpha * 0.15; ctx.fillStyle = '#ff2244'; ctx.fillRect(0, 0, W, H); ctx.restore();
+    if (Math.sin(performance.now() * 0.02) > 0) {
+      ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '900 48px "Segoe UI", system-ui, sans-serif';
+      ctx.shadowColor = 'rgba(255,34,68,0.8)'; ctx.shadowBlur = 20;
+      ctx.fillStyle = '#ff4466'; ctx.fillText('TILT', W / 2, H / 2 - 30);
+      ctx.shadowColor = 'transparent'; ctx.restore();
+    }
+  }
+}
+function renderBumperRings() {
+  for (var i = 0; i < bumperRings.length; i++) {
+    var ring = bumperRings[i];
+    ctx.beginPath(); ctx.arc(ring.x, ring.y, ring.r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(200,100,255,' + (ring.life * 0.5) + ')'; ctx.lineWidth = 2 * ring.life; ctx.stroke();
+  }
+}
+function renderDrainFlippers() {
+  if (!board) return;
+  var slotW = board.slotWidth || (board.width / board.numSlots);
+  var flipLen = slotW * 0.6, flipY = board.slotZoneY - 5;
+  ctx.save(); ctx.translate(board.left + slotW * 0.5, flipY);
+  ctx.rotate(-Math.PI * 0.15 + drainFlippers.left.angle);
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(flipLen * 0.8, -4); ctx.lineTo(flipLen, 0); ctx.lineTo(flipLen * 0.8, 4); ctx.closePath();
+  ctx.fillStyle = drainFlippers.left.active ? '#ffcc44' : '#665533'; ctx.fill();
+  ctx.strokeStyle = drainFlippers.left.active ? '#ffee88' : '#887744'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fillStyle = '#888'; ctx.fill(); ctx.restore();
+  ctx.save(); ctx.translate(board.right - slotW * 0.5, flipY);
+  ctx.rotate(Math.PI + Math.PI * 0.15 - drainFlippers.right.angle);
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(flipLen * 0.8, -4); ctx.lineTo(flipLen, 0); ctx.lineTo(flipLen * 0.8, 4); ctx.closePath();
+  ctx.fillStyle = drainFlippers.right.active ? '#ffcc44' : '#665533'; ctx.fill();
+  ctx.strokeStyle = drainFlippers.right.active ? '#ffee88' : '#887744'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fillStyle = '#888'; ctx.fill(); ctx.restore();
+}
+
+/* =====================================================================
    RENDER
    ===================================================================== */
 function render() {
   if (!board) { ctx.clearRect(0, 0, W, H); return; }
   ctx.clearRect(0, 0, W, H);
+
+  // Apply tilt shake transform
+  if (tiltState.phase !== 'none') { ctx.save(); ctx.translate(tiltState.shakeX, tiltState.shakeY); }
 
   // Board background — subtle radial gradient so pegs don't float in void
   var boardCX = (board.left + board.right) / 2;
@@ -1621,14 +1982,21 @@ function render() {
     }
 
     if (slot.glow > 0) {
-      var glowAlpha = (slot.glow / 60) * 0.4;
+      var pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.008);
+      var glowAlpha = (slot.glow / 60) * 0.4 * (0.6 + pulse * 0.4);
       ctx.fillStyle = 'rgba(212,116,138,' + glowAlpha + ')';
       ctx.fillRect(sx, sy, sw, sh);
+      // Pulsing ring
+      var ringR = sw / 2 * (1 + (1 - slot.glow / 60) * 0.3 + pulse * 0.1);
       ctx.beginPath();
-      ctx.arc(sx + sw / 2, sy + sh / 2, sw / 2 * (1 + (1 - slot.glow / 60) * 0.3), 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(212,116,138,' + (glowAlpha * 0.5) + ')';
-      ctx.lineWidth = 2;
+      ctx.arc(sx + sw / 2, sy + sh / 2, ringR, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(212,116,138,' + (glowAlpha * 0.6) + ')';
+      ctx.lineWidth = 2 + pulse;
       ctx.stroke();
+      // Pink accent border on winning slot
+      ctx.strokeStyle = 'rgba(212,116,138,' + (glowAlpha * 0.8) + ')';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sx + 1, sy + 1, sw - 2, sh - 2);
     }
 
     if (slot.name) {
@@ -1716,65 +2084,96 @@ function render() {
       ctx.restore();
     }
   }
+
+  // VFX layers (on top of balls)
+  renderLaneLights();
+  renderBumperRings();
+  renderDrainFlippers();
+  renderComboCounter();
+  renderTiltWarning();
+
+  // Restore tilt shake transform
+  if (tiltState.phase !== 'none') { ctx.restore(); }
 }
 
 function renderClaw() {
   var c = clawState;
-  var cx = c.x, cy = c.y;
-  var fadeAlpha = c.phase === 'dropping' ? 1 - (c.fadeTimer / 500) : 1;
+  if (!c) return;
+  var fadeAlpha = c.phase === 'fading' ? 1 - (c.fadeTimer / 300) : 1;
+  if (fadeAlpha <= 0) return;
 
   ctx.save();
   ctx.globalAlpha = fadeAlpha;
 
-  // Arm from top
-  ctx.beginPath();
-  ctx.moveTo(cx, 0);
-  ctx.lineTo(cx, cy - 8);
-  ctx.strokeStyle = '#555';
-  ctx.lineWidth = 3;
-  ctx.stroke();
+  // Launcher chute — vertical tube on right side
+  var chuteX = board.right - 15;
+  var chuteTop = board.top;
+  var chuteBot = board.bottom;
+  var chuteW = 20;
 
-  // Pink accent stripe
-  ctx.beginPath();
-  ctx.moveTo(cx + 2, 0);
-  ctx.lineTo(cx + 2, cy - 8);
-  ctx.strokeStyle = 'rgba(212,116,138,0.6)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
+  // Chute body (dark metallic tube)
+  var chuteGrad = ctx.createLinearGradient(chuteX - chuteW / 2, 0, chuteX + chuteW / 2, 0);
+  chuteGrad.addColorStop(0, '#2a2a3a');
+  chuteGrad.addColorStop(0.3, '#404058');
+  chuteGrad.addColorStop(0.7, '#404058');
+  chuteGrad.addColorStop(1, '#2a2a3a');
+  ctx.fillStyle = chuteGrad;
+  ctx.fillRect(chuteX - chuteW / 2, chuteTop, chuteW, chuteBot - chuteTop);
 
-  // Claw body
-  ctx.beginPath();
-  ctx.arc(cx, cy, 10, 0, Math.PI * 2);
-  ctx.fillStyle = '#444';
-  ctx.fill();
-  ctx.strokeStyle = '#666';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  // Pink accent line on chute
+  ctx.fillStyle = 'rgba(212,116,138,0.4)';
+  ctx.fillRect(chuteX - 1, chuteTop, 2, chuteBot - chuteTop);
 
-  // Grip prongs
-  var gripAngle = c.gripOpen ? 0.6 : 0.2;
-  ctx.lineWidth = 3;
-  ctx.lineCap = 'round';
+  // Spring coils (draw compressed or relaxed based on phase)
+  var springY = chuteBot - 80;
+  var coilCount = 6;
+  var springHeight = c.phase === 'pulling' ? 60 * (1 - c.springCompress * 0.6) : 60;
   ctx.strokeStyle = '#888';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(cx - 4, cy + 5);
-  ctx.lineTo(cx - 4 - Math.sin(gripAngle) * 12, cy + 5 + Math.cos(gripAngle) * 12);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(cx + 4, cy + 5);
-  ctx.lineTo(cx + 4 + Math.sin(gripAngle) * 12, cy + 5 + Math.cos(gripAngle) * 12);
+  for (var sc = 0; sc <= coilCount; sc++) {
+    var coilY = springY + (sc / coilCount) * springHeight;
+    var coilX = chuteX + (sc % 2 === 0 ? -5 : 5);
+    if (sc === 0) ctx.moveTo(coilX, coilY);
+    else ctx.lineTo(coilX, coilY);
+  }
   ctx.stroke();
 
-  // Ball in grip (before drop)
+  // Plunger bar
+  var plungerY = springY - 5;
+  if (c.phase === 'pulling') {
+    plungerY = springY + c.springCompress * 30;
+  }
+  ctx.fillStyle = '#666';
+  ctx.fillRect(chuteX - 8, plungerY, 16, 8);
+  ctx.fillStyle = 'rgba(212,116,138,0.5)';
+  ctx.fillRect(chuteX - 6, plungerY + 2, 12, 4);
+
+  // Ball in chute (before launch)
   if (!c.released) {
-    var bgr = ctx.createRadialGradient(cx - 2, cy + 14, 0, cx, cy + 16, BALL_RADIUS * 1.3);
-    bgr.addColorStop(0, '#555');
-    bgr.addColorStop(0.5, '#333');
-    bgr.addColorStop(1, 'rgba(212,116,138,0.3)');
+    var ballDrawX = c.ballX;
+    var ballDrawY = c.ballY;
+    if (c.phase === 'pulling') {
+      ballDrawX = chuteX;
+      ballDrawY = plungerY - BALL_RADIUS - 2;
+    }
+    var bGrad = ctx.createRadialGradient(ballDrawX - 3, ballDrawY - 3, 1, ballDrawX, ballDrawY, BALL_RADIUS);
+    bGrad.addColorStop(0, '#ffffff');
+    bGrad.addColorStop(0.3, '#c0c0d0');
+    bGrad.addColorStop(1, '#404058');
     ctx.beginPath();
-    ctx.arc(cx, cy + 16, BALL_RADIUS, 0, Math.PI * 2);
-    ctx.fillStyle = bgr;
+    ctx.arc(ballDrawX, ballDrawY, BALL_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = bGrad;
     ctx.fill();
+
+    // Arc trail during launch phase
+    if (c.phase === 'launching') {
+      ctx.beginPath();
+      ctx.arc(ballDrawX, ballDrawY, BALL_RADIUS + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(212,116,138,0.4)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
   }
 
   ctx.restore();
@@ -1794,6 +2193,7 @@ function gameLoop(timestamp) {
     accumulator -= FIXED_DT;
   }
 
+  updateVFX(delta);
   updateConfetti(delta / 1000);
   render();
   renderConfetti();
@@ -1947,6 +2347,104 @@ function sndServo() {
   playTone(300, 0.05, 'sawtooth', 0.02);
 }
 
+function sndLauncherSpring() {
+  if (!state.soundOn || !audioCtx) return;
+  try {
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.2);
+  } catch(e) {}
+}
+
+function sndLauncherRelease() {
+  if (!state.soundOn || !audioCtx) return;
+  try {
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch(e) {}
+}
+
+// Tilt alarm: buzzing warning
+function sndTiltAlarm() {
+  if (!state.soundOn || !audioCtx) return;
+  try {
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+  } catch(e) {}
+}
+
+// Drain save flipper snap
+function sndDrainSnap() {
+  if (!state.soundOn || !audioCtx) return;
+  try {
+    var bufSize = Math.floor(audioCtx.sampleRate * 0.03);
+    var buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < bufSize; i++) { data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 3); }
+    var src = audioCtx.createBufferSource();
+    var gain = audioCtx.createGain();
+    src.buffer = buf;
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+    src.connect(gain); gain.connect(audioCtx.destination);
+    src.start();
+    playTone(700, 0.04, 'square', 0.05);
+  } catch(e) {}
+}
+
+// Gutter drain: descending sad tone
+function sndGutterDrain() {
+  if (!state.soundOn || !audioCtx) return;
+  try {
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.4);
+    gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.45);
+  } catch(e) {}
+}
+
+// Retrigger: hopeful ascending chime
+function sndRetrigger() {
+  playTone(440, 0.08, 'sine', 0.05);
+  setTimeout(function() { playTone(554, 0.08, 'sine', 0.05); }, 80);
+  setTimeout(function() { playTone(659, 0.1, 'sine', 0.06); }, 160);
+}
+
+// Combo sound: escalating pitch on successive hits
+function sndCombo(count) {
+  var pitch = 600 + count * 80;
+  playTone(Math.min(pitch, 2000), 0.06, 'sine', 0.04 + Math.min(count * 0.005, 0.04));
+}
+
 /* =====================================================================
    DROP LOGIC
    ===================================================================== */
@@ -2078,13 +2576,13 @@ function initAdminPanel() {
     }
   });
 
-  // Bulk add
+  // Bulk add with smart parsing (handles commas, @mentions, numbered lists, etc.)
   document.getElementById('btn-add-bulk').addEventListener('click', function() {
     var ta = document.getElementById('bulk-names');
-    var lines = ta.value.split('\n');
-    for (var i = 0; i < lines.length; i++) {
-      var name = lines[i].trim();
-      if (name) addPlayer(name);
+    var raw = ta.value;
+    var names = parseNameList(raw);
+    for (var i = 0; i < names.length; i++) {
+      addPlayer(names[i]);
     }
     ta.value = '';
   });
@@ -2216,7 +2714,7 @@ function initToggle(id, activeVal, onChange) {
 }
 
 function addPlayer(name) {
-  if (state.players.length >= 30) return;
+  if (state.players.length >= 200) return;
   for (var i = 0; i < state.players.length; i++) {
     if (state.players[i] === name) return;
   }
@@ -2243,7 +2741,7 @@ function renderPlayerList() {
 
     var colorSpan = document.createElement('span');
     colorSpan.className = 'player-color';
-    colorSpan.style.background = PLAYER_COLORS[i % PLAYER_COLORS.length];
+    colorSpan.style.background = getPlayerColor(i, state.players.length);
     div.appendChild(colorSpan);
 
     var nameSpan = document.createElement('span');
@@ -2263,7 +2761,10 @@ function renderPlayerList() {
     list.appendChild(div);
   }
 
-  document.getElementById('player-count').textContent = state.players.length + ' player' + (state.players.length !== 1 ? 's' : '');
+  var countText = state.players.length + ' player' + (state.players.length !== 1 ? 's' : '');
+  var palette = getColorPalette(state.players.length);
+  countText += ' \u00B7 ' + palette.length + ' colors';
+  document.getElementById('player-count').textContent = countText;
 }
 
 function renderResults() {
