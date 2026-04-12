@@ -232,6 +232,7 @@ select {
           <div style="flex:1;">
             <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Chaos</div>
             <div class="toggle-group" id="chaos-toggle">
+              <button class="tg-btn" data-val="off">Off</button>
               <button class="tg-btn active" data-val="mild">Mild</button>
               <button class="tg-btn" data-val="wild">Wild</button>
               <button class="tg-btn" data-val="insane">Insane</button>
@@ -313,7 +314,7 @@ var state = {
   mode: 'random',
   numDrops: 1,
   boardSize: 'medium',
-  chaos: 'mild',
+  chaos: 'off',
   winnerMode: 'escalating',
   drama: 50,
   soundOn: true,
@@ -583,16 +584,28 @@ function buildBoard() {
   var allRails = [];
 
   // Add chaos obstacles on top of the peg grid
-  if (state.chaos === 'wild' || state.chaos === 'insane') {
-    // Wild: small bumpers scattered through the board
-    var bumperCount = state.chaos === 'insane' ? 8 : 4;
+  // Off = clean pegs only
+  // Mild = pegs + small bumpers
+  // Wild = pegs + bumpers + flippers + spinners
+  // Insane = pegs + lots of bumpers + lots of flippers + lots of fast spinners
+  if (state.chaos === 'mild' || state.chaos === 'wild' || state.chaos === 'insane') {
+    var bumperCount = state.chaos === 'insane' ? 12 : state.chaos === 'wild' ? 6 : 4;
     allBumpers = scatterSmallBumpers(boardWidth, boardLeft, boardTop, boardBottom, bumperCount, sRand);
   }
 
+  if (state.chaos === 'wild' || state.chaos === 'insane') {
+    var flipperCount = state.chaos === 'insane' ? 8 : 4;
+    var spinnerCount = state.chaos === 'insane' ? 6 : 3;
+    allFlippers = scatterTinyFlippers(boardWidth, boardLeft, boardTop, boardBottom, flipperCount, sRand);
+    allSpinners = scatterSpinners(boardWidth, boardLeft, boardTop, boardBottom, spinnerCount, sRand);
+  }
+
+  // Insane: make spinners faster
   if (state.chaos === 'insane') {
-    // Insane: add tiny flippers and spinning pegs
-    allFlippers = scatterTinyFlippers(boardWidth, boardLeft, boardTop, boardBottom, 4, sRand);
-    allSpinners = scatterSpinners(boardWidth, boardLeft, boardTop, boardBottom, 3, sRand);
+    for (var si = 0; si < allSpinners.length; si++) {
+      allSpinners[si].speed *= 2;
+      allSpinners[si].length *= 1.3;
+    }
   }
 
   // Remove pegs that overlap with obstacles
@@ -2298,7 +2311,7 @@ function loadState() {
   state.mode = load('pinko_mode', 'random');
   state.numDrops = parseInt(load('pinko_numDrops', '1'));
   state.boardSize = load('pinko_boardSize', 'medium');
-  state.chaos = load('pinko_chaos', 'mild');
+  state.chaos = load('pinko_chaos', 'off');
   state.winnerMode = load('pinko_winnerMode', 'escalating');
   state.soundOn = load('pinko_soundOn', 'true') === 'true';
   state.theme = load('pinko_theme', 'dark');
