@@ -507,9 +507,12 @@ canvas#wheel {
 /* Center hub */
 #center-hub {
   position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 5;
-  width: 60px;
-  height: 60px;
+  width: 220px;
+  height: 220px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #555, #222);
   border: 3px solid var(--border);
@@ -517,6 +520,8 @@ canvas#wheel {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  overflow: hidden;
 }
 #center-hub::after {
   content: '';
@@ -525,6 +530,115 @@ canvas#wheel {
   border-radius: 50%;
   background: radial-gradient(circle at 40% 40%, var(--accent), #4a3aaa);
   box-shadow: 0 0 10px var(--accent-glow);
+}
+#center-hub.hub-has-content::after {
+  display: none;
+}
+#center-hub .hub-text-title {
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  line-height: 1.1;
+  word-break: break-word;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  pointer-events: none;
+}
+#center-hub .hub-text-subtitle {
+  font-weight: 400;
+  color: #fff;
+  text-align: center;
+  line-height: 1.2;
+  word-break: break-word;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  pointer-events: none;
+  margin-top: 4px;
+}
+#center-hub .hub-text {
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  line-height: 1.1;
+  word-break: break-word;
+  padding: 4px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  pointer-events: none;
+}
+#center-hub .hub-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Color scheme palette buttons */
+.palette-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.palette-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.palette-btn:hover {
+  border-color: var(--accent);
+}
+.palette-btn.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+.palette-preview {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.palette-preview .half {
+  width: 50%;
+  height: 100%;
+}
+.palette-preview.rainbow {
+  background: conic-gradient(#7c5cfc, #ff6b9d, #00d4aa, #ffa726, #42a5f5, #7c5cfc);
+  border-radius: 50%;
+}
+.custom-pickers {
+  display: none;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: center;
+}
+.custom-pickers.visible {
+  display: flex;
+}
+.custom-pickers input[type="color"] {
+  width: 36px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+  padding: 2px;
+}
+.custom-pickers label {
+  font-size: 12px;
+  color: var(--text-dim);
 }
 
 /* ═══════════════════════════════════════════════
@@ -898,7 +1012,49 @@ h1, .game-title, .panel-title, .app-title {
             <span class="slider"></span>
           </label>
         </div>
-        <div class="btn-group" style="margin-top: 8px;">
+        <div class="setting-row">
+          <label>Text direction</label>
+          <div style="display:flex;gap:4px;">
+            <button class="btn btn-sm" id="text-dir-edge" style="flex:1;padding:4px 6px;font-size:0.75em;">A&#8594;rim</button>
+            <button class="btn btn-sm" id="text-dir-flip" style="flex:1;padding:4px 6px;font-size:0.75em;">rim&#8594;A</button>
+            <button class="btn btn-sm" id="text-dir-center" style="flex:1;padding:4px 6px;font-size:0.75em;">A&#8594;hub</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Hub -->
+      <div class="panel-section">
+        <h3>Center Hub</h3>
+        <div class="input-group">
+          <input type="text" id="hub-title-input" placeholder="Title (e.g. GWA)" style="flex:1;" />
+        </div>
+        <div class="input-group">
+          <input type="text" id="hub-subtitle-input" placeholder="Subtitle (e.g. GAMBLE WITH ASH)" style="flex:1;" />
+          <button class="btn btn-sm" id="hub-text-btn">Set</button>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-sm" id="hub-image-btn" style="flex:1;">Upload Image</button>
+          <input type="file" id="hub-image-input" accept="image/*" style="display:none;" />
+          <button class="btn btn-sm btn-danger" id="hub-clear-btn">Clear</button>
+        </div>
+      </div>
+
+      <!-- Color Scheme -->
+      <div class="panel-section">
+        <h3>Colors</h3>
+        <div class="palette-row" id="palette-row"></div>
+        <div class="custom-pickers" id="custom-pickers">
+          <label>Primary</label>
+          <input type="color" id="custom-color1" value="#7c5cfc" />
+          <label>Secondary</label>
+          <input type="color" id="custom-color2" value="#ffffff" />
+          <button class="btn btn-sm" id="custom-apply-btn">Apply</button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="panel-section">
+        <div class="btn-group">
           <button class="btn btn-sm btn-danger" id="clear-btn" style="flex:1;">Clear All</button>
           <button class="btn btn-sm" id="reset-btn" style="flex:1;">Reset Wheel</button>
         </div>
@@ -944,15 +1100,32 @@ const COLORS = [
   '#e040fb', '#00e5ff', '#76ff03', '#ffab00', '#6200ea'
 ];
 
+// ─── Color Scheme Presets ─────────────────────────
+const COLOR_PRESETS = {
+  'Classic':       { type: 'rainbow' },
+  'Pink & White':  { type: 'two-tone', c1: '#f4b8c1', c2: '#ffffff' },
+  'Blue & Gold':   { type: 'two-tone', c1: '#1a3a5c', c2: '#ffd700' },
+  'Neon':          { type: 'two-tone', c1: '#00ffcc', c2: '#ff00ff' },
+  'Red & Black':   { type: 'two-tone', c1: '#cc2222', c2: '#1a1a1a' },
+  'Pastel':        { type: 'two-tone', c1: '#ffb3ba', c2: '#bae1ff' },
+  'Mint & Cream':  { type: 'two-tone', c1: '#98d8c8', c2: '#f7f1e3' },
+  'Custom':        { type: 'custom' }
+};
+
 // ─── State ─────────────────────────────────────
 let names = [];
 let rotation = 0;        // current wheel rotation in radians
+let hubRotation = 0;     // center hub counter-rotation in radians
 let spinning = false;
 let spinDuration = 5;
 let removeWinnerAfterSpin = false;
 let soundEnabled = true;
 let adminVisible = true;
 let lastWinner = null;
+let textDirection = localStorage.getItem('spinwheel_textDir') || 'edge'; // 'edge' = last letter near rim, 'center' = first letter near hub, 'flip' = first letter near rim reading inward
+let activeColorScheme = 'Classic';
+let customColor1 = '#7c5cfc';
+let customColor2 = '#ffffff';
 
 // ─── DOM ───────────────────────────────────────
 const canvas = document.getElementById('wheel');
@@ -975,6 +1148,33 @@ const winnerOverlay = document.getElementById('winner-overlay');
 const winnerName = document.getElementById('winner-name');
 const confettiCanvas = document.getElementById('confetti-canvas');
 const confettiCtx = confettiCanvas.getContext('2d');
+const centerHub = document.getElementById('center-hub');
+const hubTitleInput = document.getElementById('hub-title-input');
+const hubSubtitleInput = document.getElementById('hub-subtitle-input');
+const hubImageInput = document.getElementById('hub-image-input');
+const textDirEdgeBtn = document.getElementById('text-dir-edge');
+const textDirFlipBtn = document.getElementById('text-dir-flip');
+const textDirCenterBtn = document.getElementById('text-dir-center');
+
+function updateTextDirButtons() {
+  [textDirEdgeBtn, textDirFlipBtn, textDirCenterBtn].forEach(btn => {
+    btn.style.background = '';
+    btn.style.color = '';
+  });
+  const activeBtn = textDirection === 'edge' ? textDirEdgeBtn : textDirection === 'flip' ? textDirFlipBtn : textDirCenterBtn;
+  activeBtn.style.background = 'var(--accent)';
+  activeBtn.style.color = '#fff';
+}
+function setTextDir(dir) {
+  textDirection = dir;
+  localStorage.setItem('spinwheel_textDir', dir);
+  updateTextDirButtons();
+  drawWheel();
+}
+textDirEdgeBtn.addEventListener('click', () => setTextDir('edge'));
+textDirFlipBtn.addEventListener('click', () => setTextDir('flip'));
+textDirCenterBtn.addEventListener('click', () => setTextDir('center'));
+updateTextDirButtons();
 
 // ─── URL Parameters ────────────────────────────
 const params = new URLSearchParams(window.location.search);
@@ -1109,9 +1309,14 @@ function drawWheel() {
   ctx.translate(cx, cy);
   ctx.rotate(rotation);
 
+  const isTwoTone = activeColorScheme !== 'Classic';
+  const schemeColors = getSchemeColors();
+
   for (let i = 0; i < n; i++) {
     const angle = i * arc;
-    const color = COLORS[i % COLORS.length];
+    const color = isTwoTone
+      ? (i % 2 === 0 ? schemeColors.c1 : schemeColors.c2)
+      : COLORS[i % COLORS.length];
 
     // Segment
     ctx.beginPath();
@@ -1127,35 +1332,78 @@ function drawWheel() {
     ctx.fillStyle = grd;
     ctx.fill();
 
-    // Segment border
-    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-    ctx.lineWidth = 2;
+    // Segment border — subtle for two-tone, standard for classic
+    if (isTwoTone) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+    } else {
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.lineWidth = 2;
+    }
     ctx.stroke();
 
-    // Text
+    // Text — auto-contrast based on segment brightness
     ctx.save();
     ctx.rotate(angle + arc / 2);
     ctx.textAlign = 'right';
-    ctx.fillStyle = '#fff';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    const textColor = getContrastColor(color);
+    ctx.fillStyle = textColor;
+    ctx.shadowColor = textColor === '#ffffff' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.3)';
     ctx.shadowBlur = 4;
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
 
-    const maxTextWidth = r * 0.55;
-    let fontSize = Math.min(28, Math.max(12, r * 0.08));
-    if (n > 20) fontSize = Math.max(10, fontSize * 0.7);
-    if (n > 30) fontSize = Math.max(8, fontSize * 0.6);
-    ctx.font = `700 ${fontSize}px ${getComputedStyle(document.documentElement).getPropertyValue('--font').trim()}`;
+    // Available text lane: from hub edge to near rim
+    const hubR = r * 0.38;
+    const textStart = hubR + 10;        // start just outside hub
+    const textEnd = r - 12;             // end just inside rim
+    const maxTextWidth = textEnd - textStart;
+    const arcHeight = arc * r;          // approx height of segment at mid-radius
+
+    // Scale font to segment: bigger when fewer entries, cap based on arc height
+    let fontSize;
+    if (n <= 4) fontSize = Math.min(48, arcHeight * 0.35);
+    else if (n <= 8) fontSize = Math.min(38, arcHeight * 0.35);
+    else if (n <= 12) fontSize = Math.min(30, arcHeight * 0.35);
+    else if (n <= 20) fontSize = Math.min(24, arcHeight * 0.35);
+    else if (n <= 30) fontSize = Math.min(18, arcHeight * 0.3);
+    else fontSize = Math.min(14, arcHeight * 0.25);
+    fontSize = Math.max(10, fontSize);
+
+    const fontFamily = getComputedStyle(document.documentElement).getPropertyValue('--font').trim();
+    ctx.font = `700 ${fontSize}px ${fontFamily}`;
 
     let text = names[i];
-    // Truncate if too long
+    // Shrink font if text doesn't fit, then truncate as last resort
+    while (ctx.measureText(text).width > maxTextWidth && fontSize > 10) {
+      fontSize--;
+      ctx.font = `700 ${fontSize}px ${fontFamily}`;
+    }
     while (ctx.measureText(text).width > maxTextWidth && text.length > 3) {
       text = text.slice(0, -1);
     }
-    if (text !== names[i]) text += '…';
+    if (text !== names[i]) text += '\u2026';
 
-    ctx.fillText(text, r - 18, fontSize / 3);
+    // Position text based on direction setting
+    if (textDirection === 'edge') {
+      // Last letter near rim, first letter toward hub (default radial)
+      ctx.textAlign = 'right';
+      ctx.fillText(text, textEnd, fontSize / 3);
+    } else if (textDirection === 'flip') {
+      // First letter at rim, reads inward — rotate 180° and left-align from rim
+      ctx.save();
+      ctx.rotate(Math.PI);
+      ctx.textAlign = 'left';
+      ctx.fillText(text, -textEnd, fontSize / 3);
+      ctx.restore();
+    } else {
+      // First letter near hub, reads outward — flip 180°
+      ctx.save();
+      ctx.rotate(Math.PI);
+      ctx.textAlign = 'right';
+      ctx.fillText(text, -textStart, fontSize / 3);
+      ctx.restore();
+    }
     ctx.restore();
   }
 
@@ -1172,9 +1420,9 @@ function drawWheel() {
   ctx.lineWidth = 4;
   ctx.stroke();
 
-  // Inner ring
+  // Inner ring (matches center hub overlay size)
   ctx.beginPath();
-  ctx.arc(0, 0, r * 0.12, 0, Math.PI * 2);
+  ctx.arc(0, 0, r * 0.38, 0, Math.PI * 2);
   ctx.fillStyle = '#1a1a2e';
   ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.1)';
@@ -1218,6 +1466,41 @@ function darkenColor(hex, percent) {
   return `rgb(${R},${G},${B})`;
 }
 
+function hexToRgb(hex) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  return { r: (num >> 16) & 0xFF, g: (num >> 8) & 0xFF, b: num & 0xFF };
+}
+
+function getContrastColor(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 128 ? '#1a1a2e' : '#ffffff';
+}
+
+function getSchemeColors() {
+  if (activeColorScheme === 'Classic') return null;
+  if (activeColorScheme === 'Custom') return { c1: customColor1, c2: customColor2 };
+  const preset = COLOR_PRESETS[activeColorScheme];
+  return preset ? { c1: preset.c1, c2: preset.c2 } : null;
+}
+
+function getSegmentColor(index) {
+  if (activeColorScheme !== 'Classic') {
+    const sc = getSchemeColors();
+    return index % 2 === 0 ? sc.c1 : sc.c2;
+  }
+  return COLORS[index % COLORS.length];
+}
+
+function applyHubBackground() {
+  if (activeColorScheme === 'Classic') {
+    centerHub.style.background = 'radial-gradient(circle at 35% 35%, #555, #222)';
+  } else {
+    const sc = getSchemeColors();
+    centerHub.style.background = `radial-gradient(circle at 35% 35%, ${sc.c1}aa, ${sc.c1}66)`;
+  }
+}
+
 // ─── Spin Logic ────────────────────────────────
 let spinRAF = null;
 
@@ -1225,6 +1508,9 @@ function spin() {
   if (spinning || names.length < 2) return;
   spinning = true;
   spinBtn.disabled = true;
+  // Stop hub counter-rotation during spin
+  centerHub.style.transform = 'translate(-50%,-50%) rotate(0rad)';
+  hubRotation = 0;
 
   // Resume audio context (browser autoplay policy)
   try { getAudio().resume(); } catch(e) { console.warn('Audio resume failed:', e.message); }
@@ -1431,7 +1717,7 @@ function updateUI() {
   names.forEach((name, i) => {
     const li = document.createElement('li');
     li.className = 'name-item';
-    const color = COLORS[i % COLORS.length];
+    const color = getSegmentColor(i);
     li.innerHTML = `
       <span class="color-dot" style="background:${color}"></span>
       <span class="name-text">${escHtml(name)}</span>
@@ -1621,6 +1907,8 @@ const idleBtn = document.getElementById('idle-btn');
 function idleRotation() {
   if (!spinning && !idlePaused && names.length > 0) {
     rotation += 0.0003; // very gentle
+    hubRotation -= 0.0005; // counter-rotate hub, slightly faster for visual interest
+    centerHub.style.transform = 'translate(-50%,-50%) rotate(' + hubRotation + 'rad)';
     drawWheel();
   }
   idleRAF = requestAnimationFrame(idleRotation);
@@ -1640,8 +1928,257 @@ idleBtn.addEventListener('click', () => {
   resumeIdle();
 });
 
+// ─── Center Hub Content ───────────────────────
+function setHubText(title, subtitle) {
+  title = (title || '').trim();
+  subtitle = (subtitle || '').trim();
+  if (!title && !subtitle) return;
+  clearHubContent();
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'hub-text';
+  wrapper.style.display = 'flex';
+  wrapper.style.flexDirection = 'column';
+  wrapper.style.alignItems = 'center';
+  wrapper.style.justifyContent = 'center';
+  wrapper.style.padding = '8px';
+
+  if (title) {
+    const titleEl = document.createElement('span');
+    titleEl.className = 'hub-text-title';
+    titleEl.textContent = title;
+    wrapper.appendChild(titleEl);
+  }
+  if (subtitle) {
+    const subEl = document.createElement('span');
+    subEl.className = 'hub-text-subtitle';
+    subEl.textContent = subtitle;
+    wrapper.appendChild(subEl);
+  }
+
+  centerHub.appendChild(wrapper);
+  centerHub.classList.add('hub-has-content');
+
+  // Auto-size title: start at 64px, shrink only based on title width
+  const maxWidth = 190; // leave padding within 220px hub
+  if (title) {
+    const titleEl = wrapper.querySelector('.hub-text-title');
+    let size = 64;
+    titleEl.style.fontSize = size + 'px';
+    while (titleEl.scrollWidth > maxWidth && size > 18) {
+      size--;
+      titleEl.style.fontSize = size + 'px';
+    }
+  }
+  // Auto-size subtitle: start at 14px, shrink only based on subtitle width
+  if (subtitle) {
+    const subEl = wrapper.querySelector('.hub-text-subtitle');
+    let size = 14;
+    subEl.style.fontSize = size + 'px';
+    while (subEl.scrollWidth > maxWidth && size > 7) {
+      size--;
+      subEl.style.fontSize = size + 'px';
+    }
+  }
+
+  try { localStorage.setItem('spinwheel_hubTitle', title); } catch(e) {}
+  try { localStorage.setItem('spinwheel_hubSubtitle', subtitle); } catch(e) {}
+  try { localStorage.removeItem('spinwheel_hubImage'); } catch(e) {}
+  // Clean up legacy key
+  try { localStorage.removeItem('spinwheel_hubText'); } catch(e) {}
+}
+
+function setHubImage(dataUrl) {
+  clearHubContent();
+  const img = document.createElement('img');
+  img.className = 'hub-image';
+  img.src = dataUrl;
+  img.alt = 'Hub image';
+  centerHub.appendChild(img);
+  centerHub.classList.add('hub-has-content');
+  try { localStorage.setItem('spinwheel_hubImage', dataUrl); } catch(e) {}
+  try { localStorage.removeItem('spinwheel_hubTitle'); } catch(e) {}
+  try { localStorage.removeItem('spinwheel_hubSubtitle'); } catch(e) {}
+  try { localStorage.removeItem('spinwheel_hubText'); } catch(e) {}
+}
+
+function clearHubContent() {
+  const existing = centerHub.querySelector('.hub-text, .hub-image');
+  if (existing) existing.remove();
+  centerHub.classList.remove('hub-has-content');
+  try { localStorage.removeItem('spinwheel_hubTitle'); } catch(e) {}
+  try { localStorage.removeItem('spinwheel_hubSubtitle'); } catch(e) {}
+  try { localStorage.removeItem('spinwheel_hubText'); } catch(e) {}
+  try { localStorage.removeItem('spinwheel_hubImage'); } catch(e) {}
+}
+
+function loadHubContent() {
+  try {
+    // Check new title/subtitle keys first, then legacy hubText
+    const savedTitle = localStorage.getItem('spinwheel_hubTitle');
+    const savedSubtitle = localStorage.getItem('spinwheel_hubSubtitle');
+    if (savedTitle || savedSubtitle) {
+      setHubText(savedTitle || '', savedSubtitle || '');
+      if (savedTitle) hubTitleInput.value = savedTitle;
+      if (savedSubtitle) hubSubtitleInput.value = savedSubtitle;
+      return;
+    }
+    const legacyText = localStorage.getItem('spinwheel_hubText');
+    if (legacyText) {
+      setHubText(legacyText, '');
+      hubTitleInput.value = legacyText;
+      return;
+    }
+    const savedImage = localStorage.getItem('spinwheel_hubImage');
+    if (savedImage) { setHubImage(savedImage); }
+  } catch(e) {}
+}
+
+document.getElementById('hub-text-btn').addEventListener('click', () => {
+  const title = hubTitleInput.value;
+  const subtitle = hubSubtitleInput.value;
+  if (title.trim() || subtitle.trim()) {
+    setHubText(title, subtitle);
+    toast('Hub text set');
+  }
+  hubTitleInput.focus();
+});
+
+hubTitleInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const title = hubTitleInput.value;
+    const subtitle = hubSubtitleInput.value;
+    if (title.trim() || subtitle.trim()) {
+      setHubText(title, subtitle);
+      toast('Hub text set');
+    }
+  }
+});
+
+hubSubtitleInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const title = hubTitleInput.value;
+    const subtitle = hubSubtitleInput.value;
+    if (title.trim() || subtitle.trim()) {
+      setHubText(title, subtitle);
+      toast('Hub text set');
+    }
+  }
+});
+
+document.getElementById('hub-image-btn').addEventListener('click', () => {
+  hubImageInput.click();
+});
+
+hubImageInput.addEventListener('change', () => {
+  const file = hubImageInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    setHubImage(e.target.result);
+    toast('Hub image set');
+  };
+  reader.readAsDataURL(file);
+  hubImageInput.value = '';
+});
+
+document.getElementById('hub-clear-btn').addEventListener('click', () => {
+  clearHubContent();
+  hubTitleInput.value = '';
+  hubSubtitleInput.value = '';
+  toast('Hub cleared');
+});
+
+// ─── Color Scheme UI ─────────────────────────────
+function buildPaletteUI() {
+  const row = document.getElementById('palette-row');
+  row.textContent = '';
+  Object.keys(COLOR_PRESETS).forEach(name => {
+    const preset = COLOR_PRESETS[name];
+    const btn = document.createElement('button');
+    btn.className = 'palette-btn' + (name === activeColorScheme ? ' active' : '');
+    btn.dataset.scheme = name;
+
+    const preview = document.createElement('span');
+    preview.className = 'palette-preview';
+    if (preset.type === 'rainbow') {
+      preview.classList.add('rainbow');
+    } else if (preset.type === 'custom') {
+      const h1 = document.createElement('span');
+      h1.className = 'half';
+      h1.style.background = customColor1;
+      const h2 = document.createElement('span');
+      h2.className = 'half';
+      h2.style.background = customColor2;
+      preview.appendChild(h1);
+      preview.appendChild(h2);
+    } else {
+      const h1 = document.createElement('span');
+      h1.className = 'half';
+      h1.style.background = preset.c1;
+      const h2 = document.createElement('span');
+      h2.className = 'half';
+      h2.style.background = preset.c2;
+      preview.appendChild(h1);
+      preview.appendChild(h2);
+    }
+
+    btn.appendChild(preview);
+    const label = document.createTextNode(name);
+    btn.appendChild(label);
+
+    btn.addEventListener('click', () => {
+      setColorScheme(name);
+    });
+
+    row.appendChild(btn);
+  });
+
+  // Show/hide custom pickers
+  const pickers = document.getElementById('custom-pickers');
+  if (activeColorScheme === 'Custom') {
+    pickers.classList.add('visible');
+  } else {
+    pickers.classList.remove('visible');
+  }
+}
+
+function setColorScheme(name) {
+  activeColorScheme = name;
+  try { localStorage.setItem('spinwheel_colorScheme', name); } catch(e) {}
+  applyHubBackground();
+  buildPaletteUI();
+  updateUI();
+}
+
+function loadColorScheme() {
+  try {
+    const saved = localStorage.getItem('spinwheel_colorScheme');
+    if (saved && COLOR_PRESETS[saved]) activeColorScheme = saved;
+    const sc1 = localStorage.getItem('spinwheel_customColor1');
+    const sc2 = localStorage.getItem('spinwheel_customColor2');
+    if (sc1) customColor1 = sc1;
+    if (sc2) customColor2 = sc2;
+  } catch(e) {}
+  document.getElementById('custom-color1').value = customColor1;
+  document.getElementById('custom-color2').value = customColor2;
+  applyHubBackground();
+  buildPaletteUI();
+}
+
+document.getElementById('custom-apply-btn').addEventListener('click', () => {
+  customColor1 = document.getElementById('custom-color1').value;
+  customColor2 = document.getElementById('custom-color2').value;
+  try { localStorage.setItem('spinwheel_customColor1', customColor1); } catch(e) {}
+  try { localStorage.setItem('spinwheel_customColor2', customColor2); } catch(e) {}
+  setColorScheme('Custom');
+  toast('Custom colors applied');
+});
+
 // ─── Init ──────────────────────────────────────
 loadNames();
+loadColorScheme();
+loadHubContent();
 resize();
 updateUI();
 idleRotation();
