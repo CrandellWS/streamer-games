@@ -176,6 +176,11 @@ select {
           <input type="range" id="slider-drama" min="0" max="100" value="50">
           <span class="slider-val" id="drama-val">Med</span>
         </div>
+        <div class="slider-row">
+          <label>Timeout</label>
+          <input type="range" id="slider-timeout" min="5" max="30" value="12" step="1">
+          <span class="slider-val" id="timeout-val">12s</span>
+        </div>
       </div>
       <div class="panel-section">
         <h3>Game Type</h3>
@@ -756,6 +761,13 @@ function updateClaw(dtSec) {
     clawState.fadeTimer += dtSec * 1000;
     if (clawState.fadeTimer > 500) {
       clawState.phase = 'done';
+      // Trigger next ball drop if there are more in the queue
+      if (currentDropIdx < dropQueue.length && state.dropping) {
+        var delay = lerp(300, 1500, state.drama / 100); // shorter delay between drops
+        setTimeout(function() {
+          if (state.dropping) dropNext();
+        }, delay);
+      }
     }
   }
 }
@@ -1961,13 +1973,8 @@ function dropNext() {
   startClaw(xFrac, currentDropIdx);
   sndServo();
   currentDropIdx++;
-
-  if (currentDropIdx < dropQueue.length) {
-    var delay = lerp(1500, 4000, state.drama / 100);
-    setTimeout(function() {
-      if (state.dropping) dropNext();
-    }, delay);
-  }
+  // Next drop is triggered by claw phase === 'done' in updateClaw
+  // No setTimeout here — waits for claw to finish before starting next
 }
 
 function updateDropBtn() {
@@ -1998,6 +2005,18 @@ function initAdminPanel() {
     state.drama = parseInt(this.value);
     updateDramaLabel();
     save('pinko_drama', state.drama);
+  });
+
+  // Timeout slider
+  var timeoutSlider = document.getElementById('slider-timeout');
+  var timeoutVal = document.getElementById('timeout-val');
+  var savedTimeout = load('pinko_timeout');
+  if (savedTimeout) { HARD_TIMEOUT = parseInt(savedTimeout) * 1000; timeoutSlider.value = parseInt(savedTimeout); }
+  timeoutVal.textContent = (HARD_TIMEOUT / 1000) + 's';
+  timeoutSlider.addEventListener('input', function() {
+    HARD_TIMEOUT = parseInt(this.value) * 1000;
+    timeoutVal.textContent = this.value + 's';
+    save('pinko_timeout', this.value);
   });
 
   // Game Type toggle
