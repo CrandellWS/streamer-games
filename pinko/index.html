@@ -496,54 +496,38 @@ function seededRand(seed) {
    The foundation for ALL chaos levels. Generates a standard offset
    peg grid spanning the full board width for a given row range.
    ===================================================================== */
-/* Plinko triangular peg grid + exterior fill.
-   Row count is driven by the triangle's height and the global pegSpacing so
-   density is consistent across player counts. At each row, interior pegs are
-   spaced ~pegSpacing apart across the row's width, and exterior pegs continue
-   the same spacing outward on both sides to the board edges.
-   The bottom-most row of the pyramid is omitted so pegs don't sit on top of
-   the slot dividers. */
+/* Classic plinko peg grid with alternating half-offset rows.
+   A uniform triangular lattice (pegSpacing horizontal, pegSpacing*0.866
+   vertical) spans the full board width. Every other row is shifted by
+   pegSpacing/2 so the pegs form the interlocking hex pattern plinko is
+   known for. Rows run from the triangle apex down to just above the slot
+   dividers; the final row is skipped. Pegs too close to the triangle
+   walls are filtered out later by the wall-clearance pass. */
 function generatePegsAlignedToTriangle(tri, pegR, pegSpacing, boardLeft, boardRight) {
   var pegs = [];
-  var apex = tri.a, br = tri.b, bl = tri.c;
-  var topX = apex.x, topY = apex.y;
-  var leftX = bl.x, rightX = br.x, botY = bl.y;
+  var apex = tri.a, bl = tri.c;
+  var topY = apex.y;
+  var botY = bl.y;
   var rowSpanY = botY - topY;
   var rowH = pegSpacing * 0.866;
 
-  // Row count from geometry — minimum of 5 to guarantee density at low counts.
   var rows = Math.max(5, Math.round(rowSpanY / rowH) + 1);
+  var anchorX = apex.x; // column 0 passes through the apex
 
-  // Skip the final bottom row — stop one row short so pegs don't sit on dividers
+  // Skip the final bottom row so pegs don't sit on top of the | dividers
   for (var r = 0; r < rows - 1; r++) {
     var t = r / (rows - 1);
     var y = topY + t * rowSpanY;
-    var rowLeft = topX + (leftX - topX) * t;
-    var rowRight = topX + (rightX - topX) * t;
-    var rowWidth = rowRight - rowLeft;
+    var rowOffset = (r % 2 === 0) ? 0 : pegSpacing * 0.5;
 
-    var pegsInRow, step;
-    if (rowWidth < pegSpacing * 0.5) {
-      // Near the apex — single peg
-      pegs.push({ x: topX, y: y, r: pegR, flash: 0, scaleAnim: 0 });
-      pegsInRow = 1;
-      step = pegSpacing;
-    } else {
-      pegsInRow = Math.max(2, Math.round(rowWidth / pegSpacing) + 1);
-      step = rowWidth / (pegsInRow - 1);
-      for (var j = 0; j < pegsInRow; j++) {
-        pegs.push({ x: rowLeft + j * step, y: y, r: pegR, flash: 0, scaleAnim: 0 });
-      }
-    }
+    var minX = boardLeft + pegR + 2;
+    var maxX = boardRight - pegR - 2;
+    var kStart = Math.ceil((minX - anchorX - rowOffset) / pegSpacing);
+    var kEnd = Math.floor((maxX - anchorX - rowOffset) / pegSpacing);
 
-    // Exterior pegs — continue outward using the global pegSpacing
-    var startLeft = (pegsInRow === 1) ? topX : rowLeft;
-    var startRight = (pegsInRow === 1) ? topX : rowRight;
-    for (var xl = startLeft - pegSpacing; xl > boardLeft + pegR; xl -= pegSpacing) {
-      pegs.push({ x: xl, y: y, r: pegR, flash: 0, scaleAnim: 0 });
-    }
-    for (var xr = startRight + pegSpacing; xr < boardRight - pegR; xr += pegSpacing) {
-      pegs.push({ x: xr, y: y, r: pegR, flash: 0, scaleAnim: 0 });
+    for (var k = kStart; k <= kEnd; k++) {
+      var x = anchorX + k * pegSpacing + rowOffset;
+      pegs.push({ x: x, y: y, r: pegR, flash: 0, scaleAnim: 0 });
     }
   }
   return pegs;
@@ -1489,6 +1473,21 @@ function updatePhysics(dtSec) {
     // Trail
     ball.trail.push({ x: ball.x, y: ball.y });
     if (ball.trail.length > TRAIL_LEN) ball.trail.shift();
+
+    // Early gutter lock — once the ball crosses below the triangle base
+    // and drifts into an edge gutter column, it can't bounce back out.
+    var gutterTopY = board.slotZoneY - board.funnelHeight;
+    if (ball.y + ball.r >= gutterTopY) {
+      var inLeftGutter = ball.x < board.left + board.slotWidth;
+      var inRightGutter = ball.x > board.right - board.slotWidth;
+      if (inLeftGutter || inRightGutter) {
+        ball.vy = Math.max(ball.vy, 80);
+        ball.vx = 0;
+        ball.x = inLeftGutter
+          ? board.left + board.slotWidth * 0.5
+          : board.right - board.slotWidth * 0.5;
+      }
+    }
 
     // Slot zone detection
     if (ball.y + ball.r >= board.slotZoneY) {
