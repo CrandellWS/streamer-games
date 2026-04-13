@@ -79,9 +79,8 @@ body.transparent-bg { background:transparent !important; }
 }
 #admin-toggle:hover { background:var(--surface2); color:var(--text); border-color:var(--accent); box-shadow:0 0 20px var(--accent-glow); }
 
-.panel-header { padding:20px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; }
-.panel-header h2 { font-size:16px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--accent-pink); margin-bottom:4px; }
-.panel-header p { font-size:12px; color:var(--text-dim); }
+.panel-header { padding:14px 20px 12px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; text-align:center; }
+.panel-header img.logo { display:block; width:100%; max-width:240px; height:auto; margin:0 auto; filter:drop-shadow(0 4px 14px rgba(212,116,138,0.35)); }
 
 .panel-section { padding:14px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
 .panel-section h3 { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); margin-bottom:10px; }
@@ -166,8 +165,7 @@ select {
   <button id="admin-toggle" title="Toggle Admin">&#9881;</button>
   <div id="admin-panel">
     <div class="panel-header">
-      <h2>PINKO</h2>
-      <p>Pinball chaos &mdash; drop it and find a winner!</p>
+      <img class="logo" src="logo.png" alt="Pinko — Where Pinball Meets Plinko">
     </div>
     <div class="panel-scroll">
       <!-- 1. Players first — streamers add names immediately -->
@@ -498,6 +496,59 @@ function seededRand(seed) {
    The foundation for ALL chaos levels. Generates a standard offset
    peg grid spanning the full board width for a given row range.
    ===================================================================== */
+/* Plinko triangular peg grid + exterior fill.
+   Row count is driven by the triangle's height and the global pegSpacing so
+   density is consistent across player counts. At each row, interior pegs are
+   spaced ~pegSpacing apart across the row's width, and exterior pegs continue
+   the same spacing outward on both sides to the board edges.
+   The bottom-most row of the pyramid is omitted so pegs don't sit on top of
+   the slot dividers. */
+function generatePegsAlignedToTriangle(tri, pegR, pegSpacing, boardLeft, boardRight) {
+  var pegs = [];
+  var apex = tri.a, br = tri.b, bl = tri.c;
+  var topX = apex.x, topY = apex.y;
+  var leftX = bl.x, rightX = br.x, botY = bl.y;
+  var rowSpanY = botY - topY;
+  var rowH = pegSpacing * 0.866;
+
+  // Row count from geometry — minimum of 5 to guarantee density at low counts.
+  var rows = Math.max(5, Math.round(rowSpanY / rowH) + 1);
+
+  // Skip the final bottom row — stop one row short so pegs don't sit on dividers
+  for (var r = 0; r < rows - 1; r++) {
+    var t = r / (rows - 1);
+    var y = topY + t * rowSpanY;
+    var rowLeft = topX + (leftX - topX) * t;
+    var rowRight = topX + (rightX - topX) * t;
+    var rowWidth = rowRight - rowLeft;
+
+    var pegsInRow, step;
+    if (rowWidth < pegSpacing * 0.5) {
+      // Near the apex — single peg
+      pegs.push({ x: topX, y: y, r: pegR, flash: 0, scaleAnim: 0 });
+      pegsInRow = 1;
+      step = pegSpacing;
+    } else {
+      pegsInRow = Math.max(2, Math.round(rowWidth / pegSpacing) + 1);
+      step = rowWidth / (pegsInRow - 1);
+      for (var j = 0; j < pegsInRow; j++) {
+        pegs.push({ x: rowLeft + j * step, y: y, r: pegR, flash: 0, scaleAnim: 0 });
+      }
+    }
+
+    // Exterior pegs — continue outward using the global pegSpacing
+    var startLeft = (pegsInRow === 1) ? topX : rowLeft;
+    var startRight = (pegsInRow === 1) ? topX : rowRight;
+    for (var xl = startLeft - pegSpacing; xl > boardLeft + pegR; xl -= pegSpacing) {
+      pegs.push({ x: xl, y: y, r: pegR, flash: 0, scaleAnim: 0 });
+    }
+    for (var xr = startRight + pegSpacing; xr < boardRight - pegR; xr += pegSpacing) {
+      pegs.push({ x: xr, y: y, r: pegR, flash: 0, scaleAnim: 0 });
+    }
+  }
+  return pegs;
+}
+
 function generatePegGrid(boardWidth, boardLeft, yStart, yEnd, pegR, pegSpacing, rowOffset) {
   var pegs = [];
   var cols = Math.floor(boardWidth / pegSpacing);
@@ -811,12 +862,30 @@ function buildBoard() {
   var pegSpacing = rowH / 0.866;
   pegSpacing = Math.max(18, Math.min(38, pegSpacing));
 
+  // Compute the triangle early so the peg grid can align to its walls.
+  // Base sits at the TOP of the slot dividers (funnelGuides top), not at
+  // the slot zone, so the triangle and the | walls line up cleanly.
+  var _slotWidth = boardWidth / TOTAL_SLOTS;
+  var _funnelTopY = boardBottom - funnelHeight;
+  var earlyTri = {
+    a: { x: boardLeft + boardWidth / 2, y: boardTop + availHeight * 0.06 },
+    b: { x: boardRight - _slotWidth, y: _funnelTopY },
+    c: { x: boardLeft + _slotWidth, y: _funnelTopY }
+  };
+
   // Peg grid starts below the top-row obstacle band.
   // Trim the last ~2 rows so there is a clean drop zone above the slots.
   var rowHActual = pegSpacing * 0.866;
   var pegStartY = boardTop + availHeight * 0.24;
   var pegEndY = boardBottom - rowHActual * 2;
-  var allPegs = generatePegGrid(boardWidth, boardLeft, pegStartY, pegEndY, PEG_RADIUS, pegSpacing, 0);
+  var allPegs = generatePegsAlignedToTriangle(earlyTri, PEG_RADIUS, pegSpacing, boardLeft, boardRight);
+  // Remove any peg that sits on a triangle wall line.
+  var pegWallMargin = PEG_RADIUS + 1;
+  allPegs = allPegs.filter(function(p) {
+    var dL = distPointToSeg(p.x, p.y, earlyTri.a.x, earlyTri.a.y, earlyTri.c.x, earlyTri.c.y);
+    var dR = distPointToSeg(p.x, p.y, earlyTri.a.x, earlyTri.a.y, earlyTri.b.x, earlyTri.b.y);
+    return Math.min(dL, dR) >= pegWallMargin;
+  });
 
   // Top row: one obstacle per active slot (gated on chaos level)
   var topRow = createTopRow(boardLeft, boardWidth, boardTop, availHeight, TOTAL_SLOTS, activeNameSlots, state.chaos);
@@ -867,6 +936,24 @@ function buildBoard() {
   for (var fj = 0; fj < allFlippers.length; fj++) {
     if (allFlippers[fj].y > obstacleMaxY) allFlippers[fj].y = obstacleMaxY;
   }
+
+  // Triangle wall rule: bumpers and rotating obstacles may sit inside or
+  // outside the triangle, but their swept area may never cross the walls.
+  var wallMargin = 4;
+  function distToTriWalls(px, py) {
+    var dL = distPointToSeg(px, py, earlyTri.a.x, earlyTri.a.y, earlyTri.c.x, earlyTri.c.y);
+    var dR = distPointToSeg(px, py, earlyTri.a.x, earlyTri.a.y, earlyTri.b.x, earlyTri.b.y);
+    return Math.min(dL, dR);
+  }
+  allBumpers = allBumpers.filter(function(b) {
+    return distToTriWalls(b.x, b.y) >= b.r + wallMargin;
+  });
+  allSpinners = allSpinners.filter(function(s) {
+    return distToTriWalls(s.x, s.y) >= (s.length / 2) + wallMargin;
+  });
+  allFlippers = allFlippers.filter(function(f) {
+    return distToTriWalls(f.x, f.y) >= (f.length / 2) + wallMargin;
+  });
 
   allPegs = removePegsNearObstacles(allPegs, allBumpers, allSpinners, allFlippers, BALL_RADIUS);
 
@@ -934,6 +1021,9 @@ function buildBoard() {
     });
   }
 
+  // Triangle already computed earlier and used to align the peg grid.
+  var triangle = { a: earlyTri.a, b: earlyTri.b, c: earlyTri.c, pulse: 0 };
+
   board = {
     pegs: allPegs, bumpers: allBumpers, spinners: allSpinners,
     flippers: allFlippers, rails: allRails, funnelGuides: funnelGuides,
@@ -941,8 +1031,36 @@ function buildBoard() {
     top: boardTop, bottom: boardBottom, width: boardWidth,
     height: availHeight, slotZoneY: slotZoneY, funnelHeight: funnelHeight,
     slotHeight: slotHeight, slotWidth: slotWidth, pegSpacing: pegSpacing,
-    numSlots: TOTAL_SLOTS, activeSlots: activeNameSlots
+    numSlots: TOTAL_SLOTS, activeSlots: activeNameSlots,
+    triangle: triangle
   };
+}
+
+// Barycentric point-in-triangle test
+function pointInTri(px, py, a, b, c) {
+  var d1 = (px - b.x) * (a.y - b.y) - (a.x - b.x) * (py - b.y);
+  var d2 = (px - c.x) * (b.y - c.y) - (b.x - c.x) * (py - c.y);
+  var d3 = (px - a.x) * (c.y - a.y) - (c.x - a.x) * (py - a.y);
+  var neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+  var pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+  return !(neg && pos);
+}
+
+// Point inside the triangle, at least `margin` from every edge.
+function pointInTriShrunk(px, py, a, b, c, margin) {
+  if (!pointInTri(px, py, a, b, c)) return false;
+  return distPointToSeg(px, py, a.x, a.y, b.x, b.y) >= margin
+      && distPointToSeg(px, py, b.x, b.y, c.x, c.y) >= margin
+      && distPointToSeg(px, py, c.x, c.y, a.x, a.y) >= margin;
+}
+
+function distPointToSeg(px, py, x1, y1, x2, y2) {
+  var dx = x2 - x1, dy = y2 - y1;
+  var L2 = dx * dx + dy * dy;
+  if (L2 === 0) return Math.sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1));
+  var t = clamp(((px - x1) * dx + (py - y1) * dy) / L2, 0, 1);
+  var cx = x1 + t * dx, cy = y1 + t * dy;
+  return Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
 }
 
 /* =====================================================================
@@ -1859,6 +1977,58 @@ function render() {
   boardBgGrad.addColorStop(1, 'rgba(13,13,20,0)');
   ctx.fillStyle = boardBgGrad;
   ctx.fillRect(board.left, board.top, board.width, board.bottom - board.top);
+
+  // Classic plinko silhouette — pink triangle spanning all active name slots
+  if (board.triangle) {
+    var tri = board.triangle;
+
+    // Does any live ball sit inside the triangle right now?
+    var ballInside = false;
+    for (var biT = 0; biT < balls.length; biT++) {
+      var bT = balls[biT];
+      if (!bT.active || bT.settled) continue;
+      if (pointInTri(bT.x, bT.y, tri.a, tri.b, tri.c)) { ballInside = true; break; }
+    }
+    var target = ballInside ? 1 : 0;
+    tri.pulse += (target - tri.pulse) * 0.15;
+    var pulse = tri.pulse;
+    var nowT = performance.now();
+    var bob = 0.5 + 0.5 * Math.sin(nowT * 0.006);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(tri.a.x, tri.a.y);
+    ctx.lineTo(tri.b.x, tri.b.y);
+    ctx.lineTo(tri.c.x, tri.c.y);
+    ctx.closePath();
+
+    // Base fill — subtle vertical gradient
+    var triGrad = ctx.createLinearGradient(0, tri.a.y, 0, tri.b.y);
+    var baseTop = 0.10 + pulse * 0.12 * (0.7 + bob * 0.3);
+    var baseBot = 0.02 + pulse * 0.05;
+    triGrad.addColorStop(0, 'rgba(212,116,138,' + baseTop + ')');
+    triGrad.addColorStop(0.6, 'rgba(212,116,138,' + (baseTop * 0.5) + ')');
+    triGrad.addColorStop(1, 'rgba(212,116,138,' + baseBot + ')');
+    ctx.fillStyle = triGrad;
+    ctx.fill();
+
+    // Outer glow border (thicker, softer)
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(212,116,138,' + (0.35 + pulse * 0.4) + ')';
+    ctx.shadowBlur = 14 + pulse * 10;
+    ctx.strokeStyle = 'rgba(212,116,138,' + (0.55 + pulse * 0.35) + ')';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // Inner highlight edge
+    ctx.strokeStyle = 'rgba(255,210,220,' + (0.25 + pulse * 0.5) + ')';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.restore();
+  }
 
   // Subtle grid lines behind pegs
   ctx.strokeStyle = 'rgba(60,60,90,0.08)';
