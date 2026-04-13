@@ -180,7 +180,10 @@ select {
         <textarea id="bulk-names" placeholder="Paste names — one per line, comma-separated, or @mentions"></textarea>
         <button class="btn btn-sm" id="btn-add-bulk" style="width:100%;margin-top:6px;">+ Add All</button>
         <div class="player-list" id="player-list"></div>
-        <div class="player-count" id="player-count">0 players</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+          <div class="player-count" id="player-count" style="flex:1;margin:0;">0 players</div>
+          <button class="btn btn-sm btn-danger" id="btn-clear-top">Clear All</button>
+        </div>
       </div>
       <!-- 2. Drop — the main action, big and prominent -->
       <div class="panel-section">
@@ -384,7 +387,10 @@ var state = {
   dropping: false,
   boardSeed: Math.random(),
   adminVisible: true,
-  prizeDropIdx: 0  // cycles through players in prize mode
+  prizeDropIdx: 0, // cycles through players in prize mode
+  bonusActive: false,
+  bonusNames: [],
+  bonusFromSlotIdx: -1
 };
 
 /* =====================================================================
@@ -680,16 +686,87 @@ function mirrorSpinners(spinners, centerX) {
 /* =====================================================================
    BUMPER TRIANGLE — always present on ALL chaos levels
    ===================================================================== */
-function createBumperTriangle(centerX, boardTop, boardHeight) {
-  var topY = boardTop + boardHeight * 0.15;
-  var botY = boardTop + boardHeight * 0.22;
-  var spacing = 40;
-  var r = 22;
-  return [
-    { x: centerX, y: topY, r: r, flash: 0, flashTimer: 0, chainCount: 0, lastHitMs: 0 },
-    { x: centerX - spacing, y: botY, r: r, flash: 0, flashTimer: 0, chainCount: 0, lastHitMs: 0 },
-    { x: centerX + spacing, y: botY, r: r, flash: 0, flashTimer: 0, chainCount: 0, lastHitMs: 0 }
-  ];
+/* Top-row obstacles — one per active slot, alternating bumper/spinner.
+   Chaos-gated:
+     off    -> nothing
+     mild   -> bumpers at even indices (1 per 2 slots), no spinners, no paddles
+     wild   -> bumpers(even) + spinners(odd) + 2 spinning paddles above
+     insane -> same as wild + staggered heights + 4 paddles */
+function createTopRow(boardLeft, boardWidth, boardTop, availHeight, totalSlots, activeSlots, chaos) {
+  var out = { bumpers: [], spinners: [], flippers: [] };
+  if (chaos === 'off') return out;
+
+  var slotWidth = boardWidth / totalSlots;
+
+  if (chaos === 'insane') {
+    // Two staggered rows, alternating bumper/paddle, 1 item per 3 slots, max 8 per row.
+    var perRow = Math.min(8, Math.ceil(activeSlots / 3));
+    var bandTop = boardTop + availHeight * 0.11;
+    var bandBot = boardTop + availHeight * 0.19;
+    var r = clamp((boardWidth / (perRow + 1)) * 0.28, 13, 20);
+    var paddleLen = 34;
+
+    function placeRow(yBase, xOffsetFrac, startWithBumper) {
+      for (var k = 0; k < perRow; k++) {
+        var frac = (k + 0.5 + xOffsetFrac) / perRow;
+        var cx = boardLeft + frac * boardWidth;
+        var isBumper = startWithBumper ? (k % 2 === 0) : (k % 2 === 1);
+        if (isBumper) {
+          out.bumpers.push({ x: cx, y: yBase, r: r, flash: 0, flashTimer: 0, chainCount: 0, lastHitMs: 0 });
+        } else {
+          out.flippers.push({
+            x: cx, y: yBase, length: paddleLen,
+            angle: (k * Math.PI) / perRow,
+            speed: (k % 2 === 0 ? 1 : -1) * 2.6,
+            flash: 0, flashTimer: 0,
+            paddleColor: (k % 2 === 0 ? 'orange' : 'purple')
+          });
+        }
+      }
+    }
+    placeRow(bandTop, 0, true);
+    placeRow(bandBot, 0.5, false);
+    return out;
+  }
+
+  // Mild / Wild: single top row, one obstacle per slot, alternating up/down.
+  var baseY = boardTop + availHeight * 0.15;
+  var stagger = (chaos === 'wild') ? 14 : 10;
+  var rr = clamp(slotWidth * 0.42, 11, 20);
+  var spinnersOn = (chaos === 'wild');
+
+  for (var i = 0; i < activeSlots; i++) {
+    var cx2 = boardLeft + (i + 1.5) * slotWidth;
+    var cy2 = baseY + ((i % 2 === 0) ? -stagger : stagger);
+    if (i % 2 === 0) {
+      out.bumpers.push({ x: cx2, y: cy2, r: rr, flash: 0, flashTimer: 0, chainCount: 0, lastHitMs: 0 });
+    } else if (spinnersOn) {
+      out.spinners.push({
+        x: cx2, y: cy2,
+        length: Math.max(20, rr * 1.6),
+        angle: 0,
+        speed: (i % 4 === 1 ? 1 : -1) * 2.2,
+        flash: 0, flashTimer: 0
+      });
+    }
+  }
+
+  var paddleCount = (chaos === 'wild') ? 1 : 0;
+  var paddleY = boardTop + availHeight * 0.055;
+  for (var p = 0; p < paddleCount; p++) {
+    var pfrac = (p + 1) / (paddleCount + 1);
+    out.flippers.push({
+      x: boardLeft + pfrac * boardWidth,
+      y: paddleY,
+      length: 32,
+      angle: (p * Math.PI) / Math.max(paddleCount, 1),
+      speed: (p % 2 === 0 ? 1 : -1) * 2.5,
+      flash: 0, flashTimer: 0,
+      paddleColor: (p % 2 === 0 ? 'orange' : 'purple')
+    });
+  }
+
+  return out;
 }
 
 /* =====================================================================
@@ -698,22 +775,30 @@ function createBumperTriangle(centerX, boardTop, boardHeight) {
 function buildBoard() {
   if (W === 0 || H === 0) return;
 
-  var nameCount;
-  if (state.gameType === 'prize') {
-    nameCount = Math.max(state.prizes.length, 1);
-  } else {
-    nameCount = Math.max(state.players.length, 1);
-  }
+  // Bonus round: use the team's name list as the slot source, fanned out.
+  var bonusActive = !!state.bonusActive;
+  var primarySource = (state.gameType === 'prize') ? state.prizes : state.players;
+  var sourceList = bonusActive ? state.bonusNames : primarySource;
 
-  // 27-slot system: 25 active name slots + 2 retrigger gutters
-  var TOTAL_SLOTS = 27;
+  var nameCount = Math.max(sourceList.length, 1);
+
+  // Slot system: N active name slots + 2 retrigger gutters (min 2, max 25)
+  var activeNameSlots = clamp(nameCount, 2, 25);
+  var TOTAL_SLOTS = activeNameSlots + 2;
 
   var margin = 20;
   var boardLeft = margin;
   var boardRight = W - margin;
   var boardWidth = boardRight - boardLeft;
   var boardTop = 80;
-  var slotHeight = 50;
+  // Slot height grows with the biggest stacked group so every name fits on screen.
+  var totalNames = sourceList.length;
+  var maxStack = Math.max(1, Math.ceil(totalNames / activeNameSlots));
+  var slotLineH = 15;
+  var slotPadding = 14;
+  var slotHeight = Math.max(50, maxStack * slotLineH + slotPadding);
+  // Cap so the play area doesn't collapse
+  slotHeight = Math.min(slotHeight, Math.floor(H * 0.45));
   var funnelHeight = 40;
   var boardBottom = H - slotHeight - funnelHeight;
   var centerX = boardLeft + boardWidth / 2;
@@ -726,41 +811,61 @@ function buildBoard() {
   var pegSpacing = rowH / 0.866;
   pegSpacing = Math.max(18, Math.min(38, pegSpacing));
 
-  // Peg grid starts below bumper triangle zone
-  var pegStartY = boardTop + availHeight * 0.28;
-  var allPegs = generatePegGrid(boardWidth, boardLeft, pegStartY, boardBottom, PEG_RADIUS, pegSpacing, 0);
+  // Peg grid starts below the top-row obstacle band.
+  // Trim the last ~2 rows so there is a clean drop zone above the slots.
+  var rowHActual = pegSpacing * 0.866;
+  var pegStartY = boardTop + availHeight * 0.24;
+  var pegEndY = boardBottom - rowHActual * 2;
+  var allPegs = generatePegGrid(boardWidth, boardLeft, pegStartY, pegEndY, PEG_RADIUS, pegSpacing, 0);
 
-  // Bumper triangle — ALWAYS present on all chaos levels
-  var triangleBumpers = createBumperTriangle(centerX, boardTop, availHeight);
-  var allBumpers = triangleBumpers.slice();
-  var allSpinners = [];
-  var allFlippers = [];
+  // Top row: one obstacle per active slot (gated on chaos level)
+  var topRow = createTopRow(boardLeft, boardWidth, boardTop, availHeight, TOTAL_SLOTS, activeNameSlots, state.chaos);
+  var allBumpers = topRow.bumpers.slice();
+  var allSpinners = topRow.spinners.slice();
+  var allFlippers = topRow.flippers.slice();
   var allRails = [];
 
-  // Chaos obstacles — scatter on LEFT half, then mirror for symmetry
-  if (state.chaos === 'mild' || state.chaos === 'wild' || state.chaos === 'insane') {
-    var bumperCount = state.chaos === 'insane' ? 6 : state.chaos === 'wild' ? 3 : 2;
+  // All body obstacles must stay at least 5 peg-rows above the slots.
+  var obstacleMinY = boardTop + availHeight * 0.30;
+  var obstacleMaxY = boardBottom - rowHActual * 5;
+
+  // Body scatter obstacles — symmetric, below top row, above minimum clearance
+  if (state.chaos !== 'off') {
     var halfWidth = boardWidth / 2;
-    var leftBumpers = scatterSmallBumpers(halfWidth, boardLeft, pegStartY, boardBottom, bumperCount, sRand);
+    var bodyTopY = obstacleMinY;
+    var bodyBotY = obstacleMaxY;
+
+    var bCount = state.chaos === 'insane' ? 5 : (state.chaos === 'wild' ? 3 : 2);
+    var leftBumpers = scatterSmallBumpers(halfWidth, boardLeft, bodyTopY, bodyBotY, bCount, sRand);
     var mirroredB = mirrorBumpers(leftBumpers, centerX);
     for (var mb = 0; mb < mirroredB.length; mb++) allBumpers.push(mirroredB[mb]);
-  }
 
-  if (state.chaos === 'wild' || state.chaos === 'insane') {
-    var flipperCount = state.chaos === 'insane' ? 4 : 2;
-    var spinnerCount = state.chaos === 'insane' ? 3 : 2;
-    var halfW2 = boardWidth / 2;
-    var leftFlippers = scatterTinyFlippers(halfW2, boardLeft, pegStartY, boardBottom, flipperCount, sRand);
-    allFlippers = mirrorFlippers(leftFlippers, centerX);
-    var leftSpinners = scatterSpinners(halfW2, boardLeft, pegStartY, boardBottom, spinnerCount, sRand);
-    allSpinners = mirrorSpinners(leftSpinners, centerX);
-  }
-
-  if (state.chaos === 'insane') {
-    for (var si = 0; si < allSpinners.length; si++) {
-      allSpinners[si].speed *= 2;
-      allSpinners[si].length *= 1.3;
+    if (state.chaos === 'wild' || state.chaos === 'insane') {
+      var sCount = state.chaos === 'insane' ? 3 : 2;
+      var leftSpinners = scatterSpinners(halfWidth, boardLeft, bodyTopY, bodyBotY, sCount, sRand);
+      var mirroredS = mirrorSpinners(leftSpinners, centerX);
+      for (var ms = 0; ms < mirroredS.length; ms++) allSpinners.push(mirroredS[ms]);
     }
+
+    if (state.chaos === 'insane') {
+      var leftF = scatterTinyFlippers(halfWidth, boardLeft, bodyTopY, bodyBotY, 2, sRand);
+      var mirroredF = mirrorFlippers(leftF, centerX);
+      for (var mf = 0; mf < mirroredF.length; mf++) allFlippers.push(mirroredF[mf]);
+      for (var si = 0; si < allSpinners.length; si++) {
+        allSpinners[si].speed *= 1.3;
+      }
+    }
+  }
+
+  // Enforce 5-peg-row clearance above slots for every body obstacle
+  for (var bi = 0; bi < allBumpers.length; bi++) {
+    if (allBumpers[bi].y > obstacleMaxY) allBumpers[bi].y = obstacleMaxY;
+  }
+  for (var sj = 0; sj < allSpinners.length; sj++) {
+    if (allSpinners[sj].y > obstacleMaxY) allSpinners[sj].y = obstacleMaxY;
+  }
+  for (var fj = 0; fj < allFlippers.length; fj++) {
+    if (allFlippers[fj].y > obstacleMaxY) allFlippers[fj].y = obstacleMaxY;
   }
 
   allPegs = removePegsNearObstacles(allPegs, allBumpers, allSpinners, allFlippers, BALL_RADIUS);
@@ -769,12 +874,12 @@ function buildBoard() {
   for (var i = 0; i < allPegs.length; i++) {
     var p = allPegs[i];
     p.x = clamp(p.x, boardLeft + ballR + p.r + 2, boardRight - ballR - p.r - 2);
-    p.y = clamp(p.y, boardTop + p.r, boardBottom - p.r);
+    p.y = clamp(p.y, boardTop + p.r, pegEndY - p.r);
   }
   for (var i = 0; i < allBumpers.length; i++) {
     var b = allBumpers[i];
     b.x = clamp(b.x, boardLeft + ballR + b.r + 2, boardRight - ballR - b.r - 2);
-    b.y = clamp(b.y, boardTop + b.r, boardBottom - b.r);
+    b.y = clamp(b.y, boardTop + b.r, obstacleMaxY);
   }
 
   // === 27-SLOT SYSTEM with retrigger gutters ===
@@ -784,13 +889,10 @@ function buildBoard() {
 
   for (var i = 1; i < TOTAL_SLOTS; i++) {
     var gx = boardLeft + i * slotWidth;
+    // Single straight vertical divider — no V apex for balls to stick on
     funnelGuides.push({
-      x1: gx - slotWidth * 0.15, y1: slotZoneY - funnelHeight,
-      x2: gx, y2: slotZoneY + 5, flash: 0
-    });
-    funnelGuides.push({
-      x1: gx + slotWidth * 0.15, y1: slotZoneY - funnelHeight,
-      x2: gx, y2: slotZoneY + 5, flash: 0
+      x1: gx, y1: slotZoneY - funnelHeight,
+      x2: gx, y2: slotZoneY + slotHeight, flash: 0
     });
   }
 
@@ -802,27 +904,33 @@ function buildBoard() {
   funnelGuides.push({ x1: rgL + 2, y1: slotZoneY - funnelHeight * 0.8, x2: rgC, y2: slotZoneY + slotHeight * 0.3, flash: 0 });
   funnelGuides.push({ x1: boardRight - 2, y1: slotZoneY - funnelHeight * 0.8, x2: rgC, y2: slotZoneY + slotHeight * 0.3, flash: 0 });
 
-  // Build 27 slots — gutters at index 0 and 26, active names at 1-25
+  // Build slots — gutters at index 0 and last, active names between.
+  // When player count exceeds active slots, names round-robin into slots (team mode).
+  var slotGroups = [];
+  for (var g = 0; g < activeNameSlots; g++) slotGroups.push([]);
+  for (var pi = 0; pi < sourceList.length; pi++) {
+    slotGroups[pi % activeNameSlots].push(sourceList[pi]);
+  }
+
   var slots = [];
   for (var i = 0; i < TOTAL_SLOTS; i++) {
+    var slotNames = [];
     var slotName = '';
     var slotColor = 'rgba(60,60,80,0.3)';
     var isGutter = (i === 0 || i === TOTAL_SLOTS - 1);
 
     if (!isGutter) {
       var nameIdx = i - 1;
-      if (state.gameType === 'prize') {
-        slotName = (nameIdx < state.prizes.length) ? state.prizes[nameIdx] : '';
-      } else {
-        slotName = (nameIdx < state.players.length) ? state.players[nameIdx] : '';
-      }
-      if (slotName) slotColor = getPlayerColor(nameIdx, nameCount);
+      slotNames = slotGroups[nameIdx] || [];
+      slotName = slotNames.length > 0 ? slotNames[0] : '';
+      if (slotName) slotColor = getPlayerColor(nameIdx, activeNameSlots);
     }
 
     slots.push({
       x: boardLeft + i * slotWidth, y: slotZoneY,
       width: slotWidth, height: slotHeight,
-      name: slotName, color: slotColor, glow: 0, isGutter: isGutter
+      name: slotName, names: slotNames,
+      color: slotColor, glow: 0, isGutter: isGutter
     });
   }
 
@@ -833,7 +941,7 @@ function buildBoard() {
     top: boardTop, bottom: boardBottom, width: boardWidth,
     height: availHeight, slotZoneY: slotZoneY, funnelHeight: funnelHeight,
     slotHeight: slotHeight, slotWidth: slotWidth, pegSpacing: pegSpacing,
-    numSlots: TOTAL_SLOTS, activeSlots: 25
+    numSlots: TOTAL_SLOTS, activeSlots: activeNameSlots
   };
 }
 
@@ -871,11 +979,15 @@ function createBall(xFrac, dropIdx) {
    LAUNCHER CHUTE — spring-loaded plunger on right side
    Ball shoots UP and arcs over the top of the board
    ===================================================================== */
-function startClaw(xFrac, dropIdx) {
+function startClaw(xFrac, dropIdx, inheritSpawnTime) {
   var dramaLevel = state.drama / 100;
   // Drama controls spring pull distance = arc height and duration
   var pullDuration = lerp(800, 3000, dramaLevel); // how long the spring compresses
-  var launchSpeed = lerp(400, 700, dramaLevel); // initial upward velocity
+  // Calculate minimum speed to clear the board (reduced gravity = GRAVITY * 0.6)
+  var arcGravity = GRAVITY * 0.6;
+  var arcHeight = (board.bottom - board.top) + 60; // extra margin
+  var minSpeed = Math.sqrt(2 * arcGravity * arcHeight);
+  var launchSpeed = lerp(minSpeed * 1.1, minSpeed * 1.5, dramaLevel);
   var targetX = board.left + clamp(xFrac, 0.1, 0.9) * board.width;
 
   clawState = {
@@ -893,7 +1005,8 @@ function startClaw(xFrac, dropIdx) {
     ballVx: 0,
     ballVy: 0,
     released: false,
-    fadeTimer: 0
+    fadeTimer: 0,
+    inheritSpawnTime: (inheritSpawnTime != null ? inheritSpawnTime : null)
   };
   sndLauncherSpring();
 }
@@ -909,42 +1022,84 @@ function updateClaw(dtSec) {
     c.ballY = c.y - c.springCompress * 20; // slight visual compression
 
     if (c.timer >= c.pullDuration) {
-      // Release! Launch ball upward
+      // Release! Rocket straight up inside the chute.
       c.phase = 'launching';
-      c.ballVy = -c.launchSpeed;
-      c.ballVx = -(board.right - c.targetX) * 0.8 / (c.launchSpeed / 500); // horizontal to reach target
+      c.ballVy = -c.launchSpeed * 1.4;
+      c.ballVx = 0;
       c.timer = 0;
       sndLauncherRelease();
     }
   } else if (c.phase === 'launching') {
     c.timer += dtSec * 1000;
-    // Ball follows arc — gravity pulls it down
-    c.ballVy += GRAVITY * 0.6 * dtSec; // reduced gravity for nice arc
+    // Straight climb inside the chute (X locked to chute center).
+    c.ballX = board.right - 15;
+    c.ballVy += GRAVITY * 0.15 * dtSec;
+    c.ballY += c.ballVy * dtSec;
+
+    var bendStartY = board.top + 60;
+    if (c.ballY <= bendStartY) {
+      // Enter the bend at the top of the chute
+      c.phase = 'bending';
+      c.bendRadius = 30;
+      c.bendMaxAngle = Math.PI / 6; // 30° curve toward screen center
+      c.bendCx = (board.right - 15) - c.bendRadius;
+      c.bendCy = bendStartY;
+      c.bendAngle = 0; // 0 = entry (right side of arc center)
+      c.bendSpeed = Math.abs(c.ballVy); // preserve entry speed
+      c.ballY = bendStartY;
+    }
+
+    if (c.timer > 3000) {
+      c.phase = 'flying';
+      c.ballVy = -400; c.ballVx = -80; c.timer = 0;
+    }
+  } else if (c.phase === 'bending') {
+    c.timer += dtSec * 1000;
+    // Sweep along the arc at constant angular velocity derived from entry speed.
+    var angVel = c.bendSpeed / c.bendRadius;
+    c.bendAngle = Math.min(c.bendAngle + angVel * dtSec, c.bendMaxAngle);
+    c.ballX = c.bendCx + c.bendRadius * Math.cos(c.bendAngle);
+    c.ballY = c.bendCy - c.bendRadius * Math.sin(c.bendAngle);
+
+    if (c.bendAngle >= c.bendMaxAngle) {
+      // Exit the chute — fly off at the tangent angle with entry speed.
+      var tx = -Math.sin(c.bendAngle);
+      var ty = -Math.cos(c.bendAngle);
+      c.ballVx = tx * c.bendSpeed;
+      c.ballVy = ty * c.bendSpeed;
+      c.phase = 'flying';
+      c.timer = 0;
+    }
+  } else if (c.phase === 'flying') {
+    c.timer += dtSec * 1000;
+    c.ballVy += GRAVITY * 0.15 * dtSec;
     c.ballX += c.ballVx * dtSec;
     c.ballY += c.ballVy * dtSec;
 
-    // Once ball crosses above board top and starts falling, convert to real ball
-    if (c.ballY < board.top + 20 && c.ballVy > 0) {
-      var ballXFrac = (c.ballX - board.left) / board.width;
-      var ball = createBall(clamp(ballXFrac, 0.05, 0.95), c.dropIdx);
-      ball.x = c.ballX;
-      ball.y = c.ballY;
-      ball.vx = c.ballVx * 0.3;
-      ball.vy = Math.max(c.ballVy, 50);
-      balls.push(ball);
-      c.released = true;
-      c.phase = 'fading';
-      c.fadeTimer = 0;
-      sndDrop();
+    if (c.ballY < -BALL_RADIUS * 4 || c.timer > 1500) {
+      c.phase = 'offscreen';
+      c.timer = 0;
+      c.offscreenDuration = 400 + Math.random() * 600;
+      c.nextBounceAt = 120 + Math.random() * 160;
+    }
+  } else if (c.phase === 'offscreen') {
+    c.timer += dtSec * 1000;
+
+    // Random tink sounds while "bouncing above the screen"
+    if (c.timer >= c.nextBounceAt && c.timer < c.offscreenDuration) {
+      sndPeg(200 + Math.random() * 300);
+      c.nextBounceAt = c.timer + 80 + Math.random() * 180;
     }
 
-    // Safety: if ball goes way off screen, force create
-    if (c.timer > 3000) {
-      var safeFrac = (c.targetX - board.left) / board.width;
-      var ball2 = createBall(safeFrac, c.dropIdx);
-      ball2.y = board.top + 10;
-      ball2.vy = 100;
-      balls.push(ball2);
+    if (c.timer >= c.offscreenDuration) {
+      // Drop from a random X above the board with a random small angle
+      var dropXFrac = 0.1 + Math.random() * 0.8;
+      var ball = createBall(dropXFrac, c.dropIdx);
+      ball.y = board.top - BALL_RADIUS * 2;
+      ball.vx = (Math.random() - 0.5) * 240;
+      ball.vy = 80 + Math.random() * 120;
+      if (c.inheritSpawnTime != null) ball.spawnTime = c.inheritSpawnTime;
+      balls.push(ball);
       c.released = true;
       c.phase = 'fading';
       c.fadeTimer = 0;
@@ -1224,14 +1379,34 @@ function updatePhysics(dtSec) {
       var slotCenterX = slot.x + slot.width / 2;
       var slotCenterY = board.slotZoneY + board.slotHeight / 2;
 
-      // Drain save flipper animation on gutter slots
-      if (slotIdx === 0 && !ball._drainTriggered) { vfxDrainSave('left'); sndDrainSnap(); ball._drainTriggered = true; }
-      if (slotIdx === board.numSlots - 1 && !ball._drainTriggered) { vfxDrainSave('right'); sndDrainSnap(); ball._drainTriggered = true; }
+      // Gutter slot: immediately drain and relaunch through the chute —
+      // no bouncing/stuck risk. Handles the ball as soon as it enters.
+      if (slot.isGutter) {
+        if (!ball._drainTriggered) {
+          vfxDrainSave(slotIdx === 0 ? 'left' : 'right');
+          sndDrainSnap();
+          sndGutterDrain();
+          ball._drainTriggered = true;
+        }
+        ball.active = false;
+        ball.settled = true;
+        // Timer anchor: first gutter of the round gets a fresh timer,
+        // subsequent gutters inherit the prior ball's spawnTime.
+        state.roundGutterCount = (state.roundGutterCount || 0) + 1;
+        var inheritSpawn = (state.roundGutterCount >= 2) ? ball.spawnTime : null;
+        (function(dropI, inherit) {
+          setTimeout(function() {
+            if (!state.dropping) return;
+            startClaw(rand(0.15, 0.85), dropI, inherit);
+            sndRetrigger();
+          }, 350);
+        })(ball.dropIdx, inheritSpawn);
+        continue;
+      }
 
       // Kill velocity aggressively in slot zone — no more bouncing
-      ball.vx *= 0.7;
-      ball.vy *= 0.7;
-      // Strong lerp toward slot center
+      ball.vx *= 0.5;
+      ball.vy *= 0.5;
       ball.x = lerp(ball.x, slotCenterX, 0.25);
       ball.y = lerp(ball.y, slotCenterY, 0.25);
 
@@ -1240,31 +1415,13 @@ function updatePhysics(dtSec) {
 
       var dToCenter = dist(ball.x, ball.y, slotCenterX, slotCenterY);
       if (dToCenter < 8 && vec2Len(ball.vx, ball.vy) < 15) {
-        // Retrigger gutter — ball landed in gutter slot, auto-drop new ball
-        if (slot.isGutter) {
-          ball.active = false;
-          ball.settled = true;
-          sndGutterDrain();
-          // Auto-drop replacement ball after 500ms
-          (function(dropI) {
-            setTimeout(function() {
-              if (!state.dropping) return;
-              var newBall = createBall(rand(0.15, 0.85), dropI);
-              newBall.y = board.top + 10;
-              newBall.vy = 50;
-              balls.push(newBall);
-              sndRetrigger();
-            }, 500);
-          })(ball.dropIdx);
-        } else {
-          ball.settled = true;
-          ball.settledSlot = slotIdx;
-          ball.x = slotCenterX;
-          ball.y = slotCenterY;
-          slot.glow = 60;
-          sndLand();
-          onBallSettled(ball);
-        }
+        ball.settled = true;
+        ball.settledSlot = slotIdx;
+        ball.x = slotCenterX;
+        ball.y = slotCenterY;
+        slot.glow = 60;
+        sndLand();
+        onBallSettled(ball);
       }
     }
 
@@ -1368,9 +1525,17 @@ function updatePhysics(dtSec) {
    WINNER LOGIC
    ===================================================================== */
 function onBallSettled(ball) {
-  settledCount++;
   var slotIdx = ball.settledSlot;
-  var slotName = board.slots[slotIdx].name;
+  var slot = board.slots[slotIdx];
+
+  // Team mode: landed in a stacked slot on the primary round — enter bonus pick.
+  if (!state.bonusActive && slot.names && slot.names.length > 1) {
+    enterBonusRound(slotIdx, slot.names.slice());
+    return;
+  }
+
+  settledCount++;
+  var slotName = slot.name;
 
   var resultEntry;
   if (state.gameType === 'prize') {
@@ -1381,7 +1546,6 @@ function onBallSettled(ball) {
   state.results.push(resultEntry);
   renderResults();
 
-  // postMessage outbound
   try {
     if (state.gameType === 'prize') {
       window.parent.postMessage({ type: 'pinko:winner', winner: ball.playerLabel, prize: slotName }, '*');
@@ -1394,7 +1558,7 @@ function onBallSettled(ball) {
 
   var useMode = state.winnerMode;
   if (useMode === 'escalating') {
-    useMode = isLastBall ? 'dramatic' : 'quick';
+    useMode = (isLastBall || state.bonusActive) ? 'dramatic' : 'quick';
   }
 
   if (useMode === 'dramatic') {
@@ -1407,10 +1571,70 @@ function onBallSettled(ball) {
     showQuickWinner(slotIdx);
   }
 
-  if (isLastBall) {
+  // Coming back from a bonus round: restore the primary board after a short beat.
+  if (state.bonusActive) {
+    setTimeout(exitBonusRound, 4000);
+  }
+
+  if (isLastBall && !state.bonusActive) {
     state.dropping = false;
     updateDropBtn();
   }
+}
+
+function enterBonusRound(slotIdx, names) {
+  state.bonusActive = true;
+  state.bonusNames = names.slice();
+  state.bonusFromSlotIdx = slotIdx;
+
+  // Announce the winning team first
+  var label = 'TEAM SLOT #' + slotIdx + ' — ' + names.length + ' PLAYERS';
+  showTeamPick(label, names);
+  sndWinnerQuick();
+
+  // After a beat, rebuild the board with only the team members and drop again.
+  setTimeout(function() {
+    hideWinnerOverlay();
+    buildBoard();
+    balls = [];
+    settledCount = 0;
+    totalDrops = 1;
+    currentDropIdx = 0;
+    dropQueue = [rand(0.15, 0.85)];
+    state.dropping = true;
+    updateDropBtn();
+    dropNext();
+  }, 2600);
+}
+
+function exitBonusRound() {
+  state.bonusActive = false;
+  state.bonusNames = [];
+  state.bonusFromSlotIdx = -1;
+  // Leave the winner overlay visible if it is — user/auto-dismiss closes it.
+  buildBoard();
+  state.dropping = false;
+  updateDropBtn();
+}
+
+function showTeamPick(label, names) {
+  var overlay = document.getElementById('winner-overlay');
+  var labelEl = document.getElementById('winner-label-text');
+  var nameEl = document.getElementById('winner-name-text');
+  var prizeEl = document.getElementById('winner-prize-text');
+  labelEl.textContent = label;
+  nameEl.textContent = names.join(' • ');
+  nameEl.style.fontSize = names.length > 6 ? '20px' : '28px';
+  prizeEl.textContent = 'picking a winner…';
+  prizeEl.style.display = 'block';
+  overlay.classList.add('active');
+}
+
+function hideWinnerOverlay() {
+  var overlay = document.getElementById('winner-overlay');
+  overlay.classList.remove('active');
+  var nameEl = document.getElementById('winner-name-text');
+  if (nameEl) nameEl.style.fontSize = '';
 }
 
 function showQuickWinner(slotIdx) {
@@ -1727,42 +1951,54 @@ function render() {
     var bFlash = bmp.flashTimer > 0;
     var bDrawR = bmp.r + (bFlash ? 5 : 0);
 
-    // Outer dark body
-    var bgr = ctx.createRadialGradient(bmp.x, bmp.y, bDrawR * 0.3, bmp.x, bmp.y, bDrawR);
+    // Classic pinball red/orange body with bright core
+    var bgr = ctx.createRadialGradient(bmp.x - bDrawR * 0.3, bmp.y - bDrawR * 0.3, bDrawR * 0.1, bmp.x, bmp.y, bDrawR);
     if (bFlash) {
       bgr.addColorStop(0, '#ffffff');
-      bgr.addColorStop(0.25, '#ffccff');
-      bgr.addColorStop(0.5, '#dd66ff');
-      bgr.addColorStop(0.8, '#aa22dd');
-      bgr.addColorStop(1, '#7711aa');
+      bgr.addColorStop(0.25, '#ffeecc');
+      bgr.addColorStop(0.55, '#ff8844');
+      bgr.addColorStop(0.85, '#cc2211');
+      bgr.addColorStop(1, '#661100');
     } else {
-      bgr.addColorStop(0, '#b090f8');
-      bgr.addColorStop(0.3, '#8868e8');
-      bgr.addColorStop(0.6, '#6644cc');
-      bgr.addColorStop(1, '#3a2288');
+      bgr.addColorStop(0, '#ffe0b8');
+      bgr.addColorStop(0.25, '#ff7744');
+      bgr.addColorStop(0.65, '#dd2200');
+      bgr.addColorStop(1, '#661100');
     }
     ctx.beginPath();
     ctx.arc(bmp.x, bmp.y, bDrawR, 0, Math.PI * 2);
     ctx.fillStyle = bgr;
     ctx.fill();
 
-    // Bright center ring (pinball style)
+    // Bright center ring
     ctx.beginPath();
     ctx.arc(bmp.x, bmp.y, bDrawR * 0.55, 0, Math.PI * 2);
-    ctx.strokeStyle = bFlash ? 'rgba(255,255,255,0.9)' : 'rgba(200,180,255,0.5)';
+    ctx.strokeStyle = bFlash ? 'rgba(255,255,255,0.95)' : 'rgba(255,240,220,0.75)';
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Bright center dot
+    // White center dot
     ctx.beginPath();
-    ctx.arc(bmp.x, bmp.y, bDrawR * 0.2, 0, Math.PI * 2);
-    ctx.fillStyle = bFlash ? '#fff' : 'rgba(200,180,255,0.6)';
+    ctx.arc(bmp.x, bmp.y, bDrawR * 0.22, 0, Math.PI * 2);
+    ctx.fillStyle = bFlash ? '#fff' : 'rgba(255,245,230,0.9)';
     ctx.fill();
 
-    // Outer thin bright ring border
+    // Classic "+" crosshair in the center
+    ctx.strokeStyle = bFlash ? 'rgba(200,40,0,0.9)' : 'rgba(160,30,0,0.75)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(bmp.x - bDrawR * 0.18, bmp.y);
+    ctx.lineTo(bmp.x + bDrawR * 0.18, bmp.y);
+    ctx.moveTo(bmp.x, bmp.y - bDrawR * 0.18);
+    ctx.lineTo(bmp.x, bmp.y + bDrawR * 0.18);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+
+    // Outer ring border
     ctx.beginPath();
     ctx.arc(bmp.x, bmp.y, bDrawR, 0, Math.PI * 2);
-    ctx.strokeStyle = bFlash ? 'rgba(255,200,255,0.8)' : 'rgba(124,92,252,0.5)';
+    ctx.strokeStyle = bFlash ? 'rgba(255,200,120,0.9)' : 'rgba(255,120,60,0.55)';
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -1770,12 +2006,12 @@ function render() {
       // Double flash ring effect
       ctx.beginPath();
       ctx.arc(bmp.x, bmp.y, bDrawR + 8, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(200,100,255,' + (bmp.flashTimer / 10 * 0.6) + ')';
+      ctx.strokeStyle = 'rgba(255,140,60,' + (bmp.flashTimer / 10 * 0.6) + ')';
       ctx.lineWidth = 2.5;
       ctx.stroke();
       ctx.beginPath();
       ctx.arc(bmp.x, bmp.y, bDrawR + 14, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(180,80,255,' + (bmp.flashTimer / 10 * 0.25) + ')';
+      ctx.strokeStyle = 'rgba(255,100,40,' + (bmp.flashTimer / 10 * 0.25) + ')';
       ctx.lineWidth = 1.5;
       ctx.stroke();
     }
@@ -1871,11 +2107,14 @@ function render() {
       ctx.stroke();
     }
 
-    // Main bar body
+    // Main bar body — color by paddleColor if set (orange / purple)
+    var isPurple = fl.paddleColor === 'purple';
+    var barBody = flFlash ? (isPurple ? '#d9a6ff' : '#ffee88') : (isPurple ? '#7733cc' : '#cc8833');
+    var barCore = flFlash ? '#fff' : (isPurple ? '#b066ff' : '#ffaa44');
     ctx.beginPath();
     ctx.moveTo(flx1, fly1);
     ctx.lineTo(flx2, fly2);
-    ctx.strokeStyle = flFlash ? '#ffee88' : '#cc8833';
+    ctx.strokeStyle = barBody;
     ctx.lineWidth = 8;
     ctx.lineCap = 'round';
     ctx.stroke();
@@ -1884,7 +2123,7 @@ function render() {
     ctx.beginPath();
     ctx.moveTo(flx1, fly1);
     ctx.lineTo(flx2, fly2);
-    ctx.strokeStyle = flFlash ? '#fff' : '#ffaa44';
+    ctx.strokeStyle = barCore;
     ctx.lineWidth = 3;
     ctx.stroke();
 
@@ -2000,19 +2239,21 @@ function render() {
     }
 
     if (slot.name) {
-      // Text shadow for depth
-      var fontSize = Math.min(16, sw * 0.6 / Math.max(slot.name.length * 0.5, 1));
-      fontSize = Math.max(9, fontSize);
+      var names = slot.names && slot.names.length ? slot.names : [slot.name];
+      var lineH = Math.min(15, Math.max(9, (sh - 10) / names.length));
+      var fontSize = Math.max(8, Math.min(13, lineH - 2));
       ctx.font = '800 ' + fontSize + 'px "Segoe UI", system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      var textY = sy + sh / 2 + 6;
-      // Shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillText(slot.name, sx + sw / 2 + 1, textY + 1, sw - 8);
-      // Main text
-      ctx.fillStyle = slot.glow > 20 ? '#fff' : '#e8e8f0';
-      ctx.fillText(slot.name, sx + sw / 2, textY, sw - 8);
+      var blockH = lineH * names.length;
+      var startY = sy + (sh - blockH) / 2 + lineH / 2;
+      for (var ni = 0; ni < names.length; ni++) {
+        var ty = startY + ni * lineH;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillText(names[ni], sx + sw / 2 + 1, ty + 1, sw - 6);
+        ctx.fillStyle = slot.glow > 20 ? '#fff' : '#e8e8f0';
+        ctx.fillText(names[ni], sx + sw / 2, ty, sw - 6);
+      }
     }
   }
 
@@ -2117,12 +2358,40 @@ function renderClaw() {
   chuteGrad.addColorStop(0.3, '#404058');
   chuteGrad.addColorStop(0.7, '#404058');
   chuteGrad.addColorStop(1, '#2a2a3a');
-  ctx.fillStyle = chuteGrad;
-  ctx.fillRect(chuteX - chuteW / 2, chuteTop, chuteW, chuteBot - chuteTop);
+  // Chute body — vertical tube with a 30° bend at the top, all in view.
+  var bendStartY = chuteTop + 60;
+  var bendR = 30;
+  var bendMax = Math.PI / 6;
+  var bendCx = chuteX - bendR;
+  var bendCy = bendStartY;
 
-  // Pink accent line on chute
-  ctx.fillStyle = 'rgba(212,116,138,0.4)';
-  ctx.fillRect(chuteX - 1, chuteTop, 2, chuteBot - chuteTop);
+  ctx.save();
+  ctx.lineCap = 'butt';
+  // Dark outer shell
+  ctx.strokeStyle = '#2a2a3a';
+  ctx.lineWidth = chuteW + 2;
+  ctx.beginPath();
+  ctx.moveTo(chuteX, chuteBot);
+  ctx.lineTo(chuteX, bendStartY);
+  ctx.arc(bendCx, bendCy, bendR, 0, -bendMax, true);
+  ctx.stroke();
+  // Inner tube
+  ctx.strokeStyle = '#404058';
+  ctx.lineWidth = chuteW;
+  ctx.beginPath();
+  ctx.moveTo(chuteX, chuteBot);
+  ctx.lineTo(chuteX, bendStartY);
+  ctx.arc(bendCx, bendCy, bendR, 0, -bendMax, true);
+  ctx.stroke();
+  // Pink accent centerline follows the same path
+  ctx.strokeStyle = 'rgba(212,116,138,0.45)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(chuteX, chuteBot);
+  ctx.lineTo(chuteX, bendStartY);
+  ctx.arc(bendCx, bendCy, bendR, 0, -bendMax, true);
+  ctx.stroke();
+  ctx.restore();
 
   // Spring coils (draw compressed or relaxed based on phase)
   var springY = chuteBot - 80;
@@ -2461,6 +2730,7 @@ function doDrop(clickXFrac) {
   balls = [];
   currentDropIdx = 0;
   state.prizeDropIdx = 0;
+  state.roundGutterCount = 0;
 
   dropQueue = [];
   for (var i = 0; i < state.numDrops; i++) {
@@ -2639,7 +2909,7 @@ function initAdminPanel() {
     updateDropBtn();
     renderResults();
   });
-  document.getElementById('btn-clear').addEventListener('click', function() {
+  function clearAllPlayers() {
     state.players = [];
     state.results = [];
     balls = [];
@@ -2650,7 +2920,9 @@ function initAdminPanel() {
     renderResults();
     save('pinko_players', JSON.stringify(state.players));
     buildBoard();
-  });
+  }
+  document.getElementById('btn-clear').addEventListener('click', clearAllPlayers);
+  document.getElementById('btn-clear-top').addEventListener('click', clearAllPlayers);
 
   // Admin toggle
   document.getElementById('admin-toggle').addEventListener('click', function() {
