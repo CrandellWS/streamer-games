@@ -30,6 +30,20 @@
   --chrome-border: #8888aa;
   --machine-frame: linear-gradient(135deg, #c8c8d8 0%, #e8e8f0 30%, #a0a0b8 50%, #d0d0e0 70%, #f0f0f8 100%);
   --reel-bg: #0a0a16;
+
+  /* LED strip + pay line.
+     These defaults reproduce the exact literal values these elements used before
+     they were tokenised, so EVERY existing theme renders identically; only
+     [data-theme="alchemist"] overrides them (to electric azure). */
+  --led: var(--gold);
+  --led-glow: var(--gold-glow);
+  --led-flash: #ffd700;          /* ledFlash1 was a hard-coded #ffd700, not --gold */
+  --led-2: #ff6600;
+  --led-2-glow: rgba(255,102,0,0.8);
+  --led-3: var(--accent);
+  --led-3-glow: var(--accent-glow);
+  --payline: var(--gold);
+  --payline-rgb: 255,215,0;      /* glows vary only in alpha, so keep an rgb triplet */
 }
 
 [data-theme="light"] {
@@ -62,6 +76,36 @@
   --chrome-border: #00ffcc;
   --machine-frame: linear-gradient(135deg, #1a2a2a 0%, #00ffcc22 30%, #0a1a1a 50%, #003322 70%, #00ffcc11 100%);
   --reel-bg: #050510;
+}
+
+[data-theme="alchemist"] {
+  --bg: #0b0510;
+  --bg2: #12060f;
+  --surface: #1a0a16;
+  --surface2: #24101d;
+  --border: #4a1226;
+  --text: #ffe9ec;
+  --text-dim: #b98a94;
+  --accent: #ef2549;
+  --accent-glow: rgba(239,37,73,0.55);
+  --gold: #f5c542;
+  --gold-glow: rgba(245,197,66,0.5);
+  --chrome: linear-gradient(135deg, #24101d 0%, #ef254933 30%, #0b0510 50%, #4b82ff22 70%, #f5c54222 100%);
+  --chrome-border: #ef2549;
+  --machine-frame: linear-gradient(135deg, #24101d 0%, #ef254933 30%, #0b0510 50%, #4b82ff22 70%, #f5c54222 100%);
+  --reel-bg: #0b0510;
+
+  /* Cabinet frame stays dark crimson; the electric azure lives in the lights.
+     LED chase + pay line only — no other theme sees these. */
+  --led: #4b82ff;
+  --led-glow: rgba(75,130,255,0.55);
+  --led-flash: #4b82ff;
+  --led-2: #82b4ff;
+  --led-2-glow: rgba(130,180,255,0.8);
+  --led-3: #2b5fd9;
+  --led-3-glow: rgba(43,95,217,0.7);
+  --payline: #4b82ff;
+  --payline-rgb: 75,130,255;
 }
 
 [data-theme="vegas"] {
@@ -209,7 +253,9 @@ html, body {
   font-family: var(--font);
   background: var(--bg);
   color: var(--text);
-  overflow: hidden;
+  /* clip, not hidden: hidden still lets focus()/scrollIntoView scroll the page,
+     which dragged the cabinet off-centre when the slid-out panel's input took focus */
+  overflow: clip;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -221,7 +267,11 @@ body.transparent-bg { background: transparent !important; }
    ═══════════════════════════════════════════════ */
 #app {
   display: flex;
-  width: 100%; height: 100%;
+  /* Sized from the viewport, not the parent: under the app zoom (see
+     applyViewportScale) vw/vh are unscaled, so dividing by --vscale gives the
+     exact CSS box that fills the screen. Percentages drift at small scales. */
+  width: calc(100vw / var(--vscale, 1));
+  height: calc(100vh / var(--vscale, 1));
   position: relative;
 }
 
@@ -933,17 +983,19 @@ input[type="range"]::-moz-range-thumb {
   background: #330033;
   transition: background 0.15s, box-shadow 0.15s;
 }
-.led.on-1 { background: var(--gold); box-shadow: 0 0 8px var(--gold-glow), 0 0 16px var(--gold-glow); }
-.led.on-2 { background: #ff6600; box-shadow: 0 0 8px rgba(255,102,0,0.8); }
-.led.on-3 { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+.led.on-1 { background: var(--led); box-shadow: 0 0 8px var(--led-glow), 0 0 16px var(--led-glow); }
+.led.on-2 { background: var(--led-2); box-shadow: 0 0 8px var(--led-2-glow); }
+.led.on-3 { background: var(--led-3); box-shadow: 0 0 8px var(--led-3-glow); }
 
 /* LED marquee chase animation */
 @keyframes ledChase1 {
-  0%, 100% { background: var(--gold); box-shadow: 0 0 8px var(--gold-glow), 0 0 16px var(--gold-glow); }
-  33% { background: #ff6600; box-shadow: 0 0 8px rgba(255,102,0,0.8); }
-  66% { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+  0%, 100% { background: var(--led); box-shadow: 0 0 8px var(--led-glow), 0 0 16px var(--led-glow); }
+  33% { background: var(--led-2); box-shadow: 0 0 8px var(--led-2-glow); }
+  66% { background: var(--led-3); box-shadow: 0 0 8px var(--led-3-glow); }
 }
 .led.chase { animation: ledChase1 1.2s linear infinite; }
+/* Fast chase — pre-draw intro only. Separate class so the normal chase timing above is untouched. */
+.led.chase-fast { animation: ledChase1 0.36s linear infinite; }
 
 #win-display {
   text-align: center;
@@ -1106,7 +1158,7 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 7px;
   position: absolute;
   top: 20px;
-  height: calc(100% - 50px);
+  height: calc(100% - 40px);   /* runs all the way down to the base (base is 20px tall) */
   transition: height 0.1s ease;
   box-shadow: 2px 0 8px rgba(0,0,0,0.5);
   z-index: 2;
@@ -1139,7 +1191,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 #lever-base {
-  width: 28px;
+  width: 44px;   /* wider than the 36px ball so it reads as a footing */
   height: 20px;
   background: linear-gradient(90deg, #555, #aaa, #777);
   border-radius: 6px 6px 0 0;
@@ -1413,15 +1465,15 @@ input[type="range"]::-moz-range-thumb {
    LED FLASH ANIMATIONS
    ═══════════════════════════════════════════════ */
 @keyframes ledFlash1 {
-  0%,100% { background:#ffd700; box-shadow:0 0 8px var(--gold-glow),0 0 16px var(--gold-glow); }
+  0%,100% { background:var(--led-flash); box-shadow:0 0 8px var(--led-glow),0 0 16px var(--led-glow); }
   50%      { background:#330033; box-shadow:none; }
 }
 @keyframes ledFlash2 {
-  0%,100% { background:#ff6600; box-shadow:0 0 8px rgba(255,102,0,0.8); }
+  0%,100% { background:var(--led-2); box-shadow:0 0 8px var(--led-2-glow); }
   50%      { background:#220000; box-shadow:none; }
 }
 @keyframes ledFlash3 {
-  0%,100% { background:var(--accent); box-shadow:0 0 8px var(--accent-glow); }
+  0%,100% { background:var(--led-3); box-shadow:0 0 8px var(--led-3-glow); }
   50%      { background:#110022; box-shadow:none; }
 }
 .led.flashing-1 { animation: ledFlash1 0.25s infinite; }
@@ -1446,6 +1498,84 @@ input[type="range"]::-moz-range-thumb {
 #empty-state.visible { opacity: 1; }
 #empty-state .icon { font-size: 32px; }
 #empty-state p { font-size: 13px; color: var(--text-dim); }
+
+/* ═══════════════════════════════
+   GIVEAWAY DRAW — PRE-DRAW INTRO CARD
+   Lives inside #reels-container, so every existing OBS crop of the cabinet
+   still frames it. Nothing is drawn outside the machine's own bounds.
+   ═══════════════════════════════ */
+#draw-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px;
+  text-align: center;
+  pointer-events: none;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at center, rgba(5,5,16,0.72) 0%, rgba(2,2,8,0.93) 100%);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0s linear 0.25s;
+}
+#draw-intro.visible {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.25s ease, visibility 0s linear 0s;
+}
+#di-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.8;
+}
+#di-title {
+  font-family: 'Georgia', serif;
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.12;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  background: linear-gradient(180deg, #fff8c0, var(--gold), #c8980a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 10px rgba(255,215,0,0.55));
+}
+#di-subtitle { font-size: 13px; color: var(--text-dim); max-width: 100%; overflow-wrap: break-word; }
+#di-meta { font-size: 13px; letter-spacing: 2px; color: var(--text-dim); }
+#di-counter {
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+  min-height: 15px;
+}
+#di-count {
+  margin-top: 8px;
+  min-height: 62px;
+  font-family: 'Georgia', serif;
+  font-size: 56px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--gold);
+  text-shadow: 0 0 18px var(--gold-glow), 0 0 36px rgba(255,215,0,0.35);
+}
+#di-count.pull { font-size: 38px; letter-spacing: 6px; }
+@keyframes diCountPop {
+  0%   { transform: scale(1.8); opacity: 0; }
+  35%  { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+#di-count.pop { animation: diCountPop 0.45s ease-out; }
 
 /* ═══════════════════════════════════════════════
    RESPONSIVE
@@ -1616,8 +1746,8 @@ h1, .game-title, .winner-text, .title {
   top: 50%;
   transform: translateY(-50%);
   height: 3px;
-  background: linear-gradient(90deg, transparent 0%, var(--gold) 10%, var(--gold) 90%, transparent 100%);
-  box-shadow: 0 0 8px rgba(255,215,0,0.6), 0 0 20px rgba(255,215,0,0.3);
+  background: linear-gradient(90deg, transparent 0%, var(--payline) 10%, var(--payline) 90%, transparent 100%);
+  box-shadow: 0 0 8px rgba(var(--payline-rgb),0.6), 0 0 20px rgba(var(--payline-rgb),0.3);
   z-index: 10;
   pointer-events: none;
   animation: paylineIdlePulse 3s ease-in-out infinite;
@@ -1637,25 +1767,25 @@ h1, .game-title, .winner-text, .title {
   left: 4px;
   border-top: 9px solid transparent;
   border-bottom: 9px solid transparent;
-  border-right: 13px solid var(--gold);
-  filter: drop-shadow(0 0 4px rgba(255,215,0,0.8));
+  border-right: 13px solid var(--payline);
+  filter: drop-shadow(0 0 4px rgba(var(--payline-rgb),0.8));
 }
 #payline-arrow-right {
   right: 4px;
   border-top: 9px solid transparent;
   border-bottom: 9px solid transparent;
-  border-left: 13px solid var(--gold);
-  filter: drop-shadow(0 0 4px rgba(255,215,0,0.8));
+  border-left: 13px solid var(--payline);
+  filter: drop-shadow(0 0 4px rgba(var(--payline-rgb),0.8));
 }
 
 @keyframes paylineIdlePulse {
-  0%, 100% { opacity: 0.7; box-shadow: 0 0 6px rgba(255,215,0,0.4), 0 0 14px rgba(255,215,0,0.2); }
-  50% { opacity: 1; box-shadow: 0 0 10px rgba(255,215,0,0.7), 0 0 24px rgba(255,215,0,0.4); }
+  0%, 100% { opacity: 0.7; box-shadow: 0 0 6px rgba(var(--payline-rgb),0.4), 0 0 14px rgba(var(--payline-rgb),0.2); }
+  50% { opacity: 1; box-shadow: 0 0 10px rgba(var(--payline-rgb),0.7), 0 0 24px rgba(var(--payline-rgb),0.4); }
 }
 
 @keyframes paylineWinFlash {
-  0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(255,215,0,0.9), 0 0 30px rgba(255,215,0,0.6); }
-  50% { opacity: 1; box-shadow: 0 0 24px rgba(255,215,0,1), 0 0 60px rgba(255,215,0,0.8); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(var(--payline-rgb),0.9), 0 0 30px rgba(var(--payline-rgb),0.6); }
+  50% { opacity: 1; box-shadow: 0 0 24px rgba(var(--payline-rgb),1), 0 0 60px rgba(var(--payline-rgb),0.8); }
 }
 
 #reels-container.payline-win-flash #payline-indicator {
@@ -1746,6 +1876,15 @@ h1, .game-title, .panel-title, .app-title {
               <div class="icon">🎰</div>
               <p>Add names to spin!</p>
             </div>
+            <!-- Pre-draw intro card (Giveaway Draw mode) — text is set with textContent only -->
+            <div id="draw-intro" aria-hidden="true">
+              <div id="di-eyebrow">Giveaway Draw</div>
+              <div id="di-title"></div>
+              <div id="di-subtitle"></div>
+              <div id="di-meta"></div>
+              <div id="di-counter"></div>
+              <div id="di-count"></div>
+            </div>
           </div>
 
           <!-- Lever -->
@@ -1822,6 +1961,16 @@ h1, .game-title, .panel-title, .app-title {
         <div class="btn-group">
           <button class="mode-btn active" data-mode="spintillx">Spin Till X Winners</button>
           <button class="mode-btn" data-mode="creditstack">Credit Stack</button>
+          <button class="mode-btn" data-mode="draw">Giveaway Draw</button>
+        </div>
+      </div>
+
+      <!-- GIVEAWAY DRAW: spins to win -->
+      <div class="panel-section" id="section-draw" style="display:none">
+        <h3>Draw</h3>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label style="font-size:13px;color:var(--text-dim);white-space:nowrap">Spins to win:</label>
+          <input type="number" id="draw-spins" value="5" min="1" max="10" style="flex:1">
         </div>
       </div>
 
@@ -1944,6 +2093,7 @@ h1, .game-title, .panel-title, .app-title {
           <option value="emerald">Emerald</option>
           <option value="cyber">Cyber</option>
           <option value="royal">Royal Purple</option>
+          <option value="alchemist">Alchemist</option>
         </select>
       </div>
 
@@ -1980,8 +2130,26 @@ const STATE = {
   coins: [],
   spinTimeouts: [],
   // Game mode
-  mode: 'spintillx',       // 'spintillx' | 'creditstack'
+  mode: 'spintillx',       // 'spintillx' | 'creditstack' | 'draw'
   winnersNeeded: 1,
+  // Giveaway Draw mode
+  drawSpins: 5,             // spins in a draw sequence (1..10)
+  drawRunning: false,       // a draw sequence is in flight
+  drawPlan: null,           // [{results, nearMiss, win}] from planDrawSequence
+  drawIndex: 0,             // index of the spin being played
+  drawWinner: null,         // forced winner (URL / postMessage), null = pick one
+  drawTimer: null,
+  weights: null,            // optional { name: positiveNumber } — draw odds only
+  // Pre-draw intro (draw mode)
+  introEnabled: true,       // ?intro=0 / {intro:false} turns it off
+  introMs: null,            // null = default length (turbo-aware); else total ms
+  introSpeed: 1,            // ?introSpeed= multiplier on the derived roll speed (0.5..2)
+  introRunning: false,
+  introTimers: [],
+  introScrollId: null,
+  introScrollSaved: null,
+  drawTitle: '',            // ?title= / {title:''} — UNTRUSTED, textContent only
+  drawSubtitle: '',         // ?subtitle= / {subtitle:''} — UNTRUSTED, textContent only
   credits: 0,
   removeWinners: true,
   winFloor: 50,             // 0-100 slider value
@@ -1995,7 +2163,9 @@ const STATE = {
   visibleRows: 3,           // 3 | 5 | 7
 };
 
-const EMOTES = ['🔥','⭐','💎','🎯','👑','🌟','💜','🍀','🎪','⚡',
+// `let`, not `const`: ?emotes=<a,b,c> (applyUrlParams) may replace this whole list
+// before the reels first populate their name badges. Untouched when the param is absent.
+let EMOTES = ['🔥','⭐','💎','🎯','👑','🌟','💜','🍀','🎪','⚡',
                 '🦊','🐉','🎸','🌈','🍕','🎭','🦁','🌙','💫','🎲',
                 '🦄','🍒','🎵','🔮','🎬','🏆','🦅','💰','🎃','🌸'];
 const nameEmoteMap = new Map();
@@ -2240,9 +2410,12 @@ function playSound(type) {
    ═══════════════════════════════════════════════ */
 function buildStrip(names) {
   const strip = [];
-  const repeats = Math.max(25, Math.ceil(500 / Math.max(names.length, 1)));
+  // With entrant weights, a name appears ONCE per pass: weight changes the draw
+  // odds, never how often a name shows up on the reel.
+  const base = STATE.weights ? [...new Set(names)] : names;
+  const repeats = Math.max(25, Math.ceil(500 / Math.max(base.length, 1)));
   for (let r = 0; r < repeats; r++) {
-    const shuffled = names.slice().sort(() => Math.random() - 0.5);
+    const shuffled = base.slice().sort(() => Math.random() - 0.5);
     strip.push(...shuffled);
   }
   return strip;
@@ -2395,10 +2568,511 @@ function determineOutcome() {
 }
 
 /* ═══════════════════════════════════════════════
+   GIVEAWAY DRAW — SEQUENCE PLANNER (pure)
+
+   planDrawSequence(entrants, weights, winner, spins, rng)
+     → [{ results:[a,b,c], nearMiss:boolean, win:boolean }] of length `spins`.
+
+   Pure: no DOM, no STATE, all randomness through `rng` (0..1, defaults to
+   Math.random) so a seeded rng makes it deterministic and unit-testable.
+
+   Tease rules:
+     · three-of-a-kind only ever on the final spin
+     · ~1/3 of losing spins are near misses (2 matching + 1 different)
+     · ~1/3 of those near misses feature the winner, ~2/3 feature decoys
+     · decoys come from the top half by weight (all entrants if fewer than 4)
+     · the winner never near-misses on the spin right before the win
+     · spins===1: no tease · spins 2-3: decoy near misses only
+   ═══════════════════════════════════════════════ */
+function planDrawSequence(entrants, weights, winner, spins, rng) {
+  const rand = typeof rng === 'function' ? rng : Math.random;
+  const total = Math.max(1, Math.min(10, Math.floor(Number(spins)) || 1));
+  const pool = (Array.isArray(entrants) ? entrants : [])
+    .filter(n => typeof n === 'string' && n.length > 0)
+    .filter((n, i, a) => a.indexOf(n) === i);
+  const win = (winner && pool.indexOf(winner) !== -1) ? winner
+            : (pool.length ? pool[0] : (winner || '?'));
+
+  const wt = n => {
+    const v = weights && Object.prototype.hasOwnProperty.call(weights, n) ? weights[n] : 1;
+    return (typeof v === 'number' && isFinite(v) && v > 0) ? v : 1;
+  };
+  const pick = arr => {
+    if (!arr || arr.length === 0) return null;
+    let t = 0;
+    for (let i = 0; i < arr.length; i++) t += wt(arr[i]);
+    let r = rand() * t;
+    for (let i = 0; i < arr.length; i++) { r -= wt(arr[i]); if (r <= 0) return arr[i]; }
+    return arr[arr.length - 1];
+  };
+  const shuffle = arr => {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  };
+
+  const others = pool.filter(n => n !== win);
+  let decoys;
+  if (pool.length < 4) {
+    decoys = others.slice();
+  } else {
+    const sorted = others.slice().sort((a, b) => wt(b) - wt(a));
+    decoys = sorted.slice(0, Math.max(1, Math.ceil(sorted.length / 2)));
+  }
+
+  function plainLosing() {
+    if (pool.length >= 3) {
+      let avail = pool.slice();
+      const out = [];
+      // Keep the winner visible on the reels during the tease
+      if (rand() < 0.4) { out.push(win); avail = avail.filter(n => n !== win); }
+      while (out.length < 3 && avail.length) {
+        const n = pick(avail);
+        out.push(n);
+        avail = avail.filter(x => x !== n);
+      }
+      return shuffle(out);
+    }
+    if (pool.length === 2) {
+      return shuffle([pool[0], pool[1], rand() < 0.5 ? pool[0] : pool[1]]);
+    }
+    const only = pool.length ? pool[0] : win;
+    return [only, only, only];   // single entrant: nothing else is possible
+  }
+
+  const losing = total - 1;
+  const canNear = pool.length >= 2;
+  const allowWinnerNear = total >= 4;
+  const nearCount = canNear ? Math.min(losing, Math.floor(losing / 3 + rand())) : 0;
+  const nearIdx = shuffle(Array.from({ length: losing }, (_, i) => i)).slice(0, nearCount);
+  const nearSet = new Set(nearIdx);
+  const winnerNear = new Set();
+  nearIdx.forEach(i => {
+    // never the spin immediately before the win, never on short draws
+    if (allowWinnerNear && i !== losing - 1 && rand() < 1 / 3) winnerNear.add(i);
+  });
+
+  const plan = [];
+  for (let i = 0; i < losing; i++) {
+    let near = nearSet.has(i);
+    let results = null;
+    if (near) {
+      let match, odd;
+      if (winnerNear.has(i)) {
+        match = win;
+        odd = pick(others);
+      } else {
+        match = pick(decoys.length ? decoys : others);
+        const rest = pool.filter(n => n !== match);
+        odd = (rest.indexOf(win) !== -1 && rand() < 0.5) ? win : pick(rest);
+      }
+      if (!match || !odd || match === odd) {
+        near = false;
+      } else {
+        results = [match, match, match];
+        results[Math.floor(rand() * 3)] = odd;
+      }
+    }
+    if (!near) results = plainLosing();
+    plan.push({ results: results, nearMiss: near, win: false });
+  }
+  plan.push({ results: [win, win, win], nearMiss: false, win: true });
+  return plan;
+}
+
+/* ═══════════════════════════════════════════════
+   GIVEAWAY DRAW — SEQUENCE DRIVER
+   ═══════════════════════════════════════════════ */
+function setDrawSpins(n) {
+  const v = Math.max(1, Math.min(10, Math.floor(Number(n)) || 1));
+  STATE.drawSpins = v;
+  const inp = document.getElementById('draw-spins');
+  if (inp) inp.value = v;
+  try { localStorage.setItem('slots_drawSpins', String(v)); } catch(e) {}
+  return v;
+}
+
+/* ═══════════════════════════════
+   PRE-DRAW INTRO — build-up before the reels start
+   Card + slow name scroll + 3 · 2 · 1 · PULL!, then the lever pulls itself and
+   the planned draw sequence runs exactly as it did before.
+   ═══════════════════════════════ */
+const INTRO_BASE_MS  = 4500;   // default length; all beats below are against this
+const INTRO_TURBO_MS = 2500;
+const INTRO_BEATS = { hold: 1400, d1: 1400, d2: 2200, d3: 3000, pull: 3800, lever: 4100, end: 4500 };
+
+function introTotalMs() {
+  if (STATE.introMs !== null) return STATE.introMs;
+  return STATE.turbo ? INTRO_TURBO_MS : INTRO_BASE_MS;
+}
+
+function setIntroConfig(v) {
+  // Accepts true/false or a length in ms (0 / negative / 'false' = off)
+  if (v === false || v === 'false' || v === '0') { STATE.introEnabled = false; return; }
+  if (v === true || v === 'true') { STATE.introEnabled = true; return; }
+  const n = typeof v === 'number' ? v : parseInt(v, 10);
+  if (isNaN(n)) return;
+  if (n <= 0) { STATE.introEnabled = false; return; }
+  STATE.introEnabled = true;
+  STATE.introMs = Math.min(60000, Math.max(500, Math.round(n)));
+}
+
+/*  computeIntroRoll — PURE. No DOM, no STATE, no side effects, so it can be
+    unit-tested straight out of the file.
+
+    The name roll used to run at a flat 0.25 px/ms, which meant that with a big
+    entrant list most names never reached a pay line. Instead, derive the speed
+    from the time budget and the size of the list:
+
+      - the three reels start a third of the list apart, so each reel only has
+        to show ceil(N/3) rows for the three of them to cover everyone
+      - speed = rowsNeeded * itemHeight / rollMs   (itemHeight is read at
+        runtime from getItemHeight(); it changes with STATE.visibleRows)
+      - the caller's introSpeed multiplier is applied BEFORE the readability
+        clamp, and coverage is recomputed from the speed actually used
+
+    cfg: { entrants, itemHeight, budgetMs, explicit, speedMult }
+    ->   { speed, coverage, rollMs, extendMs, totalMs, rowsNeeded, clamped }   */
+function computeIntroRoll(cfg) {
+  const BASE_MS      = 4500;   // beat baseline (INTRO_BASE_MS)
+  const COUNTDOWN_MS = 2400;   // 3 · 2 · 1 portion at the baseline, scales with the budget
+  const MIN_SPEED    = 0.15;   // px/ms — slower than this reads as stalled
+  const MAX_SPEED    = 0.9;    // px/ms — faster than this is an unreadable blur
+  const HARD_CAP_MS  = 9000;   // an intro may never grow past this
+
+  const N      = Math.max(1, Math.floor(cfg.entrants) || 1);
+  const ih     = cfg.itemHeight > 0 ? cfg.itemHeight : 1;
+  const budget = Math.max(1, cfg.budgetMs);
+  const mult   = Math.min(2, Math.max(0.5, cfg.speedMult || 1));
+  const f      = budget / BASE_MS;
+
+  const rowsNeeded = Math.ceil(N / 3);
+  let rollMs = Math.max(1, budget - COUNTDOWN_MS * f);   // roll phase = budget minus the countdown
+  let speed = (rowsNeeded * ih / rollMs) * mult;         // multiplier first, clamp second
+  let clamped = null;
+  let extendMs = 0;
+
+  if (speed > MAX_SPEED) { speed = MAX_SPEED; clamped = 'max'; }
+  else if (speed < MIN_SPEED) { speed = MIN_SPEED; clamped = 'min'; }
+
+  // Auto-extension is deliberately limited to the DEFAULT budget. When the
+  // caller passed intro=<ms> explicitly, that number is a directive — a stream
+  // overlay timed against it must not have the intro silently grow underneath
+  // it — so an explicit budget is honoured exactly and coverage is allowed to
+  // fall below 1 instead.
+  const rollNeeded = rowsNeeded * ih / speed;
+  if (!cfg.explicit && rollNeeded > rollMs) {
+    extendMs = Math.max(0, Math.min(rollNeeded - rollMs, HARD_CAP_MS - budget));
+    rollMs += extendMs;
+  }
+
+  const rowsShown = speed * rollMs / ih;
+  const coverage = Math.max(0, Math.min(1, (rowsShown * 3) / N));
+
+  return {
+    speed: speed,
+    coverage: Math.round(coverage * 1000) / 1000,
+    rollMs: Math.round(rollMs),
+    extendMs: Math.round(extendMs),
+    totalMs: Math.round(budget + extendMs),
+    rowsNeeded: rowsNeeded,
+    clamped: clamped
+  };
+}
+
+function setIntroSpeed(v) {
+  // Multiplier on the derived roll speed. Per-launch only — never persisted.
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if (isNaN(n)) return;
+  STATE.introSpeed = Math.min(2, Math.max(0.5, n));
+}
+
+function clearIntroTimers() {
+  STATE.introTimers.forEach(t => clearTimeout(t));
+  STATE.introTimers = [];
+}
+
+function startIntroIdleScroll(plan, runMs) {
+  // Slow downward drift of the strips that are ALREADY on screen. It never
+  // rebuilds or repopulates them, so the deferred post-win rebuild
+  // (STATE.reelsDirty, consumed by spin()) is left completely alone.
+  const strips = [];
+  for (let r = 0; r < REEL_COUNT; r++) {
+    const strip = document.getElementById(`strip-${r}`);
+    if (!strip || !strip._items || strip._items.length === 0) continue;
+    const startY = parseFloat(strip.style.transform.replace(/[^-\d.]/g, '')) || 0;
+    strips.push({ strip: strip, startY: startY, transform: strip.style.transform, items: strip._items });
+  }
+  STATE.introScrollSaved = strips;
+  if (strips.length === 0) return 0;   // nothing rolled: caller reports coverage 0
+
+  const ih = getItemHeight();
+  const pc = getPaylineCenter();
+  const idxAt = y => Math.round((-y + pc - ih / 2) / ih);
+
+  // Stagger the three reels a third of the entrant list apart, so between them
+  // the whole field passes a pay line instead of the same names three times.
+  // Only style.transform moves — _items and _currentIndex are never touched, and
+  // stopIntroIdleScroll() puts the original transform string back verbatim.
+  strips.forEach((s, r) => {
+    if (r === 0) return;
+    const wanted = idxAt(s.startY) + r * plan.rowsNeeded;
+    const idx = Math.min(s.items.length - 2, wanted);
+    s.startY = -(idx * ih) + (pc - ih / 2);
+  });
+
+  const total = Math.max(1, runMs);
+  let speed = plan.speed;   // px per ms, downward
+  strips.forEach(s => {
+    const room = Math.max(0, idxAt(s.startY) - 45) * ih;   // never walk off the top of the strip
+    speed = Math.min(speed, room / total);
+  });
+
+  // Live entrant counter, driven off this same frame — no extra timers.
+  const counterEl = document.getElementById('di-counter');
+  const seen = new Set();
+  let shownCount = -1;
+  const t0 = performance.now();
+  function step(now) {
+    const dy = (now - t0) * speed;
+    strips.forEach(s => {
+      const y = s.startY + dy;
+      s.strip.style.transform = `translateY(${y}px)`;
+      const i = idxAt(y);
+      if (i >= 0 && i < s.items.length) seen.add(s.items[i]);
+    });
+    if (counterEl && seen.size !== shownCount) {
+      shownCount = seen.size;
+      counterEl.textContent = shownCount + (shownCount === 1 ? ' entrant' : ' entrants');
+    }
+    STATE.introScrollId = requestAnimationFrame(step);
+  }
+  STATE.introScrollId = requestAnimationFrame(step);
+  return speed;   // the speed ACTUALLY used, after the room clamp above
+}
+
+function stopIntroIdleScroll() {
+  if (STATE.introScrollId) { cancelAnimationFrame(STATE.introScrollId); STATE.introScrollId = null; }
+  if (STATE.introScrollSaved) {
+    // Put every strip back exactly where it was: _currentIndex still matches.
+    STATE.introScrollSaved.forEach(s => { s.strip.style.transform = s.transform; });
+    STATE.introScrollSaved = null;
+  }
+}
+
+function cleanupDrawIntro() {
+  clearIntroTimers();
+  stopIntroIdleScroll();
+  const card = document.getElementById('draw-intro');
+  if (card) card.classList.remove('visible');
+  const countEl = document.getElementById('di-count');
+  if (countEl) { countEl.textContent = ''; countEl.classList.remove('pop', 'pull'); }
+  const counterEl = document.getElementById('di-counter');
+  if (counterEl) counterEl.textContent = '';
+  stopLedChaseFast();
+  STATE.introRunning = false;
+}
+
+function cancelDrawIntro() {
+  if (!STATE.introRunning) return;
+  cleanupDrawIntro();
+}
+
+function runDrawIntro(info, onDone) {
+  const total = introTotalMs();
+  const f = total / INTRO_BASE_MS;
+  // Roll speed comes from the time budget and the size of the field, at the
+  // item height in force right now (3/5/7 visible rows change it).
+  const plan = computeIntroRoll({
+    entrants: info.entrants,
+    itemHeight: getItemHeight(),
+    budgetMs: total,
+    explicit: STATE.introMs !== null,   // an explicit intro=<ms> is never overridden
+    speedMult: STATE.introSpeed
+  });
+  const extendMs = plan.extendMs;       // 0 unless the default budget was too short
+
+  const card     = document.getElementById('draw-intro');
+  const titleEl  = document.getElementById('di-title');
+  const subEl    = document.getElementById('di-subtitle');
+  const metaEl   = document.getElementById('di-meta');
+  const countEl  = document.getElementById('di-count');
+  if (!card) { onDone(); return; }
+
+  const title = String(STATE.drawTitle || '').trim() || 'Giveaway';
+  const subtitle = String(STATE.drawSubtitle || '').trim();
+
+  // title/subtitle come from URL params and postMessage — UNTRUSTED.
+  // textContent only, never innerHTML.
+  titleEl.textContent = title;
+  subEl.textContent = subtitle;
+  subEl.style.display = subtitle ? '' : 'none';
+  metaEl.textContent = info.spins === 1
+    ? '1 spin · one and done'
+    : `${info.entrants} entrant${info.entrants === 1 ? '' : 's'} · ${info.spins} spins`;
+  countEl.textContent = '';
+  countEl.classList.remove('pop', 'pull');
+  const counterEl = document.getElementById('di-counter');
+  if (counterEl) counterEl.textContent = '';
+
+  STATE.introRunning = true;
+  clearIntroTimers();
+  card.classList.add('visible');
+  startLedChaseFast();
+  // The rAF loop can clamp the derived speed further, so the roll never walks off
+  // the top of the strip. Report coverage from the speed ACTUALLY used rather than
+  // the planned one — the platform must never get an optimistic number. (If the
+  // clamp were to bind later mid-roll, this start-of-roll figure stands.)
+  const rollMs = total + extendMs;
+  const usedSpeed = startIntroIdleScroll(plan, rollMs);
+  const ihNow = getItemHeight();
+  const usedCoverage = (usedSpeed > 0 && ihNow > 0 && info.entrants > 0)
+    ? Math.round(Math.min(1, (usedSpeed * rollMs / ihNow) * 3 / info.entrants) * 1000) / 1000
+    : 0;
+  emitMessage('slots:intro', {
+    title: title,
+    entrants: info.entrants,
+    spins: info.spins,
+    coverage: usedCoverage
+  });
+
+  // Every beat from the countdown onward slides by the extension, so the roll
+  // phase is what grows — the countdown itself keeps its scaled tempo.
+  const at = (ms, fn) => {
+    const delay = Math.round(ms * f) + (ms >= INTRO_BEATS.d1 ? extendMs : 0);
+    STATE.introTimers.push(setTimeout(fn, Math.max(0, delay)));
+  };
+  const beat = (text, isPull) => {
+    countEl.classList.remove('pop', 'pull');
+    void countEl.offsetWidth;              // restart the pop animation
+    countEl.textContent = text;
+    countEl.classList.add('pop');
+    if (isPull) countEl.classList.add('pull');
+    playSound('click');
+  };
+
+  at(INTRO_BEATS.d1,   () => beat('3', false));
+  at(INTRO_BEATS.d2,   () => beat('2', false));
+  at(INTRO_BEATS.d3,   () => beat('1', false));
+  at(INTRO_BEATS.pull, () => beat('PULL!', true));
+  at(INTRO_BEATS.lever, () => {
+    card.classList.remove('visible');      // fades out
+    animateLeverAuto(true);                // existing auto-pulling path, silent:
+                                           // spin() plays the lever/spin pair itself
+  });
+  at(INTRO_BEATS.end, () => {
+    cleanupDrawIntro();
+    onDone();
+  });
+}
+
+function startDrawSequence(opts) {
+  const o = opts || {};
+  if (STATE.drawRunning || STATE.spinning || STATE.introRunning) return;   // one pull runs the whole draw
+  if (STATE.names.length < 1) { setStatus('Add names first!', false); return; }
+
+  // Build-up first: the intro plays, then this same function runs the draw for real.
+  if (STATE.introEnabled && !o.skipIntro) {
+    const introNames = [...new Set(getActiveNames())];
+    runDrawIntro(
+      { entrants: introNames.length, spins: introNames.length < 2 ? 1 : STATE.drawSpins },
+      () => startDrawSequence(Object.assign({}, o, { skipIntro: true }))
+    );
+    return;
+  }
+
+  const entrants = getActiveNames();
+  const eligible = getEligibleWinners();
+  let winner = o.winner || STATE.drawWinner || null;
+  if (!winner || eligible.indexOf(winner) === -1) winner = null;
+  if (!winner) {
+    // weighted random over the eligible entrants
+    let t = 0;
+    const w = n => {
+      const v = STATE.weights && Object.prototype.hasOwnProperty.call(STATE.weights, n) ? STATE.weights[n] : 1;
+      return (typeof v === 'number' && isFinite(v) && v > 0) ? v : 1;
+    };
+    eligible.forEach(n => { t += w(n); });
+    let r = Math.random() * t;
+    winner = eligible[eligible.length - 1];
+    for (let i = 0; i < eligible.length; i++) { r -= w(eligible[i]); if (r <= 0) { winner = eligible[i]; break; } }
+  }
+
+  const uniq = [...new Set(entrants)];
+  const spins = uniq.length < 2 ? 1 : STATE.drawSpins;
+  STATE.drawPlan = planDrawSequence(uniq, STATE.weights, winner, spins, Math.random);
+  STATE.drawIndex = 0;
+  STATE.drawRunning = true;
+  STATE.gameOver = false;
+  runNextDrawSpin();
+}
+
+function runNextDrawSpin() {
+  if (!STATE.drawRunning || !STATE.drawPlan) return;
+  const step = STATE.drawPlan[STATE.drawIndex];
+  if (!step) { STATE.drawRunning = false; STATE.drawPlan = null; return; }
+  const outcome = {
+    win: step.win,
+    nearMiss: step.nearMiss,
+    results: step.results.slice(),
+    winner: step.win ? step.results[0] : undefined
+  };
+  setStatus(`Draw ${STATE.drawIndex + 1} of ${STATE.drawPlan.length}`, true);
+  spin(outcome);
+}
+
+function finalizeDrawSpin(outcome) {
+  const total = STATE.drawPlan ? STATE.drawPlan.length : 1;
+  const spinNo = STATE.drawIndex + 1;
+
+  if (outcome.win) {
+    STATE.totalWins++;
+    STATE.pullsSinceLastWin = 0;
+    STATE.sessionWinners.push({ name: outcome.winner, spin: STATE.totalSpins });
+    if (STATE.removeWinners) STATE.reelsDirty = true;   // rebuild without the winner at the NEXT spin, so the winning line stays on screen
+    triggerWin(outcome.winner, outcome.results, { spin: spinNo, total: total });
+    updateStats();
+    STATE.drawRunning = false;
+    STATE.drawPlan = null;
+    STATE.drawIndex = 0;
+    // No game-over overlay in draw mode — go straight back to ready
+    STATE.drawTimer = setTimeout(() => {
+      if (!STATE.drawRunning) setStatus('Ready — pull the lever!', false);
+    }, 6000);
+    return;
+  }
+
+  STATE.pullsSinceLastWin++;
+  if (outcome.nearMiss) {
+    const reelsContainer = document.getElementById('reels-container');
+    reelsContainer.classList.add('payline-near-miss');
+    setTimeout(() => {
+      reelsContainer.classList.remove('payline-near-miss');
+      playSound('nearMissFail');
+    }, 2000);
+  }
+  setStatus(`Draw ${spinNo} of ${total} — ${outcome.results.map(n => getNameEmote(n) + ' ' + n).join('  ·  ')}`, false);
+  emitMessage('slots:draw-progress', {
+    spin: spinNo,
+    total: total,
+    symbols: outcome.results.slice(),
+    nearMiss: !!outcome.nearMiss
+  });
+
+  STATE.drawIndex++;
+  STATE.drawTimer = setTimeout(runNextDrawSpin, STATE.turbo ? 400 : 900);
+}
+
+/* ═══════════════════════════════════════════════
    SPIN LOGIC
    ═══════════════════════════════════════════════ */
-function spin() {
+function spin(forcedOutcome) {
   if (STATE.spinning || STATE.gameOver) return;
+  // Draw mode: one trigger runs the whole planned sequence
+  if (STATE.mode === 'draw' && !forcedOutcome) { startDrawSequence(); return; }
   if (STATE.names.length < 1) { setStatus('Add names first!', false); return; }
 
   // Credit check for Credit Stack mode
@@ -2417,6 +3091,9 @@ function spin() {
   }
 
   STATE.spinning = true;
+  // A previous winner was removed: rebuild the strips now, under the blur,
+  // instead of half a second after the win (which wiped the winning line).
+  if (STATE.reelsDirty) { STATE.reelsDirty = false; populateReels(); }
   STATE.totalSpins++;
   updateStats();
   setStatus('Spinning...', true);
@@ -2428,7 +3105,7 @@ function spin() {
   playSound('lever');
   setTimeout(() => playSound('spin'), 150);
 
-  const outcome = determineOutcome();
+  const outcome = forcedOutcome || determineOutcome();
 
   // Staggered stop times — reel 1 stops first, then 2, then 3
   // Near-miss: third reel gets dramatic slow stop
@@ -2465,6 +3142,21 @@ function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome, isNearMissS
   // Near-miss slow reel gets longer slow phase
   const slowDuration = isNearMissSlowReel ? 2000 : 300;
   const spinDuration = stopMs - slowDuration;
+  // Downward scrolling walks the index toward 0 (~18 items per spin). When we
+  // get near the top of the strip, jump to the same name deeper in the strip so
+  // there is always room to fall. Happens at spin start, under the motion blur.
+  {
+    const ih0 = getItemHeight();
+    const curY = parseInt(strip.style.transform.replace(/[^-\d.]/g, '')) || 0;
+    const curIdx = Math.round((-curY + getPaylineCenter() - ih0 / 2) / ih0);
+    if (curIdx < 40) {
+      const here = strip._items[Math.max(0, curIdx)];
+      const mid = Math.floor(strip._items.length / 2);
+      let j = mid;
+      while (j < strip._items.length && strip._items[j] !== here) j++;
+      positionStripAtIndex(strip, j < strip._items.length ? j : mid);
+    }
+  }
   let startY = parseInt(strip.style.transform.replace(/[^-\d.]/g, '')) || 0;
   const fastSpeed = 1.4;
 
@@ -2494,7 +3186,7 @@ function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome, isNearMissS
     }
 
     if (!slowing) {
-      const y = startY - elapsed * fastSpeed;
+      const y = startY + elapsed * fastSpeed;   // +Y = symbols fall DOWN past the pay line, like a real reel
       strip.style.transform = `translateY(${y}px)`;
       currentY = y;
       animId = requestAnimationFrame(animate);
@@ -2531,8 +3223,9 @@ function startReelSpin(reelIdx, targetName, stopMs, isLast, outcome, isNearMissS
 function findBestLandingIndex(items, targetName, currentY) {
   const ih = getItemHeight();
   const approxIdx = Math.round((-currentY + getPaylineCenter() - ih / 2) / ih);
+  // Reels scroll DOWN (index decreasing), so the next match is at a LOWER index.
   for (let offset = 0; offset < items.length; offset++) {
-    const idx = (approxIdx + offset) % items.length;
+    const idx = (approxIdx - offset + items.length) % items.length;
     if (items[idx] === targetName) return idx;
   }
   return items.indexOf(targetName) || 0;
@@ -2546,6 +3239,9 @@ function finalizeSpin(outcome) {
     setTimeout(() => document.getElementById('lever-ball').classList.add('ready-pulse'), 500);
   }
 
+  // Draw mode drives its own sequence (no game over, no credits)
+  if (STATE.mode === 'draw' && STATE.drawRunning) { finalizeDrawSpin(outcome); return; }
+
   if (outcome.win) {
     STATE.totalWins++;
     STATE.pullsSinceLastWin = 0;
@@ -2553,7 +3249,7 @@ function finalizeSpin(outcome) {
 
     if (STATE.removeWinners) {
       // Rebuild reels without this winner
-      setTimeout(() => populateReels(), 500);
+      STATE.reelsDirty = true;   // rebuild without the winner at the NEXT spin, so the winning line stays on screen
     }
 
     triggerWin(outcome.winner, outcome.results);
@@ -2626,7 +3322,7 @@ function finalizeSpin(outcome) {
 /* ═══════════════════════════════════════════════
    WIN STATE
    ═══════════════════════════════════════════════ */
-function triggerWin(winner, symbols) {
+function triggerWin(winner, symbols, extra) {
   for (let r = 0; r < REEL_COUNT; r++) {
     document.getElementById(`reel-${r}`).classList.add('win-highlight');
   }
@@ -2640,7 +3336,7 @@ function triggerWin(winner, symbols) {
   startCoinShower();
   playSound('jackpot');
   setStatus(`🏆 WINNER: ${winner}!`, false, true);
-  emitMessage('slots:winner', { winner, symbols });
+  emitMessage('slots:winner', Object.assign({ winner, symbols }, extra || {}));
 
   // Payline win flash
   const reelsContainer = document.getElementById('reels-container');
@@ -2826,13 +3522,13 @@ function stopAutoSpin() {
   if (STATE.autoInterval) { clearInterval(STATE.autoInterval); STATE.autoInterval = null; }
 }
 
-function animateLeverAuto() {
+function animateLeverAuto(silent) {
   const assembly = document.getElementById('lever-assembly');
   assembly.classList.remove('auto-pulling');
   void assembly.offsetWidth; // force reflow to restart animation
   assembly.classList.add('auto-pulling');
   setTimeout(() => assembly.classList.remove('auto-pulling'), 650);
-  playSound('lever');
+  if (!silent) playSound('lever');
 }
 
 /* ═══════════════════════════════════════════════
@@ -2970,6 +3666,12 @@ function updateMainDisplay() {
 function setMode(mode) {
   STATE.mode = mode;
   stopAutoSpin();
+  // Cancel any draw sequence in flight
+  cancelDrawIntro();
+  if (STATE.drawTimer) { clearTimeout(STATE.drawTimer); STATE.drawTimer = null; }
+  STATE.drawRunning = false;
+  STATE.drawPlan = null;
+  STATE.drawIndex = 0;
   // Reset auto on mode switch (keep turbo setting)
   STATE.auto = false;
   document.getElementById('auto-toggle').classList.remove('active');
@@ -2981,6 +3683,7 @@ function setMode(mode) {
   });
   document.getElementById('section-spintillx').style.display = mode === 'spintillx' ? '' : 'none';
   document.getElementById('section-creditstack').style.display = mode === 'creditstack' ? '' : 'none';
+  document.getElementById('section-draw').style.display = mode === 'draw' ? '' : 'none';
   updateMainDisplay();
   try { localStorage.setItem('slots_mode', mode); } catch(e) {}
 }
@@ -3049,6 +3752,24 @@ function startLedFlash() {
 }
 
 function stopLedFlash() { updateLedIdle(); }
+
+// Fast marquee chase for the pre-draw intro. Uses the CSS .chase-fast variant so
+// the normal 200ms JS chase timing is untouched.
+function startLedChaseFast() {
+  stopLedChase();
+  document.querySelectorAll('.led').forEach((led, i) => {
+    led.className = 'led chase-fast';
+    led.style.animationDelay = ((i % 6) * 0.06) + 's';
+  });
+}
+
+function stopLedChaseFast() {
+  document.querySelectorAll('.led').forEach(led => {
+    led.classList.remove('chase-fast');
+    led.style.animationDelay = '';
+  });
+  updateLedIdle();
+}
 
 /* ═══════════════════════════════════════════════
    COIN SHOWER
@@ -3171,10 +3892,12 @@ function renderNameList() {
     const text = document.createElement('div');
     text.className = 'name-item-text';
     text.textContent = name;
-    if (counts[name] > 1) {
+    const wv = STATE.weights && typeof STATE.weights[name] === 'number' ? STATE.weights[name] : null;
+    const badgeVal = counts[name] > 1 ? counts[name] : (wv && wv !== 1 ? wv : null);
+    if (badgeVal !== null) {
       const cnt = document.createElement('span');
       cnt.style.cssText = 'margin-left:4px;opacity:0.5;font-size:11px';
-      cnt.textContent = `×${counts[name]}`;
+      cnt.textContent = `×${badgeVal}`;
       text.appendChild(cnt);
     }
     const removeBtn = document.createElement('button');
@@ -3188,6 +3911,54 @@ function renderNameList() {
     item.appendChild(removeBtn);
     list.appendChild(item);
   });
+}
+
+// Replace the entrant list wholesale, with optional per-name draw weights.
+// Accepts ['a','b'] or [{name:'a',weight:3}, ...]. Returns false on junk.
+function loadEntrantList(list) {
+  if (!Array.isArray(list) || list.length === 0) return false;
+  const names = [];
+  const weights = {};
+  let hasWeights = false;
+  list.forEach(item => {
+    let n = null, w = null;
+    if (typeof item === 'string' || typeof item === 'number') {
+      n = String(item);
+    } else if (item && typeof item === 'object' && item.name != null) {
+      n = String(item.name);
+      const raw = Number(item.weight);
+      if (isFinite(raw) && raw > 0) w = raw;
+    }
+    if (n === null) return;
+    n = n.trim().substring(0, 24);
+    if (!n || names.indexOf(n) !== -1) return;
+    names.push(n);
+    if (w !== null) { weights[n] = w; hasWeights = true; }
+  });
+  if (names.length === 0) return false;
+  STATE.names = names;
+  STATE.weights = hasWeights ? weights : null;
+  saveNames();
+  renderNameList();
+  populateReels();
+  updateNameCount();
+  return true;
+}
+
+// base64url → JSON array. Never throws: bad input just yields null.
+function decodeNamesB64(raw) {
+  try {
+    let s = String(raw).replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4 !== 0) s += '=';
+    const bin = atob(s);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const json = (typeof TextDecoder !== 'undefined')
+      ? new TextDecoder('utf-8').decode(bytes)
+      : decodeURIComponent(escape(bin));
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch(e) { return null; }
 }
 
 function updateNameCount() {
@@ -3275,8 +4046,26 @@ window.addEventListener('message', function(e) {
       break;
     // Inbound: mode / config
     case 'slots:mode':
-      if (d.mode === 'spintillx' || d.mode === 'creditstack') setMode(d.mode);
+      if (d.mode === 'spintillx' || d.mode === 'creditstack' || d.mode === 'draw') setMode(d.mode);
       break;
+    // Inbound: giveaway draw
+    case 'slots:draw': {
+      if (Array.isArray(d.names)) loadEntrantList(d.names);
+      if (STATE.mode !== 'draw') setMode('draw');
+      if (d.spins !== undefined) setDrawSpins(d.spins);
+      if (typeof d.title === 'string') STATE.drawTitle = d.title.trim().substring(0, 60);
+      if (typeof d.subtitle === 'string') STATE.drawSubtitle = d.subtitle.trim().substring(0, 80);
+      if (d.intro !== undefined) setIntroConfig(d.intro);
+      if (d.introSpeed !== undefined) setIntroSpeed(d.introSpeed);
+      let dw = null;
+      if (d.winner) {
+        dw = String(d.winner).trim().substring(0, 24);
+        if (dw && STATE.names.indexOf(dw) === -1) addName(dw);
+      }
+      STATE.drawWinner = dw;
+      startDrawSequence({ winner: dw });
+      break;
+    }
     case 'slots:setwins':
       if (typeof d.count === 'number' && d.count >= 1) {
         STATE.winnersNeeded = d.count;
@@ -3294,7 +4083,7 @@ function applyUrlParams() {
   const p = new URLSearchParams(window.location.search);
   if (p.get('bg') === 'transparent') document.body.classList.add('transparent-bg');
   const theme = p.get('theme');
-  const allThemes = ['dark','light','neon','vegas','retro','cherry','midnight','emerald','cyber','royal'];
+  const allThemes = ['dark','light','neon','vegas','retro','cherry','midnight','emerald','cyber','royal','alchemist'];
   if (theme && allThemes.includes(theme)) setTheme(theme);
   const admin = p.get('admin');
   if (admin === 'false') {
@@ -3305,10 +4094,74 @@ function applyUrlParams() {
     const icb = document.getElementById('insert-coin-btn');
     if (icb) icb.style.display = 'none';
   }
+  // ?emotes=<a,b,c> — replaces the reel name-badge EMOTES list.
+  // Parsed BEFORE any name loading (names / namesb64) so the very first badge
+  // assignment already uses the new glyphs. Split on comma, trim, drop empties,
+  // cap at 24 entries and 8 CODE POINTS each ([...str], never slice, so a flag or
+  // ZWJ sequence is never cut in half). Empty result → EMOTES left exactly as is.
+  const emotesParam = p.get('emotes');
+  if (emotesParam !== null) {
+    const list = emotesParam
+      .split(',')
+      .map(e => [...e.trim()].slice(0, 8).join(''))
+      .filter(e => e.length > 0)
+      .slice(0, 24);
+    if (list.length) EMOTES = list;
+  }
+
   const names = p.get('names');
   if (names) {
     const rawNames = names.split(',').map(n => n.trim()).filter(n => n);
     [...new Set(rawNames)].forEach(n => addName(n.substring(0, 24)));
+  }
+
+  // Giveaway Draw params
+  const b64 = p.get('namesb64');
+  if (b64) {
+    const decoded = decodeNamesB64(b64);
+    if (decoded) loadEntrantList(decoded);   // malformed input is ignored silently
+  }
+  const spinsParam = p.get('spins');
+  if (spinsParam !== null && spinsParam !== '') {
+    const sv = parseInt(spinsParam, 10);
+    if (!isNaN(sv)) setDrawSpins(sv);
+  }
+  const winnerParam = p.get('winner');
+  if (winnerParam) {
+    const w = winnerParam.trim().substring(0, 24);
+    if (w) {
+      if (STATE.names.indexOf(w) === -1) addName(w);
+      STATE.drawWinner = w;
+    }
+  }
+  const titleParam = p.get('title');
+  if (titleParam !== null) STATE.drawTitle = titleParam.trim().substring(0, 60);
+  const subtitleParam = p.get('subtitle');
+  if (subtitleParam !== null) STATE.drawSubtitle = subtitleParam.trim().substring(0, 80);
+  // ?marquee=<text> — replaces the cabinet marquee ("STREAMER SLOTS").
+  // textContent only (never innerHTML) so the param can never inject markup;
+  // blank/whitespace-only leaves the built-in text alone.
+  const marqueeParam = p.get('marquee');
+  if (marqueeParam !== null) {
+    const m = marqueeParam.trim().substring(0, 24);
+    const marqueeEl = document.getElementById('display-title');
+    if (m && marqueeEl) marqueeEl.textContent = m;
+  }
+  const introParam = p.get('intro');
+  if (introParam !== null && introParam !== '') setIntroConfig(introParam);
+  const introSpeedParam = p.get('introSpeed');
+  if (introSpeedParam !== null && introSpeedParam !== '') setIntroSpeed(introSpeedParam);
+
+  const modeParam = p.get('mode');
+  if (modeParam === 'draw' || modeParam === 'creditstack' || modeParam === 'spintillx') {
+    STATE.mode = modeParam;   // setMode() runs after bindEvents in init()
+  }
+  if (p.get('autostart') === '1') {
+    // Give the reels time to build before the first pull
+    setTimeout(() => {
+      if (STATE.mode === 'draw') startDrawSequence({ winner: STATE.drawWinner });
+      else spin();
+    }, 600);
   }
 }
 
@@ -3328,6 +4181,13 @@ function computeViewportScale() {
   // Scale both ways: a 1600x900 window or a 1280x720 OBS source gets the same
   // design shrunk to fit (panel included) instead of a fixed 360px panel that
   // pushes PULL LEVER off the bottom. Floor 0.5 keeps phones legible.
+  // Panel hidden (OBS source / platform embed, ?admin=false): the cabinet alone
+  // must FILL the box it is given, centred, never too tall or too wide. Its design
+  // box is 1000x900 (cabinet 900 wide at 90%, 85% tall), so contain-fit to that.
+  if (!STATE.adminVisible || p.get('fit') === 'contain') {
+    const c = Math.min(window.innerWidth / 1000, window.innerHeight / 900);
+    return Math.min(4, Math.max(0.2, Math.round(c * 100) / 100));
+  }
   const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
   return Math.min(4, Math.max(0.5, Math.round(s * 100) / 100));
 }
@@ -3410,6 +4270,15 @@ function bindEvents() {
   // Stop auto
   document.getElementById('speed-stop').addEventListener('click', () => setAuto(false));
 
+  // Spins to win (Giveaway Draw)
+  document.getElementById('draw-spins').addEventListener('input', function() {
+    const v = parseInt(this.value, 10);
+    if (!isNaN(v) && v >= 1 && v <= 10) {
+      STATE.drawSpins = v;
+      try { localStorage.setItem('slots_drawSpins', String(v)); } catch(e) {}
+    }
+  });
+
   // Winners needed
   document.getElementById('winners-needed').addEventListener('input', function() {
     const v = parseInt(this.value);
@@ -3485,23 +4354,38 @@ function bindEvents() {
     const SHAFT_TOP = 20;
     // Dynamic shaft height based on assembly size
     function getShaftHeight() {
-      return Math.max(100, assembly.offsetHeight - SHAFT_TOP - 30);
+      return Math.max(100, assembly.offsetHeight - SHAFT_TOP - 20);   // shaft ends at the base top
     }
     let SHAFT_HEIGHT = getShaftHeight();
     // Pull travel must follow the shaft, not the first measurement at script time
-    let MAX_PULL = SHAFT_HEIGHT;
-    let OVERSHOOT = SHAFT_HEIGHT * 0.2;
+    let MAX_PULL = SHAFT_HEIGHT - 10;   // ball seats on the base at full pull instead of covering it
+    let OVERSHOOT = Math.min(12, SHAFT_HEIGHT * 0.05);   // a squish, not a fifth of the lever: the ball stays on the track
+    // Trigger point (Bill 2026-09-02): the spin fires when the ball crosses the
+    // PAY LINE, whatever size the cabinet is — a geometric mark, not a fixed
+    // fraction of the shaft. Measured in cabinet (CSS) px; falls back to 45%
+    // of the travel if the pay line can't be found.
+    let TRIGGER_PULL = SHAFT_HEIGHT * 0.45;
+    function syncTrigger() {
+      const payline = document.getElementById('payline-indicator');
+      if (!payline) { TRIGGER_PULL = MAX_PULL * 0.45; return; }
+      const b = ball.getBoundingClientRect();
+      const p = payline.getBoundingClientRect();
+      const ballRestCenter = (b.top + b.height / 2) / VIEWPORT_SCALE - currentPull;
+      const paylineCenter = (p.top + p.height / 2) / VIEWPORT_SCALE;
+      const d = paylineCenter - ballRestCenter + 6;   // "just past" the line
+      TRIGGER_PULL = (d > 20 && d < MAX_PULL) ? d : MAX_PULL * 0.45;
+    }
     function syncShaft() {
       SHAFT_HEIGHT = getShaftHeight();
-      MAX_PULL = SHAFT_HEIGHT;
-      OVERSHOOT = SHAFT_HEIGHT * 0.2;
+      MAX_PULL = SHAFT_HEIGHT - 10;   // ball seats on the base at full pull instead of covering it
+      OVERSHOOT = Math.min(12, SHAFT_HEIGHT * 0.05);   // a squish, not a fifth of the lever: the ball stays on the track
       shaft.style.height = SHAFT_HEIGHT + 'px';
+      syncTrigger();
     }
     // Update on resize
     window.addEventListener('resize', syncShaft);
     // Initial set
     setTimeout(syncShaft, 100);
-    const TRIGGER_PERCENT = 0.45;
 
     let isDragging = false;
     let startY = 0;
@@ -3515,14 +4399,14 @@ function bindEvents() {
       const newHeight = SHAFT_HEIGHT - pullAmount;
       shaft.style.height = Math.max(0, newHeight) + 'px';
       shaft.style.top = (SHAFT_TOP + pullAmount) + 'px';
-      const progress = pullAmount / MAX_PULL;
-      if (progress >= TRIGGER_PERCENT) {
+      const progress = Math.min(1, pullAmount / TRIGGER_PULL);
+      if (pullAmount >= TRIGGER_PULL) {
         ball.style.boxShadow = `0 4px 12px rgba(200,0,0,0.6),
           inset 0 -2px 4px rgba(0,0,0,0.4),
           inset 0 2px 4px rgba(255,100,68,0.6),
           0 0 ${20 * progress}px rgba(255,68,34,${0.3 + progress * 0.4})`;
         // Screen shake at trigger point
-        if (!clunkPlayed && progress >= TRIGGER_PERCENT) {
+        if (!clunkPlayed) {
           clunkPlayed = true;
           const gameArea = document.getElementById('game-area');
           gameArea.style.transform = 'translate(1px, 0)';
@@ -3549,12 +4433,13 @@ function bindEvents() {
     function autoComplete() {
       isDragging = false;
       clunkPlayed = false;
+      currentPull = 0;   // next pull starts from rest, not from the trigger point
       // Squish effect at bottom
       ball.style.transition = 'top 0.25s cubic-bezier(0.4, 0, 1, 1), transform 0.1s';
       shaft.style.transition = 'height 0.25s cubic-bezier(0.4, 0, 1, 1), top 0.25s cubic-bezier(0.4, 0, 1, 1)';
       ball.style.top = (MAX_PULL + OVERSHOOT) + 'px';
       shaft.style.height = '0px';
-      shaft.style.top = (SHAFT_TOP + MAX_PULL) + 'px';
+      shaft.style.top = (SHAFT_TOP + MAX_PULL + OVERSHOOT) + 'px';   // shaft top rides with the ball
       // Squish ball at bottom
       setTimeout(() => {
         ball.style.transform = 'scale(1.1, 0.9)';
@@ -3592,7 +4477,7 @@ function bindEvents() {
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const pullAmount = (clientY - startY) / VIEWPORT_SCALE;
       updateLever(pullAmount);
-      if (currentPull / MAX_PULL >= TRIGGER_PERCENT) {
+      if (currentPull >= TRIGGER_PULL) {
         autoComplete();
       }
     }
@@ -3602,7 +4487,7 @@ function bindEvents() {
       isDragging = false;
       assembly.style.cursor = 'grab';
       clunkPlayed = false;
-      if (currentPull / MAX_PULL < TRIGGER_PERCENT) {
+      if (currentPull < TRIGGER_PULL) {
         snapBack();
       }
     }
@@ -3642,6 +4527,7 @@ function bindEvents() {
   document.getElementById('admin-toggle').addEventListener('click', () => {
     STATE.adminVisible = !STATE.adminVisible;
     document.getElementById('admin-panel').classList.toggle('hidden', !STATE.adminVisible);
+    applyViewportScale();   // cabinet-only fit vs full-layout scale
     // Update insert coin button visibility
     updateMainDisplay();
   });
@@ -3681,7 +4567,7 @@ function init() {
 
   // Restore saved settings
   try {
-    const allThemes = ['dark','light','neon','vegas','retro','cherry','midnight','emerald','cyber','royal'];
+    const allThemes = ['dark','light','neon','vegas','retro','cherry','midnight','emerald','cyber','royal','alchemist'];
     const savedTheme = localStorage.getItem('slots_theme');
     if (savedTheme && allThemes.includes(savedTheme)) setTheme(savedTheme);
     const s = localStorage.getItem('slots_sound');
@@ -3691,9 +4577,17 @@ function init() {
       document.getElementById('sound-label').textContent = 'Sound Off';
     }
     const m = localStorage.getItem('slots_mode');
-    if (m === 'creditstack') {
+    if (m === 'creditstack' || m === 'draw') {
       // setMode will be called after bindEvents; store for later
-      STATE.mode = 'creditstack';
+      STATE.mode = m;
+    }
+    const ds = localStorage.getItem('slots_drawSpins');
+    if (ds !== null) {
+      const dsv = parseInt(ds, 10);
+      if (!isNaN(dsv) && dsv >= 1 && dsv <= 10) {
+        STATE.drawSpins = dsv;
+        document.getElementById('draw-spins').value = dsv;
+      }
     }
     const wf = localStorage.getItem('slots_winfloor');
     if (wf !== null) {
@@ -3723,7 +4617,7 @@ function init() {
   bindEvents();
 
   // Apply restored mode after events are bound
-  if (STATE.mode === 'creditstack') setMode('creditstack');
+  if (STATE.mode === 'creditstack' || STATE.mode === 'draw') setMode(STATE.mode);
 
   renderNameList();
   updateNameCount();
@@ -3740,11 +4634,13 @@ function init() {
     }
   }, 500);
 
-  setTimeout(() => { const inp = document.getElementById('name-input'); if (inp) inp.focus(); }, 100);
+  setTimeout(() => { const inp = document.getElementById('name-input'); if (inp && STATE.adminVisible) inp.focus({ preventScroll: true }); }, 100);
 
   const canvas = document.getElementById('coin-canvas');
   canvas.width = canvas.offsetWidth;
   canvas.height = canvas.offsetHeight;
+
+  emitMessage('slots:ready', {});
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -164,6 +164,8 @@ body {
 .log-msg.win { color: #ffd700; font-weight: 700; }
 .log-msg.fail { color: #ff4466; }
 .log-msg.pass { color: #44ff88; }
+.log-msg.ok { color: #44ff88; }
+.log-msg.near { color: #ffaa33; }
 
 /* Test results bar */
 #test-bar {
@@ -244,8 +246,22 @@ body {
     <div class="btn-grid">
       <button class="t-btn" id="btn-mode-spintillx">Mode: Spin Till X</button>
       <button class="t-btn" id="btn-mode-creditstack">Mode: Credit Stack</button>
+      <button class="t-btn" id="btn-mode-draw">Mode: Giveaway Draw</button>
       <button class="t-btn" id="btn-setwins3">Set 3 Winners</button>
       <button class="t-btn" id="btn-setwins1">Set 1 Winner</button>
+    </div>
+  </div>
+
+  <!-- Giveaway Draw -->
+  <div class="ctrl-section">
+    <h3>Giveaway Draw</h3>
+    <div class="btn-grid">
+      <button class="t-btn gold" id="btn-draw-5">🎁 Draw 5 spins (Bob wins)</button>
+      <button class="t-btn" id="btn-draw-1">⚡ Draw 1 spin (instant)</button>
+      <button class="t-btn" id="btn-draw-weighted">⚖ Draw 5 weighted</button>
+      <button class="t-btn" id="btn-draw-random">🎲 Draw 5 (no forced winner)</button>
+      <button class="t-btn" id="btn-draw-intro">🎬 Intro draw (titled)</button>
+      <button class="t-btn" id="btn-draw-nointro">⏭ Draw, intro=0 (skip)</button>
     </div>
   </div>
 
@@ -356,7 +372,11 @@ window.addEventListener('message', e => {
   const d = e.data;
   if (!d || typeof d.type !== 'string') return;
   if (!d.type.startsWith('slots:')) return;
-  const cls = d.type === 'slots:winner' ? 'win' : '';
+  let cls = '';
+  if (d.type === 'slots:winner') cls = 'win';
+  else if (d.type === 'slots:ready') cls = 'ok';
+  else if (d.type === 'slots:intro') cls = 'ok';
+  else if (d.type === 'slots:draw-progress') cls = d.nearMiss ? 'near' : '';
   log('out', JSON.stringify(d), cls);
 });
 
@@ -374,6 +394,51 @@ document.getElementById('btn-add1').addEventListener('click', () => {
 
 document.getElementById('btn-pull').addEventListener('click', () => {
   send('slots:pull');
+});
+
+document.getElementById('btn-mode-draw').addEventListener('click', () => {
+  send('slots:mode', { mode: 'draw' });
+});
+
+// Giveaway Draw: one message loads the entrants and runs the whole sequence
+document.getElementById('btn-draw-5').addEventListener('click', () => {
+  send('slots:draw', { names: ['Alice', 'Bob', 'Charlie', 'Dana'], winner: 'Bob', spins: 5 });
+});
+
+document.getElementById('btn-draw-1').addEventListener('click', () => {
+  send('slots:draw', { names: ['Alice', 'Bob', 'Charlie', 'Dana'], winner: 'Dana', spins: 1 });
+});
+
+document.getElementById('btn-draw-weighted').addEventListener('click', () => {
+  send('slots:draw', {
+    names: [{ name: 'Alice', weight: 5 }, { name: 'Bob', weight: 3 }, { name: 'Charlie', weight: 1 }, { name: 'Dana', weight: 1 }],
+    spins: 5
+  });
+});
+
+document.getElementById('btn-draw-intro').addEventListener('click', () => {
+  send('slots:draw', {
+    names: ['Alice', 'Bob', 'Charlie', 'Dana'],
+    winner: 'Charlie',
+    spins: 3,
+    title: 'Friday Freeplay',
+    subtitle: 'Subs only',
+    intro: true
+  });
+});
+
+document.getElementById('btn-draw-nointro').addEventListener('click', () => {
+  send('slots:draw', {
+    names: ['Alice', 'Bob', 'Charlie', 'Dana'],
+    winner: 'Alice',
+    spins: 3,
+    title: 'No Intro Draw',
+    intro: false
+  });
+});
+
+document.getElementById('btn-draw-random').addEventListener('click', () => {
+  send('slots:draw', { spins: 5 });
 });
 
 document.getElementById('btn-remove').addEventListener('click', () => {
@@ -553,7 +618,7 @@ async function runTests() {
 
   // T4: XSS safety — add script tag as name
   log('test', 'T4: XSS safety');
-  send('slots:add', { name: '<script>alert(1)</script>' });
+  send('slots:add', { name: '<script>alert(1)<\/script>' });
   await delay(200);
   const xssCheck = waitForMessage('slots:names', 3000);
   send('slots:names');
