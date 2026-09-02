@@ -235,7 +235,8 @@ body.transparent-bg { background: transparent !important; }
   min-height: 0;
 }
 #game-area > #slot-machine {
-  height: min(85vh, 100%);
+  /* vh is not shrunk by the app zoom (see applyViewportScale), so divide it out */
+  height: min(calc(85vh / var(--vscale, 1)), 100%);
 }
 
 /* ═══════════════════════════════════════════════
@@ -805,7 +806,7 @@ input[type="range"]::-moz-range-thumb {
    ═══════════════════════════════════════════════ */
 #slot-machine {
   position: relative;
-  width: min(90%, 95vw);
+  width: min(90%, calc(95vw / var(--vscale, 1)));
   max-width: 900px;
   display: flex;
   flex-direction: column;
@@ -2881,8 +2882,8 @@ function animateCoinInsert() {
     box-shadow: 0 2px 8px rgba(218,165,32,0.6);
     z-index: 1000;
     pointer-events: none;
-    left: ${slotRect.left + slotRect.width / 2 - 12}px;
-    top: ${slotRect.top - 36}px;
+    left: ${(slotRect.left + slotRect.width / 2) / VIEWPORT_SCALE - 12}px;
+    top: ${slotRect.top / VIEWPORT_SCALE - 36}px;
     transition: all 0.4s cubic-bezier(0.22, 1.2, 0.36, 1);
   `;
   document.body.appendChild(coin);
@@ -3281,6 +3282,33 @@ function applyUrlParams() {
 }
 
 /* ═══════════════════════════════════════════════
+   VIEWPORT SCALE (4K / large displays)
+   The cabinet and panel are designed in px against a 1920x1080 baseline, so on a
+   4K source the machine sat at 1080p pixel size in the middle of the screen with
+   a narrow panel and tiny text. Zoom the app root by the viewport ratio instead:
+   1x at 1080p and below (existing responsive rules untouched), 2x at 4K.
+   ?scale=<0.5..4> overrides for OBS fine-tuning.
+   ═══════════════════════════════════════════════ */
+let VIEWPORT_SCALE = 1;
+function computeViewportScale() {
+  const p = new URLSearchParams(window.location.search);
+  const forced = parseFloat(p.get('scale'));
+  if (!Number.isNaN(forced) && forced > 0) return Math.min(4, Math.max(0.5, forced));
+  const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+  return Math.min(4, Math.max(1, Math.round(s * 100) / 100));
+}
+function applyViewportScale() {
+  const s = computeViewportScale();
+  if (s === VIEWPORT_SCALE && document.getElementById('app').style.zoom) return;
+  VIEWPORT_SCALE = s;
+  const app = document.getElementById('app');
+  app.style.zoom = String(s);
+  app.style.setProperty('--vscale', String(s)); // vh/vw rules divide by this
+  // Reel window, lever shaft and coin canvas all measure themselves on resize.
+  requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+}
+
+/* ═══════════════════════════════════════════════
    THEME
    ═══════════════════════════════════════════════ */
 function setTheme(theme) {
@@ -3651,6 +3679,8 @@ function init() {
   } catch(e) {}
 
   applyUrlParams();
+  applyViewportScale();
+  window.addEventListener('resize', applyViewportScale);
   bindEvents();
 
   // Apply restored mode after events are bound
