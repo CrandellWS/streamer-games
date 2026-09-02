@@ -796,6 +796,31 @@ input[type="range"]::-moz-range-thumb {
 #insert-coin-btn.no-credits #insert-coin-label {
   animation: insertCoinPulse 1s ease-in-out infinite;
 }
+/* Credit Stack with 0 credits: say it on the CABINET, not only in the status
+   line under the panel (which scrolls out of view at 1080p). */
+#slot-machine.no-credits #insert-coin-slot {
+  border-color: var(--gold);
+  animation: coinSlotBeckon 1.1s ease-in-out infinite;
+}
+#slot-machine.no-credits #credits-display {
+  color: var(--danger);
+  text-shadow: 0 0 10px rgba(255,68,102,0.7);
+  animation: insertCoinPulse 1.1s ease-in-out infinite;
+}
+#slot-machine.no-credits #lever-ball {
+  filter: grayscale(0.7) brightness(0.6);
+  cursor: not-allowed;
+}
+#insert-coin-btn.refused { animation: coinSlotShake 0.45s ease-in-out; }
+@keyframes coinSlotBeckon {
+  0%, 100% { box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.5), 0 0 6px rgba(255,215,0,0.25); }
+  50%      { box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.5), 0 0 22px rgba(255,215,0,0.9); }
+}
+@keyframes coinSlotShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
 @keyframes insertCoinPulse {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; text-shadow: 0 0 10px var(--gold-glow); }
@@ -2381,6 +2406,9 @@ function spin() {
     if (STATE.credits <= 0) {
       setStatus('No credits! Add credits to continue.', false);
       if (STATE.auto) stopAutoSpin();
+      // Refused pull: shake the coin slot so the cue is on the cabinet
+      const icb = document.getElementById('insert-coin-btn');
+      if (icb) { icb.classList.remove('refused'); void icb.offsetWidth; icb.classList.add('refused'); }
       return;
     }
     STATE.credits--;
@@ -2926,7 +2954,9 @@ function updateMainDisplay() {
       // Pulse label if no credits
       insertCoinBtn.classList.toggle('no-credits', STATE.credits === 0);
     }
+    document.getElementById('slot-machine').classList.toggle('no-credits', STATE.credits === 0);
   } else {
+    document.getElementById('slot-machine').classList.remove('no-credits');
     labelEl.textContent = 'PROGRESS';
     valueEl.textContent = `${STATE.sessionWinners.length}/${STATE.winnersNeeded}`;
     if (insertCoinBtn) insertCoinBtn.style.display = 'none';
