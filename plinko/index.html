@@ -5,494 +5,152 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Plinko — Streamer Games</title>
 <style>
-/* ═══════════════════════════════════════════════
-   CSS RESET & VARIABLES
-   ═══════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0d0d14;
-  --bg2: #14141f;
-  --surface: #1a1a2e;
-  --surface2: #22223a;
-  --border: #2a2a4a;
-  --text: #e8e8f0;
-  --text-dim: #8888aa;
-  --accent: #7c5cfc;
-  --accent-glow: rgba(124, 92, 252, 0.4);
-  --gold: #ffd700;
-  --gold-glow: rgba(255, 215, 0, 0.5);
-  --danger: #ff4466;
-  --success: #44ff88;
+  --bg: #0d0d14; --bg2: #14141f; --surface: #1a1a2e; --surface2: #22223a;
+  --border: #2a2a4a; --text: #e8e8f0; --text-dim: #8888aa;
+  --accent: #7c5cfc; --accent-glow: rgba(124,92,252,0.4);
+  --gold: #ffd700; --gold-glow: rgba(255,215,0,0.5);
+  --danger: #ff4466; --success: #44ff88;
   --panel-width: 320px;
   --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --font-mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+  --font-mono: 'Cascadia Code','Fira Code','JetBrains Mono',monospace;
 }
-
 [data-theme="light"] {
-  --bg: #f0f0f5;
-  --bg2: #e8e8f0;
-  --surface: #ffffff;
-  --surface2: #f5f5fa;
-  --border: #d0d0e0;
-  --text: #1a1a2e;
-  --text-dim: #666680;
+  --bg:#f0f0f5; --bg2:#e8e8f0; --surface:#ffffff; --surface2:#f5f5fa;
+  --border:#d0d0e0; --text:#1a1a2e; --text-dim:#666680;
 }
-
 [data-theme="neon"] {
-  --bg: #0a0a0a;
-  --bg2: #111111;
-  --surface: #1a1a1a;
-  --surface2: #222222;
-  --border: #333333;
-  --text: #ffffff;
-  --text-dim: #888888;
-  --accent: #00ffcc;
-  --accent-glow: rgba(0, 255, 204, 0.4);
-  --gold: #ff00ff;
-  --gold-glow: rgba(255, 0, 255, 0.5);
+  --bg:#0a0a0a; --bg2:#111; --surface:#1a1a1a; --surface2:#222;
+  --border:#333; --text:#fff; --text-dim:#888;
+  --accent:#00ffcc; --accent-glow:rgba(0,255,204,0.4);
+  --gold:#ff00ff; --gold-glow:rgba(255,0,255,0.5);
 }
 
-html, body {
-  width: 100%; height: 100%;
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--text);
-  overflow: hidden;
-  user-select: none;
-  -webkit-user-select: none;
+html,body { width:100%;height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden;user-select:none;-webkit-user-select:none; }
+body.transparent-bg { background:transparent !important; }
+
+#app { display:flex;width:100%;height:100%;position:relative; }
+#board-area { flex:1;position:relative;overflow:hidden;display:flex;align-items:stretch; }
+#board-canvas { display:block;width:100%;height:100%;cursor:crosshair; }
+
+/* Overlay effects */
+#teleport-flash {
+  position:absolute;inset:0;pointer-events:none;background:white;
+  opacity:0;z-index:50;transition:opacity 0.06s ease-out;
+}
+#screen-flash {
+  position:absolute;inset:0;pointer-events:none;background:white;
+  opacity:0;z-index:51;transition:opacity 0.04s ease-out;
 }
 
-body.transparent-bg { background: transparent !important; }
-
-/* ═══════════════════════════════════════════════
-   LAYOUT
-   ═══════════════════════════════════════════════ */
-#app {
-  display: flex;
-  width: 100%; height: 100%;
-  position: relative;
-}
-
-#board-area {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: stretch;
-}
-
-#board-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  cursor: crosshair;
-}
-
-/* ═══════════════════════════════════════════════
-   ADMIN PANEL
-   ═══════════════════════════════════════════════ */
 #admin-panel {
-  width: var(--panel-width);
-  height: 100%;
-  background: var(--bg2);
-  border-left: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
-  z-index: 100;
-  flex-shrink: 0;
+  width:var(--panel-width);height:100%;background:var(--bg2);
+  border-left:1px solid var(--border);display:flex;flex-direction:column;
+  overflow:hidden;transition:transform .35s cubic-bezier(.4,0,.2,1),opacity .35s ease;
+  z-index:100;flex-shrink:0;
 }
-
-#admin-panel.hidden {
-  transform: translateX(100%);
-  opacity: 0;
-  position: absolute;
-  right: 0;
-  top: 0;
-  pointer-events: none;
-}
+#admin-panel.hidden { transform:translateX(100%);opacity:0;position:absolute;right:0;top:0;pointer-events:none; }
 
 #admin-toggle {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 200;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-dim);
-  font-size: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  position:fixed;top:12px;right:12px;z-index:200;width:44px;height:44px;
+  border-radius:12px;border:1px solid var(--border);background:var(--surface);
+  color:var(--text-dim);font-size:20px;cursor:pointer;display:flex;
+  align-items:center;justify-content:center;transition:all .2s;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
 }
-#admin-toggle:hover {
-  background: var(--surface2);
-  color: var(--text);
-  border-color: var(--accent);
-  box-shadow: 0 0 20px var(--accent-glow);
-}
+#admin-toggle:hover { background:var(--surface2);color:var(--text);border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow); }
 
-.panel-header {
-  padding: 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  flex-shrink: 0;
-}
-.panel-header h2 {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 4px;
-}
-.panel-header p {
-  font-size: 12px;
-  color: var(--text-dim);
-}
+.panel-header { padding:20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0; }
+.panel-header h2 { font-size:16px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--accent);margin-bottom:4px; }
+.panel-header p { font-size:12px;color:var(--text-dim); }
 
-.panel-section {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.panel-section h3 {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-dim);
-  margin-bottom: 10px;
-}
+.panel-section { padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0; }
+.panel-section h3 { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:10px; }
 
-.panel-scroll {
-  flex: 1;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
+.panel-scroll { flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent; }
 
-/* Form elements */
-.input-group {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+.input-group { display:flex;gap:8px;margin-bottom:8px; }
+input[type="text"],textarea,select {
+  width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text);font-family:var(--font);font-size:13px;
+  outline:none;transition:border-color .2s,box-shadow .2s;
 }
-
-input[type="text"], textarea, select {
-  width: 100%;
-  padding: 9px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-input[type="text"]:focus, textarea:focus, select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
-textarea {
-  resize: vertical;
-  min-height: 70px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
+input[type="text"]:focus,textarea:focus,select:focus { border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow); }
+textarea { resize:vertical;min-height:70px;font-family:var(--font-mono);font-size:12px;line-height:1.5; }
 select {
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238888aa'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
+  cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238888aa'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;
 }
 
 .btn {
-  padding: 9px 14px;
-  min-height: 40px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
+  padding:9px 14px;min-height:40px;border-radius:10px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text);font-family:var(--font);font-size:13px;
+  font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
 }
-.btn:hover {
-  background: var(--surface2);
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-.btn:active { transform: scale(0.97); }
+.btn:hover { background:var(--surface2);border-color:var(--accent);transform:translateY(-1px); }
+.btn:active { transform:scale(.97); }
+.btn-primary { background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 4px 14px var(--accent-glow); }
+.btn-primary:hover { filter:brightness(1.15);box-shadow:0 6px 22px var(--accent-glow); }
+.btn-danger { color:var(--danger);border-color:rgba(255,68,102,.3); }
+.btn-danger:hover { background:rgba(255,68,102,.1);border-color:var(--danger); }
+.btn-sm { padding:5px 10px;min-height:30px;font-size:12px;border-radius:8px; }
+.btn-block { width:100%; }
+.btn-group { display:flex;gap:6px;flex-wrap:wrap; }
+.btn-group .btn.active { background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px var(--accent-glow); }
 
-.btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-  box-shadow: 0 4px 14px var(--accent-glow);
-}
-.btn-primary:hover {
-  filter: brightness(1.15);
-  box-shadow: 0 6px 22px var(--accent-glow);
-}
-
-.btn-danger {
-  color: var(--danger);
-  border-color: rgba(255, 68, 102, 0.3);
-}
-.btn-danger:hover {
-  background: rgba(255, 68, 102, 0.1);
-  border-color: var(--danger);
-}
-
-.btn-sm {
-  padding: 5px 10px;
-  min-height: 30px;
-  font-size: 12px;
-  border-radius: 8px;
-}
-
-.btn-block { width: 100%; }
-
-.btn-group {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.btn-group .btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-  box-shadow: 0 2px 8px var(--accent-glow);
-}
-
-/* Big drop button */
 #drop-btn {
-  padding: 12px 20px;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--accent), #9b7cfc);
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 4px 24px var(--accent-glow);
-  width: 100%;
-  position: relative;
-  overflow: hidden;
-  margin-bottom: 10px;
+  padding:12px 20px;font-size:15px;font-weight:700;letter-spacing:.5px;
+  border-radius:12px;background:linear-gradient(135deg,var(--accent),#9b7cfc);
+  border:none;color:#fff;cursor:pointer;
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 4px 24px var(--accent-glow);width:100%;position:relative;overflow:hidden;margin-bottom:10px;
 }
-#drop-btn::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.4s;
-}
-#drop-btn:hover::before { left: 100%; }
-#drop-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px var(--accent-glow);
-}
-#drop-btn:active { transform: translateY(0) scale(0.98); }
-#drop-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
+#drop-btn::before { content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transition:left .4s; }
+#drop-btn:hover::before { left:100%; }
+#drop-btn:hover { transform:translateY(-2px);box-shadow:0 8px 32px var(--accent-glow); }
+#drop-btn:active { transform:translateY(0) scale(.98); }
+#drop-btn:disabled { opacity:.5;cursor:not-allowed;transform:none;box-shadow:none; }
 
-/* Name list */
-.name-list {
-  list-style: none;
-  max-height: 200px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-  margin-top: 8px;
-}
-.name-item {
-  display: flex;
-  align-items: center;
-  padding: 6px 8px;
-  border-radius: 8px;
-  margin-bottom: 3px;
-  font-size: 13px;
-  font-weight: 500;
-  transition: background 0.15s;
-}
-.name-item:hover { background: var(--surface2); }
-.name-item .color-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  margin-right: 9px;
-  flex-shrink: 0;
-}
-.name-item .name-text {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.name-item .slot-badge {
-  font-size: 10px;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  margin-right: 6px;
-}
-.name-item .remove-btn {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-.name-item .remove-btn:hover {
-  background: rgba(255, 68, 102, 0.15);
-  color: var(--danger);
-}
+.name-list { list-style:none;max-height:200px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;margin-top:8px; }
+.name-item { display:flex;align-items:center;padding:6px 8px;border-radius:8px;margin-bottom:3px;font-size:13px;font-weight:500;transition:background .15s; }
+.name-item:hover { background:var(--surface2); }
+.name-item .color-dot { width:9px;height:9px;border-radius:50%;margin-right:9px;flex-shrink:0; }
+.name-item .name-text { flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.name-item .slot-badge { font-size:10px;color:var(--text-dim);font-family:var(--font-mono);margin-right:6px; }
+.name-item .remove-btn { width:22px;height:22px;border-radius:6px;border:none;background:transparent;color:var(--text-dim);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0; }
+.name-item .remove-btn:hover { background:rgba(255,68,102,.15);color:var(--danger); }
+.name-count { font-size:11px;color:var(--text-dim);margin-bottom:6px; }
 
-.name-count {
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-bottom: 6px;
-}
+.setting-row { display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px; }
+.setting-row label { font-size:12px;color:var(--text-dim);white-space:nowrap;flex-shrink:0; }
 
-/* Settings row */
-.setting-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  gap: 8px;
-}
-.setting-row label {
-  font-size: 12px;
-  color: var(--text-dim);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
+.result-item { display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;font-size:13px;margin-bottom:3px; }
+.result-item .result-num { font-size:10px;color:var(--text-dim);font-family:var(--font-mono);width:18px; }
+.result-item .result-color { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+.result-item .result-name { flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.result-item .result-slot { font-size:11px;color:var(--text-dim);font-family:var(--font-mono); }
 
-/* Results */
-.result-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: 8px;
-  font-size: 13px;
-  margin-bottom: 3px;
-}
-.result-item .result-num {
-  font-size: 10px;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  width: 18px;
-}
-.result-item .result-color {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.result-item .result-name {
-  flex: 1;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.result-item .result-slot {
-  font-size: 11px;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-}
+.tally-item { display:flex;align-items:center;gap:8px;font-size:12px;padding:3px 0; }
+.tally-item .tally-color { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+.tally-item .tally-name { flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.tally-item .tally-count { font-weight:700;color:var(--gold);font-family:var(--font-mono); }
 
-/* Win tally */
-.tally-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  padding: 3px 0;
-}
-.tally-item .tally-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.tally-item .tally-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tally-item .tally-count {
-  font-weight: 700;
-  color: var(--gold);
-  font-family: var(--font-mono);
-}
+#status-bar { font-size:11px;color:var(--text-dim);padding:6px 16px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;text-align:center; }
 
-/* Status bar */
-#status-bar {
-  font-size: 11px;
-  color: var(--text-dim);
-  padding: 6px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  flex-shrink: 0;
-  text-align: center;
-}
-
-/* Drop zone hint overlay on canvas */
-#drop-hint {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  padding: 10px;
-  text-align: center;
-  font-size: 12px;
-  color: rgba(124, 92, 252, 0.6);
-  pointer-events: none;
-  letter-spacing: 0.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
+#drop-hint { position:absolute;top:0;left:0;right:0;padding:10px;text-align:center;font-size:12px;color:rgba(124,92,252,.6);pointer-events:none;letter-spacing:.5px;font-weight:600;text-transform:uppercase; }
 </style>
 </head>
 <body>
-
 <div id="app">
-
   <div id="board-area">
     <canvas id="board-canvas"></canvas>
     <div id="drop-hint"></div>
+    <div id="teleport-flash"></div>
+    <div id="screen-flash"></div>
   </div>
 
   <button id="admin-toggle" title="Toggle admin panel">⚙</button>
@@ -500,16 +158,13 @@ select {
   <div id="admin-panel">
     <div class="panel-header">
       <h2>🎯 Plinko</h2>
-      <p>Pinball chaos awaits every drop!</p>
+      <p>Pinball chaos — simultaneous multi-ball!</p>
     </div>
-
     <div class="panel-scroll">
 
-      <!-- DROP CONTROLS -->
       <div class="panel-section">
         <h3>Drop</h3>
-        <button id="drop-btn">🎯 Drop Disc (Space)</button>
-
+        <button id="drop-btn">🎯 Drop (Space)</button>
         <div class="setting-row">
           <label>Mode</label>
           <div class="btn-group">
@@ -517,9 +172,8 @@ select {
             <button class="btn btn-sm mode-btn" data-mode="click">🖱 Click</button>
           </div>
         </div>
-
         <div class="setting-row">
-          <label>Drops</label>
+          <label>Balls</label>
           <div class="btn-group">
             <button class="btn btn-sm drops-btn active" data-drops="1">×1</button>
             <button class="btn btn-sm drops-btn" data-drops="3">×3</button>
@@ -529,7 +183,6 @@ select {
         </div>
       </div>
 
-      <!-- PLAYERS -->
       <div class="panel-section">
         <h3>Players</h3>
         <div class="input-group">
@@ -542,14 +195,12 @@ select {
         <ul class="name-list" id="name-list"></ul>
       </div>
 
-      <!-- RESULTS -->
       <div class="panel-section" id="results-section" style="display:none">
         <h3>Results</h3>
         <div id="results-list"></div>
         <div id="tally-list" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"></div>
       </div>
 
-      <!-- BOARD SETTINGS -->
       <div class="panel-section">
         <h3>Board</h3>
         <div class="setting-row">
@@ -570,7 +221,6 @@ select {
         </div>
       </div>
 
-      <!-- APPEARANCE -->
       <div class="panel-section">
         <h3>Appearance</h3>
         <div class="setting-row">
@@ -587,7 +237,6 @@ select {
         </div>
       </div>
 
-      <!-- ACTIONS -->
       <div class="panel-section">
         <div class="btn-group" style="flex-direction:column;gap:6px">
           <button class="btn btn-sm" id="reset-results-btn">↺ Reset Results</button>
@@ -595,88 +244,88 @@ select {
         </div>
       </div>
 
-    </div><!-- /panel-scroll -->
-
+    </div>
     <div id="status-bar">Ready · Add players to begin</div>
-  </div><!-- /admin-panel -->
-
-</div><!-- /app -->
+  </div>
+</div>
 
 <a id="feedback-link" href="https://github.com/CrandellWS/streamer-games/issues" target="_blank" rel="noopener"
-   style="position:fixed;bottom:8px;right:8px;font-size:11px;color:var(--text-dim);opacity:0.6;text-decoration:none;z-index:100;font-family:var(--font);"
-   onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">&#x1F4AC; Feedback</a>
+   style="position:fixed;bottom:8px;right:8px;font-size:11px;color:var(--text-dim);opacity:.6;text-decoration:none;z-index:100;font-family:var(--font);"
+   onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">&#x1F4AC; Feedback</a>
 <script>if(new URLSearchParams(location.search).get('admin')==='false')document.getElementById('feedback-link').style.display='none';</script>
 
 <script>
 'use strict';
 (function() {
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────────────────────────────
 const COLORS = [
   '#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff6bd6',
   '#ff9f43','#a8e6cf','#fd79a8','#6c5ce7','#00cec9',
   '#fdcb6e','#55efc4','#74b9ff','#e17055','#00b894',
   '#d63031','#0984e3','#e84393','#f9ca24','#6ab04c'
 ];
+// Distinct ball colors for multi-ball mode
+const BALL_COLORS = [
+  '#7c5cfc','#ff4466','#ffd700','#44ff88','#00b4d8',
+  '#ff9f43','#a29bfe','#fd79a8','#55efc4','#e17055'
+];
 
-const GRAVITY     = 0.38;
-const RESTITUTION = 0.48;
-const WALL_REST   = 0.65;
-const BUMPER_REST = 1.3;
-const RAIL_REST   = 0.82;
-const FLIPPER_REST= 0.72;
-const MAX_VEL     = 18;
-const TRAIL_LEN   = 16;
-const MIN_SLOTS   = 3;
-const MAX_SLOTS   = 20;
+const GRAVITY      = 0.38;
+const RESTITUTION  = 0.48;
+const WALL_REST    = 0.65;
+const BUMPER_REST  = 1.3;
+const RAIL_REST    = 0.82;
+const FLIPPER_REST = 0.72;
+const SETTLE_REST  = 0.38;
+const MAX_VEL      = 18;
+const TRAIL_LEN    = 10;
+const MIN_SLOTS    = 3;
+const MAX_SLOTS    = 20;
 
-// ── State ─────────────────────────────────────────────────────────────────────
+// ── State ──────────────────────────────────────────────────────────────────────
 const state = {
-  names:      [],
-  colorMap:   {},
-  boardRows:  10,
-  dropMode:   'random',
-  numDrops:   1,
-  soundOn:    true,
-  adminVisible: true,
-  chaosLevel: 'wild',
-
-  dropping:      false,
-  dropsLeft:     0,
-  awaitingClick: false,
-  clickDropX:    null,
-
-  results:    [],
-  winCounts:  {},
-
-  winner:       null,
-  winnerSlot:   -1,
-  celebTicks:   0,
-  confetti:     [],
+  names: [], colorMap: {}, boardRows: 10,
+  dropMode: 'random', numDrops: 1, soundOn: true,
+  adminVisible: true, chaosLevel: 'wild',
+  dropping: false, awaitingClick: false,
+  activeBalls: 0,
+  results: [], winCounts: {},
+  winner: null, winnerSlot: -1, celebTicks: 0, confetti: [],
 };
 
-// ── Board geometry ────────────────────────────────────────────────────────────
+// ── Board ──────────────────────────────────────────────────────────────────────
 const board = {};
 
-// ── Obstacle helpers ──────────────────────────────────────────────────────────
-function addBumper(x, y, r) {
-  board.bumpers.push({ x, y, r, flashTimer: 0, flashMax: 10 });
-}
+// ── Live objects ───────────────────────────────────────────────────────────────
+let discs      = [];   // array of disc objects
+let particles  = [];   // bumper explosion particles
+let slotGlows  = {};   // slotIdx → {timer, color}
+const screenShake = { timer: 0, intensity: 0 };
 
+// ── Sound throttles ────────────────────────────────────────────────────────────
+let lastPegSoundMs    = 0;
+let lastBumperSoundMs = 0;
+let lastSpinnerSndMs  = 0;
+let lastFlipperSndMs  = 0;
+let lastSpeedRailSndMs= 0;
+
+// ── Obstacle builder helpers ───────────────────────────────────────────────────
+function addBumper(x, y, r) {
+  board.bumpers.push({ x, y, r, flashTimer: 0, flashMax: 10, lastHitMs: 0, chainCount: 0 });
+}
 function addSpinner(x, y, length, speed) {
   board.spinners.push({ x, y, length, speed, angle: Math.random() * Math.PI * 2, flashTimer: 0 });
 }
-
 function addFlipper(cx, cy, length, angle) {
   const cos = Math.cos(angle), sin = Math.sin(angle);
   board.flippers.push({
     cx, cy, length, angle,
-    x1: cx - cos * length / 2, y1: cy - sin * length / 2,
-    x2: cx + cos * length / 2, y2: cy + sin * length / 2,
+    x1: cx - cos*length/2, y1: cy - sin*length/2,
+    x2: cx + cos*length/2, y2: cy + sin*length/2,
     flashTimer: 0
   });
 }
-
 function addFunnelTrap(tipX, tipY, halfW, depth) {
   const gap = board.discR * 1.8;
   board.funnelWalls.push(
@@ -684,160 +333,106 @@ function addFunnelTrap(tipX, tipY, halfW, depth) {
     { x1: tipX + halfW, y1: tipY - depth, x2: tipX + gap, y2: tipY, flashTimer: 0 }
   );
 }
-
 function addRicochetRails(count, yMin, yMax) {
   const W = board.width;
   const defs = [
-    { rx: 0.12, ry: 0.10, ang:  0.40 },
-    { rx: 0.82, ry: 0.35, ang: -0.50 },
-    { rx: 0.15, ry: 0.72, ang:  0.55 },
-    { rx: 0.78, ry: 0.60, ang: -0.40 },
-    { rx: 0.30, ry: 0.15, ang:  0.30 },
-    { rx: 0.62, ry: 0.80, ang: -0.60 },
-    { rx: 0.10, ry: 0.45, ang:  0.45 },
-    { rx: 0.85, ry: 0.05, ang: -0.35 },
+    {rx:.12,ry:.10,ang:.40},{rx:.82,ry:.35,ang:-.50},{rx:.15,ry:.72,ang:.55},
+    {rx:.78,ry:.60,ang:-.40},{rx:.30,ry:.15,ang:.30},{rx:.62,ry:.80,ang:-.60},
+    {rx:.10,ry:.45,ang:.45},{rx:.85,ry:.05,ang:-.35},
   ];
   for (let i = 0; i < count && i < defs.length; i++) {
     const p = defs[i];
-    const cx2 = board.left + W * p.rx;
-    const cy2 = yMin + (yMax - yMin) * p.ry;
-    const len = W * 0.10;
-    const cos = Math.cos(p.ang), sin = Math.sin(p.ang);
+    const cx2 = board.left + W*p.rx, cy2 = yMin + (yMax-yMin)*p.ry;
+    const len = W*0.10, cos = Math.cos(p.ang), sin = Math.sin(p.ang);
     board.ricochetRails.push({
-      x1: cx2 - cos * len / 2, y1: cy2 - sin * len / 2,
-      x2: cx2 + cos * len / 2, y2: cy2 + sin * len / 2,
-      flashTimer: 0
+      x1:cx2-cos*len/2, y1:cy2-sin*len/2, x2:cx2+cos*len/2, y2:cy2+sin*len/2, flashTimer:0
     });
   }
 }
-
-function addTeleporterPair(x1, y1, x2, y2, r) {
+function addTeleporterPair(x1,y1,x2,y2,r) {
   board.teleporterPairs.push({
-    a: { x: x1, y: y1, r, flashTimer: 0 },
-    b: { x: x2, y: y2, r, flashTimer: 0 }
+    a:{x:x1,y:y1,r,flashTimer:0}, b:{x:x2,y:y2,r,flashTimer:0}
   });
 }
-
-function addSpeedRail(x1, y1, x2, y2) {
-  board.speedRails.push({ x1, y1, x2, y2, flashTimer: 0 });
+function addSpeedRail(x1,y1,x2,y2) {
+  board.speedRails.push({x1,y1,x2,y2,flashTimer:0});
 }
-
+function addMultiplierZone(x,y,w,h,col) {
+  board.multiplierZones.push({x,y,w,h,col,glowTimer:0});
+}
 function addPegCluster(cx, cy) {
-  const spacing = board.pegR * 3.0;
-  const pts = [[0,0],[-1,1],[1,1],[-2,2],[0,2],[2,2]];
-  for (const [px, py] of pts) {
-    board.pegs.push({ x: cx + px * spacing, y: cy + py * spacing * 0.85, flash: 0 });
-  }
+  const sp = board.pegR * 3.0;
+  for (const [px,py] of [[0,0],[-1,1],[1,1],[-2,2],[0,2],[2,2]])
+    board.pegs.push({ x:cx+px*sp, y:cy+py*sp*0.85, flash:0 });
 }
 
-// ── Obstacle generation by zone + chaos level ─────────────────────────────────
+// ── Obstacle generation ────────────────────────────────────────────────────────
 function generateObstacles() {
-  const W  = board.width;
-  const H  = board.height;
-  const cx = board.left + W / 2;
-  const ch = state.chaosLevel;
+  const W  = board.width, H = board.height;
+  const cx = board.left + W/2, ch = state.chaosLevel;
+  const bR = Math.min(24, Math.max(14, W*0.038));
+  const sLen = Math.min(110, Math.max(55, W*0.18));
 
-  const bR   = Math.min(24, Math.max(14, W * 0.038));
-  const sLen = Math.min(110, Math.max(55, W * 0.18));
+  board.bumpers=[];board.spinners=[];board.flippers=[];
+  board.ricochetRails=[];board.funnelWalls=[];
+  board.teleporterPairs=[];board.speedRails=[];
+  board.gravFlipZones=[];board.multiplierZones=[];
 
-  board.bumpers        = [];
-  board.spinners       = [];
-  board.flippers       = [];
-  board.ricochetRails  = [];
-  board.funnelWalls    = [];
-  board.teleporterPairs= [];
-  board.speedRails     = [];
-  board.gravFlipZones  = [];
+  // Zone 1
+  addSpinner(cx, board.top+H*.11, sLen, ch==='insane'?.052:.030);
 
-  // ── ZONE 1: Entry (top 20%) ──────────────────────────────────
-  addSpinner(cx, board.top + H * 0.11, sLen, ch === 'insane' ? 0.052 : 0.030);
-
-  // ── ZONE 2: Chaos (20–50%) ───────────────────────────────────
-  // Core bumper triangle
-  addBumper(cx,            board.top + H * 0.30, bR);
-  addBumper(cx - W * 0.19, board.top + H * 0.40, bR);
-  addBumper(cx + W * 0.19, board.top + H * 0.40, bR);
-
-  if (ch !== 'mild') {
-    addBumper(cx, board.top + H * 0.47, bR * 0.88);
-    addSpinner(board.left + W * 0.20, board.top + H * 0.36, sLen * 0.65, -0.042);
-    addSpinner(board.right - W * 0.20, board.top + H * 0.44, sLen * 0.65,  0.048);
+  // Zone 2
+  addBumper(cx,            board.top+H*.30, bR);
+  addBumper(cx-W*.19,      board.top+H*.40, bR);
+  addBumper(cx+W*.19,      board.top+H*.40, bR);
+  if (ch!=='mild') {
+    addBumper(cx, board.top+H*.47, bR*.88);
+    addSpinner(board.left+W*.20, board.top+H*.36, sLen*.65, -.042);
+    addSpinner(board.right-W*.20, board.top+H*.44, sLen*.65, .048);
   }
-  if (ch === 'insane') {
-    addBumper(cx - W * 0.32, board.top + H * 0.26, bR * 0.78);
-    addBumper(cx + W * 0.32, board.top + H * 0.26, bR * 0.78);
-    addSpinner(cx, board.top + H * 0.49, sLen * 0.75, 0.065);
+  if (ch==='insane') {
+    addBumper(cx-W*.32, board.top+H*.26, bR*.78);
+    addBumper(cx+W*.32, board.top+H*.26, bR*.78);
+    addSpinner(cx, board.top+H*.49, sLen*.75, .065);
   }
+  addPegCluster(board.left+W*.15, board.top+H*.35);
+  addPegCluster(board.right-W*.15, board.top+H*.43);
+  if (ch==='insane') addPegCluster(cx, board.top+H*.24);
 
-  // Peg clusters in zone 2
-  addPegCluster(board.left + W * 0.15, board.top + H * 0.35);
-  addPegCluster(board.right - W * 0.15, board.top + H * 0.43);
-  if (ch === 'insane') addPegCluster(cx, board.top + H * 0.24);
+  addRicochetRails(ch==='mild'?2:ch==='wild'?5:8, board.top+H*.20, board.top+H*.50);
 
-  // Ricochet rails
-  const railCount = ch === 'mild' ? 2 : ch === 'wild' ? 5 : 8;
-  addRicochetRails(railCount, board.top + H * 0.20, board.top + H * 0.50);
+  if (ch!=='mild') addTeleporterPair(board.left+W*.13, board.top+H*.33, board.right-W*.13, board.top+H*.43, 16);
+  if (ch==='insane') addTeleporterPair(cx-W*.08, board.top+H*.49, cx+W*.08, board.top+H*.23, 14);
 
-  // Teleporters
-  if (ch !== 'mild') {
-    addTeleporterPair(
-      board.left + W * 0.13, board.top + H * 0.33,
-      board.right - W * 0.13, board.top + H * 0.43,
-      16
-    );
+  // Zone 3
+  const fl = W*.18;
+  addFlipper(cx-W*.14, board.top+H*.56, fl,  Math.PI*.17);
+  addFlipper(cx+W*.14, board.top+H*.56, fl, -Math.PI*.17);
+  if (ch!=='mild') {
+    addFlipper(cx-W*.28, board.top+H*.67, fl*.78,  Math.PI*.22);
+    addFlipper(cx+W*.28, board.top+H*.67, fl*.78, -Math.PI*.22);
   }
-  if (ch === 'insane') {
-    addTeleporterPair(
-      cx - W * 0.08, board.top + H * 0.49,
-      cx + W * 0.08, board.top + H * 0.23,
-      14
-    );
-  }
+  addFunnelTrap(board.left+W*.26,  board.top+H*.62, W*.11, H*.05);
+  if (ch!=='mild') addFunnelTrap(board.right-W*.26, board.top+H*.68, W*.11, H*.05);
+  addSpeedRail(cx-W*.12, board.top+H*.73, cx+W*.12, board.top+H*.74);
+  if (ch==='insane') board.gravFlipZones.push({x:cx-W*.16, y:board.top+H*.58, w:W*.32, h:H*.055});
 
-  // ── ZONE 3: Channels (50–75%) ────────────────────────────────
-  const flipLen = W * 0.18;
-  addFlipper(cx - W * 0.14, board.top + H * 0.56, flipLen,  Math.PI * 0.17);
-  addFlipper(cx + W * 0.14, board.top + H * 0.56, flipLen, -Math.PI * 0.17);
+  // Multiplier zones (visual hype)
+  addMultiplierZone(board.left+W*.33, board.top+H*.52, W*.34, H*.045, '#ffd700');
+  addMultiplierZone(board.left+W*.10, board.top+H*.70, W*.22, H*.035, '#44ff88');
+  addMultiplierZone(board.right-W*.32, board.top+H*.70, W*.22, H*.035, '#4d96ff');
 
-  if (ch !== 'mild') {
-    addFlipper(cx - W * 0.28, board.top + H * 0.67, flipLen * 0.78,  Math.PI * 0.22);
-    addFlipper(cx + W * 0.28, board.top + H * 0.67, flipLen * 0.78, -Math.PI * 0.22);
-  }
-
-  // Funnel traps
-  const fHW = W * 0.11, fD = H * 0.05;
-  addFunnelTrap(board.left + W * 0.26, board.top + H * 0.62, fHW, fD);
-  if (ch !== 'mild') {
-    addFunnelTrap(board.right - W * 0.26, board.top + H * 0.68, fHW, fD);
-  }
-
-  // Speed rail
-  addSpeedRail(cx - W * 0.12, board.top + H * 0.73, cx + W * 0.12, board.top + H * 0.74);
-
-  // Gravity flip zone (insane only)
-  if (ch === 'insane') {
-    board.gravFlipZones.push({
-      x: cx - W * 0.16,
-      y: board.top + H * 0.58,
-      w: W * 0.32,
-      h: H * 0.055
-    });
-  }
-
-  // ── ZONE 4: Landing (75–100%) ────────────────────────────────
-  // Final bumper
-  addBumper(cx, board.top + H * 0.86, bR * 0.82);
+  // Zone 4 final bumper
+  addBumper(cx, board.top+H*.86, bR*.82);
 }
 
-// ── Board compute ─────────────────────────────────────────────────────────────
+// ── Board compute ──────────────────────────────────────────────────────────────
 function computeBoard() {
-  const W = canvas.clientWidth;
-  const H = canvas.clientHeight;
-
-  const numSlots = Math.max(MIN_SLOTS, Math.min(MAX_SLOTS, state.names.length || 5));
-  const marginX   = Math.max(16, Math.min(40, W * 0.05));
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  const numSlots = Math.max(MIN_SLOTS, Math.min(MAX_SLOTS, state.names.length||5));
+  const marginX   = Math.max(16, Math.min(40, W*.05));
   const marginTop = 52;
-  const slotH     = Math.min(72, Math.max(48, H * 0.09));
+  const slotH     = Math.min(72, Math.max(48, H*.09));
   const gap       = 8;
 
   board.left      = marginX;
@@ -855,1052 +450,931 @@ function computeBoard() {
   board.pegR  = Math.max(4, Math.min(8,  board.slotWidth * 0.18));
   board.discR = Math.max(8, Math.min(14, board.slotWidth * 0.28));
 
-  const BW = board.width;
-  const BH = board.height;
+  const BW = board.width, BH = board.height;
 
-  // ── Peg generation ────────────────────────────────────────────
+  // Pegs: zone 1 sparse + zone 4 dense
   board.pegs = [];
-
-  // Zone 1: 2 sparse rows
   for (let r = 0; r < 2; r++) {
-    const y = board.top + BH * (0.07 + r * 0.08);
-    if (r % 2 === 0) {
-      for (let k = 0; k < numSlots; k++)
-        board.pegs.push({ x: board.left + (k + 0.5) * board.slotWidth, y, flash: 0 });
-    } else {
-      for (let k = 1; k < numSlots; k++)
-        board.pegs.push({ x: board.left + k * board.slotWidth, y, flash: 0 });
-    }
+    const y = board.top + BH*(0.07 + r*0.08);
+    if (r%2===0) for (let k=0;k<numSlots;k++) board.pegs.push({x:board.left+(k+.5)*board.slotWidth,y,flash:0});
+    else         for (let k=1;k<numSlots;k++) board.pegs.push({x:board.left+k*board.slotWidth,y,flash:0});
+  }
+  const z4Start = board.top+BH*.76, z4End = board.bottom-BH*.02;
+  const z4H = z4End-z4Start, z4R = state.boardRows;
+  for (let r=0;r<z4R;r++) {
+    const y = z4Start + (r+1)*z4H/(z4R+1);
+    if (r%2===0) for (let k=0;k<numSlots;k++) board.pegs.push({x:board.left+(k+.5)*board.slotWidth,y,flash:0});
+    else         for (let k=1;k<numSlots;k++) board.pegs.push({x:board.left+k*board.slotWidth,y,flash:0});
   }
 
-  // Zone 4: dense rows (75–100%)
-  const z4Start = board.top + BH * 0.76;
-  const z4End   = board.bottom - BH * 0.02;
-  const z4H     = z4End - z4Start;
-  const z4Rows  = state.boardRows;
-  for (let r = 0; r < z4Rows; r++) {
-    const y = z4Start + (r + 1) * z4H / (z4Rows + 1);
-    if (r % 2 === 0) {
-      for (let k = 0; k < numSlots; k++)
-        board.pegs.push({ x: board.left + (k + 0.5) * board.slotWidth, y, flash: 0 });
-    } else {
-      for (let k = 1; k < numSlots; k++)
-        board.pegs.push({ x: board.left + k * board.slotWidth, y, flash: 0 });
-    }
-  }
-
-  // Generate all pinball obstacles (also pushes peg clusters)
   generateObstacles();
 }
 
-// ── Disc ──────────────────────────────────────────────────────────────────────
-let disc = null;
-let lastPegSoundMs     = 0;
-let lastBumperSoundMs  = 0;
-let lastSpinnerSoundMs = 0;
-let lastFlipperSoundMs = 0;
-let lastSpeedRailSndMs = 0;
-
-function dropDisc(xFrac) {
+// ── Disc factory ───────────────────────────────────────────────────────────────
+function createDisc(xFrac, colorIdx) {
   xFrac = Math.max(0.02, Math.min(0.98, xFrac));
-  const x = board.left + xFrac * board.width;
-  disc = {
-    x, y: board.top - board.discR - 4,
-    vx: (Math.random() - 0.5) * 0.8,
+  return {
+    x: board.left + xFrac*board.width,
+    y: board.top - board.discR - 4,
+    vx: (Math.random()-0.5)*0.8,
     vy: 1.5,
     trail: [],
     active: true,
-    teleporting: false,
-    teleportTimer: 0,
-    teleportTx: 0,
-    teleportTy: 0,
-    gravFlipTimer: 0,
-    wasInGravFlip: false,
+    teleporting: false, teleportTimer: 0, teleportTx: 0, teleportTy: 0,
+    gravFlipTimer: 0, wasInGravFlip: false,
+    settling: false, settleX: 0, settleY: 0, settleSlot: -1,
+    colorIdx: colorIdx ?? 0,
+    color: BALL_COLORS[colorIdx % BALL_COLORS.length],
+    landed: false,
   };
-  state.dropping = true;
-  state.awaitingClick = false;
+}
+
+// ── Session start ──────────────────────────────────────────────────────────────
+function startSession(clickXFrac) {
+  if (state.names.length === 0) return;
+  state.results = []; state.winCounts = {};
+  state.dropping = true; state.awaitingClick = false;
+  state.winner = null; state.winnerSlot = -1;
+  state.activeBalls = state.numDrops;
+  slotGlows = {};
+  renderResults();
+  ensureAudio();
+
+  discs = [];
+  for (let i = 0; i < state.numDrops; i++) {
+    const delay = i * 120; // 120ms stagger per ball
+    const idx = i;
+    setTimeout(() => {
+      if (!state.dropping) return;
+      let xFrac;
+      if (clickXFrac !== undefined) {
+        // All balls near click position with slight spread
+        xFrac = Math.max(0.05, Math.min(0.95, clickXFrac + (Math.random()-0.5)*0.12));
+      } else {
+        xFrac = Math.random();
+      }
+      discs.push(createDisc(xFrac, idx));
+    }, delay);
+  }
   updateDropBtn();
 }
 
-// ── Segment collision ─────────────────────────────────────────────────────────
-// Returns null or {cx,cy,vx,vy,nx,ny,force}
-function collideSegment(px, py, pvx, pvy, x1, y1, x2, y2, rest) {
-  const dx = x2 - x1, dy = y2 - y1;
-  const len2 = dx * dx + dy * dy;
-  if (len2 < 0.001) return null;
-  let t = ((px - x1) * dx + (py - y1) * dy) / len2;
-  t = Math.max(0, Math.min(1, t));
-  const cx = x1 + t * dx, cy = y1 + t * dy;
-  const ex = px - cx, ey = py - cy;
-  const d2 = ex * ex + ey * ey;
-  const minD = board.discR;
-  if (d2 >= minD * minD || d2 < 0.001) return null;
-  const d  = Math.sqrt(d2);
-  const nx = ex / d, ny = ey / d;
-  const vn = pvx * nx + pvy * ny;
-  if (vn >= 0) return null;
-  return {
-    cx: cx + nx * (minD + 1),
-    cy: cy + ny * (minD + 1),
-    vx: pvx - (1 + rest) * vn * nx,
-    vy: pvy - (1 + rest) * vn * ny,
-    nx, ny,
-    force: Math.abs(vn)
-  };
+// ── Segment collision ──────────────────────────────────────────────────────────
+function collideSegment(px,py,pvx,pvy, x1,y1,x2,y2, rest) {
+  const dx=x2-x1, dy=y2-y1, len2=dx*dx+dy*dy;
+  if (len2<0.001) return null;
+  let t=((px-x1)*dx+(py-y1)*dy)/len2;
+  t=Math.max(0,Math.min(1,t));
+  const cx=x1+t*dx, cy=y1+t*dy, ex=px-cx, ey=py-cy;
+  const d2=ex*ex+ey*ey, minD=board.discR;
+  if (d2>=minD*minD||d2<0.001) return null;
+  const d=Math.sqrt(d2), nx=ex/d, ny=ey/d;
+  const vn=pvx*nx+pvy*ny;
+  if (vn>=0) return null;
+  return { cx:cx+nx*(minD+1), cy:cy+ny*(minD+1),
+           vx:pvx-(1+rest)*vn*nx, vy:pvy-(1+rest)*vn*ny, nx, ny, force:Math.abs(vn) };
 }
 
-// ── Disc physics ──────────────────────────────────────────────────────────────
-function updateDisc() {
-  if (!disc || !disc.active) return;
-
-  // Gravity (respect gravity flip)
-  if (disc.gravFlipTimer > 0) {
-    disc.vy -= GRAVITY * 1.3;
-    disc.gravFlipTimer--;
-  } else {
-    disc.vy += GRAVITY;
+// ── Physics update ─────────────────────────────────────────────────────────────
+function updateAllDiscs() {
+  for (let i=0; i<discs.length; i++) {
+    const d = discs[i];
+    if (d.settling) { updateSettling(d); continue; }
+    if (!d.active || d.teleporting) continue;
+    updateSingleDisc(d, i);
   }
+}
 
-  // Check gravity flip zone entry
-  if (board.gravFlipZones && disc.gravFlipTimer <= 0) {
+function updateSingleDisc(disc, discIdx) {
+  // Gravity / flip
+  if (disc.gravFlipTimer > 0) { disc.vy -= GRAVITY*1.3; disc.gravFlipTimer--; }
+  else disc.vy += GRAVITY;
+
+  // Gravity flip zone entry
+  if (board.gravFlipZones && disc.gravFlipTimer<=0) {
     for (const z of board.gravFlipZones) {
-      if (disc.x >= z.x && disc.x <= z.x + z.w &&
-          disc.y >= z.y && disc.y <= z.y + z.h) {
-        if (!disc.wasInGravFlip) {
-          disc.gravFlipTimer = 35;
-          sndGravFlip();
-        }
-        disc.wasInGravFlip = true;
-        break;
+      if (disc.x>=z.x&&disc.x<=z.x+z.w&&disc.y>=z.y&&disc.y<=z.y+z.h) {
+        if (!disc.wasInGravFlip) { disc.gravFlipTimer=35; sndGravFlip(); }
+        disc.wasInGravFlip=true; break;
       }
     }
-    if (disc.gravFlipTimer <= 0) disc.wasInGravFlip = false;
+    if (disc.gravFlipTimer<=0) disc.wasInGravFlip=false;
   }
 
-  // Clamp speed
-  const spd = Math.hypot(disc.vx, disc.vy);
-  if (spd > MAX_VEL) {
-    disc.vx = disc.vx / spd * MAX_VEL;
-    disc.vy = disc.vy / spd * MAX_VEL;
+  // Multiplier zone check
+  for (const mz of board.multiplierZones) {
+    if (disc.x>=mz.x&&disc.x<=mz.x+mz.w&&disc.y>=mz.y&&disc.y<=mz.y+mz.h) {
+      mz.glowTimer=25;
+      const slot=Math.floor((disc.x-board.left)/board.slotWidth);
+      if (slot>=0&&slot<board.numSlots) {
+        slotGlows[slot]={timer:35, color:mz.col};
+      }
+    }
   }
+
+  // Speed
+  const spd=Math.hypot(disc.vx,disc.vy);
+  if (spd>MAX_VEL) { disc.vx=disc.vx/spd*MAX_VEL; disc.vy=disc.vy/spd*MAX_VEL; }
 
   // Trail
-  disc.trail.push({ x: disc.x, y: disc.y });
-  if (disc.trail.length > TRAIL_LEN) disc.trail.shift();
+  disc.trail.push({x:disc.x,y:disc.y});
+  if (disc.trail.length>TRAIL_LEN) disc.trail.shift();
 
-  // Speed rail check (once per frame)
-  checkSpeedRails();
+  // Speed rail
+  checkSpeedRails(disc);
 
-  // Sub-step collision
-  const STEPS = 4;
-  for (let s = 0; s < STEPS; s++) {
-    disc.x += disc.vx / STEPS;
-    disc.y += disc.vy / STEPS;
-
+  // Sub-steps
+  const STEPS=4;
+  for (let s=0;s<STEPS;s++) {
+    disc.x += disc.vx/STEPS;
+    disc.y += disc.vy/STEPS;
     const nowMs = Date.now();
 
-    // Top wall safety (for gravity flip)
-    if (disc.y - board.discR < board.top) {
-      disc.y = board.top + board.discR;
-      if (disc.vy < 0) disc.vy = Math.abs(disc.vy) * 0.5;
-    }
+    // Top wall
+    if (disc.y-board.discR<board.top) { disc.y=board.top+board.discR; if(disc.vy<0) disc.vy=Math.abs(disc.vy)*.5; }
     // Left wall
-    if (disc.x - board.discR < board.left) {
-      disc.x = board.left + board.discR;
-      if (disc.vx < 0) { disc.vx = Math.abs(disc.vx) * WALL_REST; sndWall(); }
-    }
+    if (disc.x-board.discR<board.left) { disc.x=board.left+board.discR; if(disc.vx<0){disc.vx=Math.abs(disc.vx)*WALL_REST;sndWall();} }
     // Right wall
-    if (disc.x + board.discR > board.right) {
-      disc.x = board.right - board.discR;
-      if (disc.vx > 0) { disc.vx = -Math.abs(disc.vx) * WALL_REST; sndWall(); }
-    }
+    if (disc.x+board.discR>board.right) { disc.x=board.right-board.discR; if(disc.vx>0){disc.vx=-Math.abs(disc.vx)*WALL_REST;sndWall();} }
 
-    // Peg collisions
+    // Pegs
     for (const peg of board.pegs) {
-      const dx = disc.x - peg.x, dy = disc.y - peg.y;
-      const d2 = dx * dx + dy * dy;
-      const minD = board.discR + board.pegR;
-      if (d2 < minD * minD && d2 > 0.001) {
-        const d  = Math.sqrt(d2);
-        const nx = dx / d, ny = dy / d;
-        disc.x = peg.x + nx * (minD + 0.5);
-        disc.y = peg.y + ny * (minD + 0.5);
-        const vn = disc.vx * nx + disc.vy * ny;
-        if (vn < 0) {
-          disc.vx -= (1 + RESTITUTION) * vn * nx;
-          disc.vy -= (1 + RESTITUTION) * vn * ny;
-          disc.vx += (Math.random() - 0.5) * 0.4;
-          if (nowMs - lastPegSoundMs > 40) {
-            sndPeg(Math.abs(vn));
-            lastPegSoundMs = nowMs;
-          }
-          peg.flash = 6;
+      const dx=disc.x-peg.x,dy=disc.y-peg.y,d2=dx*dx+dy*dy,minD=board.discR+board.pegR;
+      if (d2<minD*minD&&d2>0.001) {
+        const d=Math.sqrt(d2),nx=dx/d,ny=dy/d;
+        disc.x=peg.x+nx*(minD+0.5); disc.y=peg.y+ny*(minD+0.5);
+        const vn=disc.vx*nx+disc.vy*ny;
+        if (vn<0) {
+          disc.vx-=(1+RESTITUTION)*vn*nx; disc.vy-=(1+RESTITUTION)*vn*ny;
+          disc.vx+=(Math.random()-.5)*.4; peg.flash=6;
+          if(nowMs-lastPegSoundMs>40){sndPeg(Math.abs(vn));lastPegSoundMs=nowMs;}
         }
       }
     }
 
-    // Bumper collisions
+    // Bumpers
     for (const b of board.bumpers) {
-      const dx = disc.x - b.x, dy = disc.y - b.y;
-      const d2 = dx * dx + dy * dy;
-      const minD = board.discR + b.r;
-      if (d2 < minD * minD && d2 > 0.001) {
-        const d  = Math.sqrt(d2);
-        const nx = dx / d, ny = dy / d;
-        disc.x = b.x + nx * (minD + 1);
-        disc.y = b.y + ny * (minD + 1);
-        const vn = disc.vx * nx + disc.vy * ny;
-        if (vn < 0) {
-          disc.vx -= (1 + BUMPER_REST) * vn * nx;
-          disc.vy -= (1 + BUMPER_REST) * vn * ny;
-          disc.vx += (Math.random() - 0.5) * 2.0;
-          b.flashTimer = b.flashMax;
-          if (nowMs - lastBumperSoundMs > 80) {
-            sndBumper();
-            lastBumperSoundMs = nowMs;
+      const dx=disc.x-b.x,dy=disc.y-b.y,d2=dx*dx+dy*dy,minD=board.discR+b.r;
+      if (d2<minD*minD&&d2>0.001) {
+        const d=Math.sqrt(d2),nx=dx/d,ny=dy/d;
+        disc.x=b.x+nx*(minD+1); disc.y=b.y+ny*(minD+1);
+        const vn=disc.vx*nx+disc.vy*ny;
+        if (vn<0) {
+          disc.vx-=(1+BUMPER_REST)*vn*nx; disc.vy-=(1+BUMPER_REST)*vn*ny;
+          disc.vx+=(Math.random()-.5)*2.0;
+          // Chain reaction detection
+          if (nowMs-b.lastHitMs<200) {
+            b.chainCount++;
+            b.flashTimer=b.flashMax+6;
+            sndBumperCombo(b.chainCount);
+          } else {
+            b.chainCount=1;
+            b.flashTimer=b.flashMax;
           }
+          b.lastHitMs=nowMs;
+          // Particle explosion
+          spawnBumperParticles(b.x, b.y, disc.color);
+          // Screen shake
+          triggerShake(3);
+          if(nowMs-lastBumperSoundMs>80){sndBumper();lastBumperSoundMs=nowMs;}
         }
       }
     }
 
-    // Spinner collisions
+    // Spinners
     for (const sp of board.spinners) {
-      const cos = Math.cos(sp.angle), sin = Math.sin(sp.angle);
-      const hL  = sp.length / 2;
-      const hit = collideSegment(
-        disc.x, disc.y, disc.vx, disc.vy,
-        sp.x - cos * hL, sp.y - sin * hL,
-        sp.x + cos * hL, sp.y + sin * hL,
-        RAIL_REST
-      );
+      const cos=Math.cos(sp.angle),sin=Math.sin(sp.angle),hL=sp.length/2;
+      const hit=collideSegment(disc.x,disc.y,disc.vx,disc.vy,sp.x-cos*hL,sp.y-sin*hL,sp.x+cos*hL,sp.y+sin*hL,RAIL_REST);
       if (hit) {
-        disc.x = hit.cx; disc.y = hit.cy;
-        disc.vx = hit.vx; disc.vy = hit.vy;
-        disc.vx += sp.speed * hL * 0.35 * (Math.random() > 0.5 ? 1 : -1);
-        sp.flashTimer = 8;
-        if (nowMs - lastSpinnerSoundMs > 80) {
-          sndSpinner();
-          lastSpinnerSoundMs = nowMs;
-        }
+        disc.x=hit.cx;disc.y=hit.cy;disc.vx=hit.vx;disc.vy=hit.vy;
+        disc.vx+=sp.speed*hL*.35*(Math.random()>.5?1:-1);
+        sp.flashTimer=8;
+        if(nowMs-lastSpinnerSndMs>80){sndSpinner();lastSpinnerSndMs=nowMs;}
       }
     }
 
-    // Flipper collisions
+    // Flippers
     for (const f of board.flippers) {
-      const hit = collideSegment(
-        disc.x, disc.y, disc.vx, disc.vy,
-        f.x1, f.y1, f.x2, f.y2, FLIPPER_REST
-      );
+      const hit=collideSegment(disc.x,disc.y,disc.vx,disc.vy,f.x1,f.y1,f.x2,f.y2,FLIPPER_REST);
       if (hit) {
-        disc.x = hit.cx; disc.y = hit.cy;
-        disc.vx = hit.vx; disc.vy = hit.vy;
-        f.flashTimer = 8;
-        if (nowMs - lastFlipperSoundMs > 80) {
-          sndFlipper();
-          lastFlipperSoundMs = nowMs;
-        }
+        disc.x=hit.cx;disc.y=hit.cy;disc.vx=hit.vx;disc.vy=hit.vy;
+        f.flashTimer=8;
+        if(nowMs-lastFlipperSndMs>80){sndFlipper();lastFlipperSndMs=nowMs;}
       }
     }
 
-    // Ricochet rail collisions
+    // Ricochet rails
     for (const r of board.ricochetRails) {
-      const hit = collideSegment(
-        disc.x, disc.y, disc.vx, disc.vy,
-        r.x1, r.y1, r.x2, r.y2, RAIL_REST
-      );
+      const hit=collideSegment(disc.x,disc.y,disc.vx,disc.vy,r.x1,r.y1,r.x2,r.y2,RAIL_REST);
       if (hit) {
-        disc.x = hit.cx; disc.y = hit.cy;
-        disc.vx = hit.vx; disc.vy = hit.vy;
-        r.flashTimer = 6;
-        if (nowMs - lastPegSoundMs > 40) {
-          sndPeg(hit.force);
-          lastPegSoundMs = nowMs;
-        }
+        disc.x=hit.cx;disc.y=hit.cy;disc.vx=hit.vx;disc.vy=hit.vy;
+        r.flashTimer=6;
+        if(nowMs-lastPegSoundMs>40){sndPeg(hit.force);lastPegSoundMs=nowMs;}
       }
     }
 
-    // Funnel wall collisions
+    // Funnel walls
     for (const w of board.funnelWalls) {
-      const hit = collideSegment(
-        disc.x, disc.y, disc.vx, disc.vy,
-        w.x1, w.y1, w.x2, w.y2, WALL_REST
-      );
-      if (hit) {
-        disc.x = hit.cx; disc.y = hit.cy;
-        disc.vx = hit.vx; disc.vy = hit.vy;
-        w.flashTimer = 5;
+      const hit=collideSegment(disc.x,disc.y,disc.vx,disc.vy,w.x1,w.y1,w.x2,w.y2,WALL_REST);
+      if (hit) { disc.x=hit.cx;disc.y=hit.cy;disc.vx=hit.vx;disc.vy=hit.vy;w.flashTimer=5; }
+    }
+
+    // Ball-to-ball collision
+    for (let j=0;j<discs.length;j++) {
+      if (j===discIdx) continue;
+      const other=discs[j];
+      if (!other.active||other.teleporting||other.settling) continue;
+      const dx=disc.x-other.x,dy=disc.y-other.y,d2=dx*dx+dy*dy,minD=board.discR*2;
+      if (d2<minD*minD&&d2>0.001) {
+        const d=Math.sqrt(d2),nx=dx/d,ny=dy/d;
+        const overlap=(minD-d)/2;
+        disc.x+=nx*overlap; disc.y+=ny*overlap;
+        other.x-=nx*overlap; other.y-=ny*overlap;
+        const dvx=disc.vx-other.vx,dvy=disc.vy-other.vy;
+        const dot=dvx*nx+dvy*ny;
+        if (dot<0) {
+          disc.vx-=dot*nx; disc.vy-=dot*ny;
+          other.vx+=dot*nx; other.vy+=dot*ny;
+          if(Date.now()-lastPegSoundMs>40){sndPeg(Math.abs(dot)*.7);lastPegSoundMs=Date.now();}
+        }
       }
     }
 
     // Landing
-    if (disc.y + board.discR >= board.bottom) {
-      disc.y = board.bottom - board.discR;
-      disc.active = false;
-      const raw  = (disc.x - board.left) / board.slotWidth;
-      const slot = Math.max(0, Math.min(board.numSlots - 1, Math.floor(raw)));
-      onLanded(slot);
+    if (disc.y+board.discR>=board.bottom) {
+      const raw=(disc.x-board.left)/board.slotWidth;
+      const slot=Math.max(0,Math.min(board.numSlots-1,Math.floor(raw)));
+      beginSettle(disc, slot);
       break;
     }
   }
+  for (const peg of board.pegs) if(peg.flash>0) peg.flash--;
 
-  // Peg flash tick
-  for (const peg of board.pegs) { if (peg.flash > 0) peg.flash--; }
-
-  // Teleporter check
-  checkTeleporters();
+  checkTeleporters(disc);
 }
 
-function checkSpeedRails() {
-  if (!disc || !disc.active) return;
+function checkSpeedRails(disc) {
   for (const rail of board.speedRails) {
-    const dx = rail.x2 - rail.x1, dy = rail.y2 - rail.y1;
-    const len2 = dx * dx + dy * dy;
-    if (len2 < 0.001) continue;
-    const t  = Math.max(0, Math.min(1, ((disc.x - rail.x1) * dx + (disc.y - rail.y1) * dy) / len2));
-    const cx = rail.x1 + t * dx, cy = rail.y1 + t * dy;
-    const d  = Math.hypot(disc.x - cx, disc.y - cy);
-    if (d < board.discR + 10) {
-      const len = Math.sqrt(len2);
-      disc.vx += dx / len * 0.8;
-      disc.vy += dy / len * 0.8;
-      rail.flashTimer = 4;
-      const nowMs = Date.now();
-      if (nowMs - lastSpeedRailSndMs > 200) {
-        sndSpeedRail();
-        lastSpeedRailSndMs = nowMs;
-      }
+    const dx=rail.x2-rail.x1,dy=rail.y2-rail.y1,len2=dx*dx+dy*dy;
+    if(len2<0.001) continue;
+    const t=Math.max(0,Math.min(1,((disc.x-rail.x1)*dx+(disc.y-rail.y1)*dy)/len2));
+    const cx=rail.x1+t*dx,cy=rail.y1+t*dy;
+    if(Math.hypot(disc.x-cx,disc.y-cy)<board.discR+10) {
+      const len=Math.sqrt(len2);
+      disc.vx+=dx/len*.8; disc.vy+=dy/len*.8; rail.flashTimer=4;
+      const nowMs=Date.now();
+      if(nowMs-lastSpeedRailSndMs>200){sndSpeedRail();lastSpeedRailSndMs=nowMs;}
     }
   }
 }
 
-function checkTeleporters() {
-  if (!disc || !disc.active) return;
+function checkTeleporters(disc) {
+  if (!disc.active) return;
   for (const pair of board.teleporterPairs) {
-    const portals = [pair.a, pair.b];
-    for (let i = 0; i < 2; i++) {
-      const entry = portals[i];
-      const exit  = portals[1 - i];
-      const dx = disc.x - entry.x, dy = disc.y - entry.y;
-      if (dx * dx + dy * dy < entry.r * entry.r) {
-        disc.vx = 0; disc.vy = 0;
-        disc.active = false;
-        disc.teleporting = true;
-        disc.teleportTimer = 12;
-        disc.teleportTx = exit.x;
-        disc.teleportTy = exit.y;
-        entry.flashTimer = 28;
-        exit.flashTimer  = 28;
+    for (let i=0;i<2;i++) {
+      const entry=i===0?pair.a:pair.b, exit=i===0?pair.b:pair.a;
+      const dx=disc.x-entry.x,dy=disc.y-entry.y;
+      if (dx*dx+dy*dy<entry.r*entry.r) {
+        disc.vx=0;disc.vy=0;disc.active=false;
+        disc.teleporting=true;disc.teleportTimer=12;
+        disc.teleportTx=exit.x;disc.teleportTy=exit.y;
+        entry.flashTimer=28;exit.flashTimer=28;
         sndTeleportIn();
+        flashTeleport();
         return;
       }
     }
   }
 }
 
-function executeTeleport() {
-  disc.x = disc.teleportTx;
-  disc.y = disc.teleportTy;
-  const angle = Math.PI * (0.3 + Math.random() * 0.4);
-  const speed = 7 + Math.random() * 5;
-  disc.vx = Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1);
-  disc.vy = Math.abs(Math.sin(angle) * speed) + 2;
-  disc.trail = [];
-  disc.active = true;
-  disc.teleporting = false;
-  disc.wasInGravFlip = false;
+function executeTeleport(disc) {
+  disc.x=disc.teleportTx; disc.y=disc.teleportTy;
+  const angle=Math.PI*(.3+Math.random()*.4);
+  const speed=7+Math.random()*5;
+  disc.vx=Math.cos(angle)*speed*(Math.random()>.5?1:-1);
+  disc.vy=Math.abs(Math.sin(angle)*speed)+2;
+  disc.trail=[]; disc.active=true; disc.teleporting=false; disc.wasInGravFlip=false;
   sndTeleportOut();
-  if (disc.y + board.discR >= board.bottom) {
-    disc.active = false;
-    const raw  = (disc.x - board.left) / board.slotWidth;
-    const slot = Math.max(0, Math.min(board.numSlots - 1, Math.floor(raw)));
-    onLanded(slot);
+  if (disc.y+board.discR>=board.bottom) {
+    const raw=(disc.x-board.left)/board.slotWidth;
+    beginSettle(disc, Math.max(0,Math.min(board.numSlots-1,Math.floor(raw))));
   }
 }
 
-// ── Landing ───────────────────────────────────────────────────────────────────
-function onLanded(slot) {
-  const name  = state.names[slot] || null;
-  const color = name ? (state.colorMap[name] || '#888888') : '#888888';
+// ── Settling bounce animation ──────────────────────────────────────────────────
+function beginSettle(disc, slot) {
+  disc.active = false;
+  disc.settling = true;
+  disc.settleSlot = slot;
+  disc.settleX = board.left + (slot+.5)*board.slotWidth;
+  disc.settleY = board.bottom - board.discR;
+  disc.y = Math.min(disc.y, disc.settleY);
+  // Carry downward velocity into bounce
+  disc.vy = -Math.abs(disc.vy)*SETTLE_REST;
+  disc.vx *= 0.5;
+}
 
-  state.results.push({ slot, name, color });
-  if (name) state.winCounts[name] = (state.winCounts[name] || 0) + 1;
+function updateSettling(disc) {
+  disc.vy += GRAVITY;
+  disc.vx *= 0.78; // horizontal damping
+  disc.x += (disc.settleX - disc.x) * 0.28; // pull to center
+  disc.y += disc.vy;
 
-  state.winner     = name;
-  state.winnerSlot = slot;
-  state.celebTicks = 220;
-  spawnConfetti(slot, color);
-  sndLanding();
-  if (name) {
-    sndWinner();
-    window.parent.postMessage({ type: 'plinko:winner', winner: name }, '*');
-  }
+  // Clamp within slot
+  const sl = board.left + disc.settleSlot*board.slotWidth;
+  const sr = sl + board.slotWidth;
+  disc.x = Math.max(sl+board.discR, Math.min(sr-board.discR, disc.x));
 
-  renderResults();
-
-  state.dropsLeft--;
-  if (state.dropsLeft > 0) {
-    if (state.dropMode === 'random') {
-      setTimeout(() => { if (state.dropping) doNextDrop(); }, 2800);
-    } else {
-      state.awaitingClick = true;
-      state.dropping = true;
-      updateDropBtn();
+  if (disc.y >= disc.settleY) {
+    disc.y = disc.settleY;
+    const speed = Math.abs(disc.vy);
+    disc.vy = -speed * SETTLE_REST;
+    if (speed < 0.9) {
+      // Done settling
+      disc.y = disc.settleY;
+      disc.x = disc.settleX;
+      disc.settling = false;
+      disc.landed = true;
+      onLanded(disc.settleSlot, disc);
     }
-  } else {
-    state.dropping = false;
-    state.awaitingClick = false;
-    updateDropBtn();
   }
 }
 
-function doNextDrop(xFrac) {
-  const x = (xFrac !== undefined) ? xFrac : Math.random();
-  dropDisc(x);
-}
+// ── Landing ────────────────────────────────────────────────────────────────────
+function onLanded(slot, disc) {
+  const name  = state.names[slot] || null;
+  const color = name ? (state.colorMap[name]||'#888888') : '#888888';
 
-function startSession() {
-  if (state.names.length === 0) return;
-  state.results    = [];
-  state.winCounts  = {};
-  state.dropsLeft  = state.numDrops;
-  state.dropping   = true;
-  state.winner     = null;
-  state.winnerSlot = -1;
-  renderResults();
-  if (state.dropMode === 'random') {
-    doNextDrop();
+  state.results.push({ slot, name, color, ballColor: disc.color });
+  if (name) state.winCounts[name] = (state.winCounts[name]||0)+1;
+
+  spawnConfetti(slot, disc.color);
+  sndLanding(); sndCrowdRoar();
+  if (name) window.parent.postMessage({type:'plinko:winner',winner:name},'*');
+
+  // Count remaining active balls
+  state.activeBalls = discs.filter(d => d.active||d.settling||d.teleporting).length;
+
+  if (state.activeBalls === 0) {
+    // All done — show winner
+    if (state.numDrops===1 && name) {
+      state.winner=name; state.winnerSlot=slot; state.celebTicks=220;
+      sndWinner();
+    } else if (state.numDrops>1) {
+      const top=Object.entries(state.winCounts).sort((a,b)=>b[1]-a[1])[0];
+      if (top) {
+        state.winner=top[0]; state.winnerSlot=state.names.indexOf(top[0]);
+        state.celebTicks=220; sndWinner();
+        window.parent.postMessage({type:'plinko:winner',winner:top[0]},'*');
+      }
+    }
+    state.dropping=false; state.awaitingClick=false;
+    updateDropBtn(); renderResults();
   } else {
-    state.awaitingClick = true;
-    updateDropBtn();
-    setStatus('Click top of board to drop');
-    updateDropHint();
+    renderResults();
   }
 }
 
-// ── Confetti ──────────────────────────────────────────────────────────────────
-function spawnConfetti(slot, color) {
-  const cx = board.left + (slot + 0.5) * board.slotWidth;
-  const cy = board.slotTop;
-  for (let i = 0; i < 48; i++) {
-    const c = COLORS[Math.floor(Math.random() * COLORS.length)];
-    state.confetti.push({
-      x: cx + (Math.random() - 0.5) * 50, y: cy,
-      vx: (Math.random() - 0.5) * 7,
-      vy: -(Math.random() * 10 + 3),
-      col: c, rot: Math.random() * Math.PI * 2,
-      vrot: (Math.random() - 0.5) * 0.25,
-      sz: Math.random() * 7 + 4, life: 1.0,
+// ── Particles ──────────────────────────────────────────────────────────────────
+function spawnBumperParticles(bx, by, color) {
+  const count = 10;
+  for (let i=0;i<count;i++) {
+    const angle = (Math.PI*2/count)*i + Math.random()*.3;
+    const speed = 3.5 + Math.random()*4.5;
+    particles.push({
+      x:bx, y:by,
+      vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed,
+      life:1.0, decay:0.035+Math.random()*.02,
+      r:3+Math.random()*3,
+      color: Math.random()>.5 ? color : '#ffffff',
     });
   }
 }
 
+function tickParticles() {
+  for (let i=particles.length-1;i>=0;i--) {
+    const p=particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.18; p.vx*=0.95;
+    p.life-=p.decay;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    ctx.save();
+    ctx.globalAlpha=p.life;
+    ctx.fillStyle=p.color;
+    ctx.shadowColor=p.color; ctx.shadowBlur=6;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ── Confetti ───────────────────────────────────────────────────────────────────
+function spawnConfetti(slot, color) {
+  const cx=board.left+(slot+.5)*board.slotWidth, cy=board.slotTop;
+  for (let i=0;i<52;i++) {
+    const c=COLORS[Math.floor(Math.random()*COLORS.length)];
+    state.confetti.push({
+      x:cx+(Math.random()-.5)*55, y:cy,
+      vx:(Math.random()-.5)*8, vy:-(Math.random()*11+3),
+      col:c, rot:Math.random()*Math.PI*2, vrot:(Math.random()-.5)*.28,
+      sz:Math.random()*8+4, life:1.0,
+    });
+  }
+}
 function tickConfetti() {
-  for (let i = state.confetti.length - 1; i >= 0; i--) {
-    const c = state.confetti[i];
-    c.x += c.vx; c.y += c.vy;
-    c.vy += 0.22; c.vx *= 0.98;
-    c.rot += c.vrot;
-    c.life -= 0.012;
-    if (c.life <= 0 || c.y > canvas.clientHeight + 20) state.confetti.splice(i, 1);
+  for (let i=state.confetti.length-1;i>=0;i--) {
+    const c=state.confetti[i];
+    c.x+=c.vx;c.y+=c.vy;c.vy+=0.22;c.vx*=0.98;c.rot+=c.vrot;c.life-=0.012;
+    if(c.life<=0||c.y>canvas.clientHeight+20) state.confetti.splice(i,1);
   }
 }
 
-// ── Obstacle tick ─────────────────────────────────────────────────────────────
+// ── Obstacle tick ──────────────────────────────────────────────────────────────
 function tickObstacles() {
-  for (const b  of board.bumpers)       { if (b.flashTimer  > 0) b.flashTimer--;  }
-  for (const sp of board.spinners)      { sp.angle += sp.speed / 60; if (sp.flashTimer > 0) sp.flashTimer--; }
-  for (const f  of board.flippers)      { if (f.flashTimer  > 0) f.flashTimer--;  }
-  for (const r  of board.ricochetRails) { if (r.flashTimer  > 0) r.flashTimer--;  }
-  for (const w  of board.funnelWalls)   { if (w.flashTimer  > 0) w.flashTimer--;  }
-  for (const sr of board.speedRails)    { if (sr.flashTimer > 0) sr.flashTimer--; }
+  for (const b  of board.bumpers)        if(b.flashTimer>0)  b.flashTimer--;
+  for (const sp of board.spinners)       { sp.angle+=sp.speed/60; if(sp.flashTimer>0) sp.flashTimer--; }
+  for (const f  of board.flippers)       if(f.flashTimer>0)  f.flashTimer--;
+  for (const r  of board.ricochetRails)  if(r.flashTimer>0)  r.flashTimer--;
+  for (const w  of board.funnelWalls)    if(w.flashTimer>0)  w.flashTimer--;
+  for (const sr of board.speedRails)     if(sr.flashTimer>0) sr.flashTimer--;
+  for (const mz of board.multiplierZones)if(mz.glowTimer>0)  mz.glowTimer--;
   for (const pair of board.teleporterPairs) {
-    if (pair.a.flashTimer > 0) pair.a.flashTimer--;
-    if (pair.b.flashTimer > 0) pair.b.flashTimer--;
+    if(pair.a.flashTimer>0) pair.a.flashTimer--;
+    if(pair.b.flashTimer>0) pair.b.flashTimer--;
+  }
+  // Slot glow tick
+  for (const k of Object.keys(slotGlows)) {
+    slotGlows[k].timer--;
+    if(slotGlows[k].timer<=0) delete slotGlows[k];
   }
 }
 
-// ── Audio ─────────────────────────────────────────────────────────────────────
-let audioCtx = null;
+// ── Screen shake ───────────────────────────────────────────────────────────────
+function triggerShake(intensity) {
+  if (intensity>screenShake.intensity) {
+    screenShake.intensity=intensity; screenShake.timer=6;
+  }
+  const area = document.getElementById('board-area');
+  const amt = intensity * 1.5;
+  area.style.transform = `translate(${(Math.random()-.5)*amt*2}px,${(Math.random()-.5)*amt*2}px)`;
+  clearTimeout(screenShake._t);
+  screenShake._t = setTimeout(()=>{ area.style.transform=''; },110);
+}
 
+function flashTeleport() {
+  const el = document.getElementById('teleport-flash');
+  el.style.opacity='0.12'; setTimeout(()=>{el.style.opacity='0';},55);
+}
+
+// ── Audio ──────────────────────────────────────────────────────────────────────
+let audioCtx = null;
 function ensureAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  if (!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if (audioCtx.state==='suspended') audioCtx.resume().catch(()=>{});
   return audioCtx;
 }
-
-function tone(freq, type, gainAmt, duration, freqEnd, startDelay) {
+function tone(freq,type,gainAmt,duration,freqEnd,startDelay) {
   if (!state.soundOn) return;
   try {
-    const ac  = ensureAudio();
-    const t   = ac.currentTime + (startDelay || 0);
-    const osc = ac.createOscillator();
-    const g   = ac.createGain();
-    osc.type = type || 'sine';
-    osc.frequency.setValueAtTime(freq, t);
-    if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, t + duration);
-    g.gain.setValueAtTime(gainAmt, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    osc.connect(g); g.connect(ac.destination);
-    osc.start(t); osc.stop(t + duration + 0.01);
-  } catch(e) {}
+    const ac=ensureAudio(),t=ac.currentTime+(startDelay||0);
+    const osc=ac.createOscillator(),g=ac.createGain();
+    osc.type=type||'sine'; osc.frequency.setValueAtTime(freq,t);
+    if(freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd,t+duration);
+    g.gain.setValueAtTime(gainAmt,t); g.gain.exponentialRampToValueAtTime(0.0001,t+duration);
+    osc.connect(g);g.connect(ac.destination);osc.start(t);osc.stop(t+duration+0.01);
+  } catch(e){}
 }
-
-function sndPeg(force) {
-  const f = 280 + Math.min(force, 12) * 30;
-  tone(f, 'triangle', 0.12 + Math.min(force, 8) * 0.012, 0.08, f * 0.4);
-}
-function sndWall() { tone(140, 'sine', 0.08, 0.14, 80); }
-function sndLanding() {
-  tone(180, 'sine', 0.25, 0.28, 90);
-  tone(90,  'sine', 0.15, 0.3,  60, 0.04);
-}
-function sndWinner() {
-  const notes = [523.25, 659.25, 783.99, 1046.5];
-  notes.forEach((f, i) => tone(f, 'triangle', 0.18, 0.35, f * 0.9, i * 0.11));
-}
-function sndBumper() {
-  tone(80,  'sine', 0.38, 0.25, 40);
-  tone(160, 'sine', 0.14, 0.12, 80, 0.02);
-}
-function sndSpinner() { tone(820, 'sine', 0.11, 0.09, 380); }
-function sndFlipper() {
+function noise(gainAmt, duration, startDelay) {
   if (!state.soundOn) return;
   try {
-    const ac = ensureAudio();
-    const t  = ac.currentTime;
-    const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.07), ac.sampleRate);
-    const d   = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 1.8);
-    const src = ac.createBufferSource();
-    src.buffer = buf;
-    const gn = ac.createGain();
-    gn.gain.setValueAtTime(0.22, t);
-    gn.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
-    src.connect(gn); gn.connect(ac.destination);
-    src.start(t);
-  } catch(e) {}
+    const ac=ensureAudio(),t=ac.currentTime+(startDelay||0);
+    const buf=ac.createBuffer(1,Math.floor(ac.sampleRate*duration),ac.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.5);
+    const src=ac.createBufferSource(); src.buffer=buf;
+    const g=ac.createGain();
+    g.gain.setValueAtTime(gainAmt,t); g.gain.exponentialRampToValueAtTime(0.0001,t+duration);
+    src.connect(g);g.connect(ac.destination);src.start(t);
+  } catch(e){}
 }
-function sndTeleportIn()  { tone(200,  'sine', 0.20, 0.18, 2200); }
-function sndTeleportOut() { tone(2200, 'sine', 0.20, 0.18, 180); }
-function sndGravFlip() {
-  tone(320, 'sine', 0.14, 0.30, 140);
-  tone(140, 'sine', 0.10, 0.30, 320, 0.15);
-}
-function sndSpeedRail() { tone(460, 'sine', 0.08, 0.07, 920); }
 
-// ── Drawing ───────────────────────────────────────────────────────────────────
-const canvas = document.getElementById('board-canvas');
-const ctx    = canvas.getContext('2d');
-let dpr = 1;
+function sndPeg(force)   { const f=280+Math.min(force,12)*30; tone(f,'triangle',0.12+Math.min(force,8)*.012,.08,f*.4); }
+function sndWall()        { tone(140,'sine',.08,.14,80); }
+function sndLanding()     { tone(180,'sine',.25,.28,90); tone(90,'sine',.15,.3,60,.04); }
+function sndWinner()      { const n=[523.25,659.25,783.99,1046.5]; n.forEach((f,i)=>tone(f,'triangle',.18,.35,f*.9,i*.11)); }
+function sndBumper()      { tone(80,'sine',.38,.25,40); tone(160,'sine',.14,.12,80,.02); }
+function sndBumperCombo(n){ tone(120+n*60,'sine',.32,.2,200+n*40); tone(240+n*80,'sine',.18,.15,400+n*60,.04); }
+function sndSpinner()     { tone(820,'sine',.11,.09,380); }
+function sndFlipper()     { noise(0.22, 0.07); }
+function sndTeleportIn()  { tone(200,'sine',.2,.18,2200); }
+function sndTeleportOut() { tone(2200,'sine',.2,.18,180); }
+function sndGravFlip()    { tone(320,'sine',.14,.30,140); tone(140,'sine',.1,.30,320,.15); }
+function sndSpeedRail()   { tone(460,'sine',.08,.07,920); }
+function sndCrowdRoar()   {
+  if (!state.soundOn) return;
+  try {
+    const ac=ensureAudio(),t=ac.currentTime;
+    const buf=ac.createBuffer(1,Math.floor(ac.sampleRate*.4),ac.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.min(1,i/(ac.sampleRate*.05))*Math.pow(1-i/d.length,0.4);
+    const src=ac.createBufferSource(); src.buffer=buf;
+    const g=ac.createGain(),flt=ac.createBiquadFilter();
+    flt.type='lowpass'; flt.frequency.value=700;
+    g.gain.setValueAtTime(.18,t); g.gain.exponentialRampToValueAtTime(0.001,t+.4);
+    src.connect(flt);flt.connect(g);g.connect(ac.destination);src.start(t);
+  } catch(e){}
+}
+
+// ── Canvas / drawing ───────────────────────────────────────────────────────────
+const canvas=document.getElementById('board-canvas');
+const ctx=canvas.getContext('2d');
+let dpr=1;
 
 function resizeCanvas() {
-  dpr = window.devicePixelRatio || 1;
-  const area = document.getElementById('board-area');
-  const W = area.clientWidth, H = area.clientHeight;
-  canvas.width  = W * dpr; canvas.height = H * dpr;
-  canvas.style.width  = W + 'px'; canvas.style.height = H + 'px';
-  ctx.scale(dpr, dpr);
-  computeBoard();
+  dpr=window.devicePixelRatio||1;
+  const area=document.getElementById('board-area');
+  const W=area.clientWidth,H=area.clientHeight;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr); computeBoard();
 }
 
-function rrect(x, y, w, h, r) {
+function rrect(x,y,w,h,r) {
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
 }
-
-function hexRgba(hex, a) {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
-}
+function hexRgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
 
 function drawBoard() {
   ctx.save();
-  ctx.shadowColor = 'rgba(124,92,252,0.12)';
-  ctx.shadowBlur  = 40;
-  const bgG = ctx.createLinearGradient(board.left, board.top, board.left, board.bottom);
-  bgG.addColorStop(0, 'rgba(20,20,42,0.96)');
-  bgG.addColorStop(1, 'rgba(10,10,24,0.96)');
-  ctx.fillStyle = bgG;
-  rrect(board.left, board.top, board.width, board.bottom - board.top, 10);
-  ctx.fill();
+  ctx.shadowColor='rgba(124,92,252,.12)';ctx.shadowBlur=40;
+  const bgG=ctx.createLinearGradient(board.left,board.top,board.left,board.bottom);
+  bgG.addColorStop(0,'rgba(20,20,42,.96)');bgG.addColorStop(1,'rgba(10,10,24,.96)');
+  ctx.fillStyle=bgG; rrect(board.left,board.top,board.width,board.bottom-board.top,10); ctx.fill();
   ctx.restore();
+  ctx.strokeStyle='rgba(124,92,252,.22)';ctx.lineWidth=1;
+  rrect(board.left,board.top,board.width,board.bottom-board.top,10);ctx.stroke();
+  ctx.fillStyle='rgba(0,0,0,.025)';
+  for(let y=board.top+2;y<board.bottom;y+=4) ctx.fillRect(board.left+1,y,board.width-2,1);
 
-  ctx.strokeStyle = 'rgba(124,92,252,0.22)';
-  ctx.lineWidth = 1;
-  rrect(board.left, board.top, board.width, board.bottom - board.top, 10);
-  ctx.stroke();
-
-  ctx.fillStyle = 'rgba(0,0,0,0.025)';
-  for (let y = board.top + 2; y < board.bottom; y += 4) {
-    ctx.fillRect(board.left + 1, y, board.width - 2, 1);
-  }
-
-  // Zone labels (subtle)
-  ctx.save();
-  ctx.font = '10px system-ui';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'top';
-  const zoneLabels = [
-    { y: board.top + board.height * 0.01, text: 'ENTRY', col: 'rgba(124,92,252,0.25)' },
-    { y: board.top + board.height * 0.21, text: 'CHAOS', col: 'rgba(255,80,50,0.25)' },
-    { y: board.top + board.height * 0.51, text: 'CHANNEL', col: 'rgba(80,180,255,0.22)' },
-    { y: board.top + board.height * 0.76, text: 'LANDING', col: 'rgba(80,255,150,0.22)' },
-  ];
-  for (const lbl of zoneLabels) {
-    ctx.fillStyle = lbl.col;
-    ctx.fillText(lbl.text, board.right - 4, lbl.y);
-  }
+  // Zone labels
+  ctx.save();ctx.font='10px system-ui';ctx.textAlign='right';ctx.textBaseline='top';
+  [{y:board.top+board.height*.01,text:'ENTRY',col:'rgba(124,92,252,.25)'},
+   {y:board.top+board.height*.21,text:'CHAOS',col:'rgba(255,80,50,.25)'},
+   {y:board.top+board.height*.51,text:'CHANNEL',col:'rgba(80,180,255,.22)'},
+   {y:board.top+board.height*.76,text:'LANDING',col:'rgba(80,255,150,.22)'}]
+  .forEach(l=>{ctx.fillStyle=l.col;ctx.fillText(l.text,board.right-4,l.y);});
   ctx.restore();
 }
 
 function drawPegs() {
-  const r = board.pegR;
+  const r=board.pegR;
   for (const peg of board.pegs) {
     ctx.save();
-    if (peg.flash > 0) {
-      ctx.shadowColor = '#ffffff';
-      ctx.shadowBlur  = 10 * (peg.flash / 6);
-    } else {
-      ctx.shadowColor = 'rgba(0,0,0,0.4)';
-      ctx.shadowBlur  = 4;
-    }
-    const hx = peg.x - r * 0.32, hy = peg.y - r * 0.32;
-    const grad = ctx.createRadialGradient(hx, hy, r * 0.05, peg.x, peg.y, r);
-    if (peg.flash > 0) {
-      const t = peg.flash / 6;
-      grad.addColorStop(0, `rgba(220,200,255,${0.6 + t * 0.4})`);
-      grad.addColorStop(0.5, `rgba(160,130,220,${t})`);
-      grad.addColorStop(1, 'rgba(60,50,110,0.9)');
-    } else {
-      grad.addColorStop(0, '#d0d0f0');
-      grad.addColorStop(0.45, '#8888b8');
-      grad.addColorStop(1, '#404068');
-    }
-    ctx.fillStyle = grad;
-    ctx.beginPath(); ctx.arc(peg.x, peg.y, r, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(255,255,255,0.28)';
-    ctx.beginPath(); ctx.arc(peg.x - r * 0.28, peg.y - r * 0.28, r * 0.38, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowColor=peg.flash>0?'#ffffff':'rgba(0,0,0,.4)';
+    ctx.shadowBlur=peg.flash>0?10*(peg.flash/6):4;
+    const hx=peg.x-r*.32,hy=peg.y-r*.32;
+    const grad=ctx.createRadialGradient(hx,hy,r*.05,peg.x,peg.y,r);
+    if(peg.flash>0){const t=peg.flash/6;grad.addColorStop(0,`rgba(220,200,255,${.6+t*.4})`);grad.addColorStop(.5,`rgba(160,130,220,${t})`);grad.addColorStop(1,'rgba(60,50,110,.9)');}
+    else{grad.addColorStop(0,'#d0d0f0');grad.addColorStop(.45,'#8888b8');grad.addColorStop(1,'#404068');}
+    ctx.fillStyle=grad;ctx.beginPath();ctx.arc(peg.x,peg.y,r,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;ctx.fillStyle='rgba(255,255,255,.28)';
+    ctx.beginPath();ctx.arc(peg.x-r*.28,peg.y-r*.28,r*.38,0,Math.PI*2);ctx.fill();
     ctx.restore();
   }
 }
 
 function drawBumpers() {
   for (const b of board.bumpers) {
-    const fl = b.flashTimer > 0;
+    const fl=b.flashTimer>0;
     ctx.save();
-    ctx.shadowColor = fl ? '#ffffff' : 'rgba(255,100,50,0.7)';
-    ctx.shadowBlur  = fl ? 38 : 14;
-
-    const grad = ctx.createRadialGradient(b.x - b.r * 0.3, b.y - b.r * 0.3, 0, b.x, b.y, b.r);
-    if (fl) {
-      grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.3, '#ffaa44');
-      grad.addColorStop(1,   '#cc2200');
-    } else {
-      grad.addColorStop(0, '#ff8855');
-      grad.addColorStop(0.6, '#cc3300');
-      grad.addColorStop(1,   '#881100');
+    ctx.shadowColor=fl?'#ffffff':'rgba(255,100,50,.7)';ctx.shadowBlur=fl?40:14;
+    const grad=ctx.createRadialGradient(b.x-b.r*.3,b.y-b.r*.3,0,b.x,b.y,b.r);
+    if(fl){grad.addColorStop(0,'#ffffff');grad.addColorStop(.3,'#ffaa44');grad.addColorStop(1,'#cc2200');}
+    else{grad.addColorStop(0,'#ff8855');grad.addColorStop(.6,'#cc3300');grad.addColorStop(1,'#881100');}
+    ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle=grad;ctx.fill();
+    ctx.strokeStyle=fl?'rgba(255,220,120,.95)':'rgba(255,130,70,.65)';ctx.lineWidth=2;ctx.stroke();
+    ctx.shadowBlur=0;ctx.fillStyle=fl?'#ffffff':'rgba(255,210,190,.75)';
+    ctx.font=`bold ${Math.max(10,b.r*.52)}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('+',b.x,b.y);
+    // Chain indicator ring
+    if(b.chainCount>1&&b.flashTimer>0) {
+      ctx.strokeStyle=`rgba(255,255,100,${b.flashTimer/16})`;ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(b.x,b.y,b.r*1.5,0,Math.PI*2);ctx.stroke();
     }
-    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-    ctx.fillStyle = grad; ctx.fill();
-
-    ctx.strokeStyle = fl ? 'rgba(255,220,120,0.95)' : 'rgba(255,130,70,0.65)';
-    ctx.lineWidth   = 2;
-    ctx.stroke();
-
-    ctx.shadowBlur  = 0;
-    ctx.fillStyle   = fl ? '#ffffff' : 'rgba(255,210,190,0.75)';
-    ctx.font        = `bold ${Math.max(10, b.r * 0.52)}px system-ui`;
-    ctx.textAlign   = 'center';
-    ctx.textBaseline= 'middle';
-    ctx.fillText('+', b.x, b.y);
     ctx.restore();
   }
 }
 
 function drawSpinners() {
   for (const sp of board.spinners) {
-    const fl = sp.flashTimer > 0;
-    ctx.save();
-    ctx.translate(sp.x, sp.y);
-    ctx.rotate(sp.angle);
-    ctx.shadowColor = fl ? '#ffffff' : 'rgba(100,180,255,0.55)';
-    ctx.shadowBlur  = fl ? 22 : 9;
-
-    const grad = ctx.createLinearGradient(-sp.length/2, 0, sp.length/2, 0);
-    grad.addColorStop(0,   'rgba(50,110,210,0.55)');
-    grad.addColorStop(0.5, fl ? 'rgba(255,255,255,0.95)' : 'rgba(130,210,255,0.92)');
-    grad.addColorStop(1,   'rgba(50,110,210,0.55)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.rect(-sp.length/2, -4, sp.length, 8);
-    ctx.fill();
-
-    ctx.shadowBlur = 0;
-    ctx.fillStyle  = fl ? '#ffffff' : '#80c8ff';
-    ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+    const fl=sp.flashTimer>0;
+    ctx.save();ctx.translate(sp.x,sp.y);ctx.rotate(sp.angle);
+    ctx.shadowColor=fl?'#ffffff':'rgba(100,180,255,.55)';ctx.shadowBlur=fl?22:9;
+    const grad=ctx.createLinearGradient(-sp.length/2,0,sp.length/2,0);
+    grad.addColorStop(0,'rgba(50,110,210,.55)');
+    grad.addColorStop(.5,fl?'rgba(255,255,255,.95)':'rgba(130,210,255,.92)');
+    grad.addColorStop(1,'rgba(50,110,210,.55)');
+    ctx.fillStyle=grad;ctx.beginPath();ctx.rect(-sp.length/2,-4,sp.length,8);ctx.fill();
+    ctx.shadowBlur=0;ctx.fillStyle=fl?'#ffffff':'#80c8ff';
+    ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fill();
     ctx.restore();
   }
 }
 
 function drawFlippers() {
   for (const f of board.flippers) {
-    const fl = f.flashTimer > 0;
-    ctx.save();
-    ctx.shadowColor = fl ? '#ffffff' : 'rgba(200,160,255,0.45)';
-    ctx.shadowBlur  = fl ? 18 : 7;
-    ctx.lineCap     = 'round';
-    ctx.lineWidth   = 10;
-    ctx.strokeStyle = fl ? '#ffffff' : '#a060e8';
-    ctx.beginPath(); ctx.moveTo(f.x1, f.y1); ctx.lineTo(f.x2, f.y2); ctx.stroke();
-    ctx.shadowBlur  = 0;
-    ctx.lineWidth   = 4;
-    ctx.strokeStyle = fl ? 'rgba(255,255,255,0.7)' : 'rgba(220,190,255,0.6)';
-    ctx.stroke();
+    const fl=f.flashTimer>0;
+    ctx.save();ctx.shadowColor=fl?'#ffffff':'rgba(200,160,255,.45)';ctx.shadowBlur=fl?18:7;
+    ctx.lineCap='round';ctx.lineWidth=10;ctx.strokeStyle=fl?'#ffffff':'#a060e8';
+    ctx.beginPath();ctx.moveTo(f.x1,f.y1);ctx.lineTo(f.x2,f.y2);ctx.stroke();
+    ctx.shadowBlur=0;ctx.lineWidth=4;ctx.strokeStyle=fl?'rgba(255,255,255,.7)':'rgba(220,190,255,.6)';ctx.stroke();
     ctx.restore();
   }
 }
 
 function drawRicochetRails() {
   for (const r of board.ricochetRails) {
-    const fl = r.flashTimer > 0;
-    ctx.save();
-    ctx.shadowColor = fl ? '#ffffff' : 'rgba(255,200,50,0.45)';
-    ctx.shadowBlur  = fl ? 16 : 6;
-    ctx.lineCap     = 'round';
-    ctx.lineWidth   = 7;
-    ctx.strokeStyle = fl ? '#ffee80' : 'rgba(255,185,35,0.78)';
-    ctx.beginPath(); ctx.moveTo(r.x1, r.y1); ctx.lineTo(r.x2, r.y2); ctx.stroke();
+    const fl=r.flashTimer>0;
+    ctx.save();ctx.shadowColor=fl?'#ffffff':'rgba(255,200,50,.45)';ctx.shadowBlur=fl?16:6;
+    ctx.lineCap='round';ctx.lineWidth=7;ctx.strokeStyle=fl?'#ffee80':'rgba(255,185,35,.78)';
+    ctx.beginPath();ctx.moveTo(r.x1,r.y1);ctx.lineTo(r.x2,r.y2);ctx.stroke();
     ctx.restore();
   }
 }
 
 function drawFunnelWalls() {
   for (const w of board.funnelWalls) {
-    const fl = w.flashTimer > 0;
-    ctx.save();
-    ctx.shadowColor = fl ? '#ffffff' : 'rgba(50,220,160,0.45)';
-    ctx.shadowBlur  = fl ? 16 : 6;
-    ctx.lineCap     = 'round';
-    ctx.lineWidth   = 7;
-    ctx.strokeStyle = fl ? '#88ffcc' : 'rgba(50,210,140,0.78)';
-    ctx.beginPath(); ctx.moveTo(w.x1, w.y1); ctx.lineTo(w.x2, w.y2); ctx.stroke();
+    const fl=w.flashTimer>0;
+    ctx.save();ctx.shadowColor=fl?'#ffffff':'rgba(50,220,160,.45)';ctx.shadowBlur=fl?16:6;
+    ctx.lineCap='round';ctx.lineWidth=7;ctx.strokeStyle=fl?'#88ffcc':'rgba(50,210,140,.78)';
+    ctx.beginPath();ctx.moveTo(w.x1,w.y1);ctx.lineTo(w.x2,w.y2);ctx.stroke();
     ctx.restore();
   }
 }
 
 function drawTeleporters() {
-  const t = Date.now() * 0.003;
+  const t=Date.now()*.003;
   for (const pair of board.teleporterPairs) {
-    // Connection line
-    ctx.save();
-    ctx.strokeStyle = 'rgba(200,80,255,0.18)';
-    ctx.lineWidth   = 1;
-    ctx.setLineDash([5, 10]);
-    ctx.beginPath(); ctx.moveTo(pair.a.x, pair.a.y); ctx.lineTo(pair.b.x, pair.b.y); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-
-    for (const portal of [pair.a, pair.b]) {
-      const fl    = portal.flashTimer > 0;
-      const pulse = (Math.sin(t * 2.5) + 1) / 2;
-      ctx.save();
-      ctx.shadowColor = '#ff44ff';
-      ctx.shadowBlur  = fl ? 45 : 12 + pulse * 10;
-
-      ctx.strokeStyle = fl ? '#ffffff' : `rgba(255,80,255,${0.62 + pulse * 0.28})`;
-      ctx.lineWidth   = fl ? 3.5 : 2.5;
-      ctx.beginPath(); ctx.arc(portal.x, portal.y, portal.r, 0, Math.PI * 2); ctx.stroke();
-
-      ctx.shadowBlur  = 0;
-      ctx.strokeStyle = `rgba(200,100,255,${0.38 + pulse * 0.2})`;
-      ctx.lineWidth   = 1.5;
-      ctx.beginPath(); ctx.arc(portal.x, portal.y, portal.r * 0.58, 0, Math.PI * 2); ctx.stroke();
-
-      ctx.fillStyle = fl ? '#ffffff' : '#cc66ff';
-      ctx.beginPath(); ctx.arc(portal.x, portal.y, portal.r * 0.22, 0, Math.PI * 2); ctx.fill();
-
-      // Orbiting particles
-      for (let i = 0; i < 4; i++) {
-        const a  = t * 3.5 + i * Math.PI * 0.5;
-        const px = portal.x + Math.cos(a) * portal.r * 0.82;
-        const py = portal.y + Math.sin(a) * portal.r * 0.82;
-        ctx.fillStyle = `rgba(210,120,255,${0.6 + pulse * 0.3})`;
-        ctx.beginPath(); ctx.arc(px, py, 2.2, 0, Math.PI * 2); ctx.fill();
-      }
+    ctx.save();ctx.strokeStyle='rgba(200,80,255,.18)';ctx.lineWidth=1;ctx.setLineDash([5,10]);
+    ctx.beginPath();ctx.moveTo(pair.a.x,pair.a.y);ctx.lineTo(pair.b.x,pair.b.y);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+    for (const portal of [pair.a,pair.b]) {
+      const fl=portal.flashTimer>0,pulse=(Math.sin(t*2.5)+1)/2;
+      ctx.save();ctx.shadowColor='#ff44ff';ctx.shadowBlur=fl?45:12+pulse*10;
+      ctx.strokeStyle=fl?'#ffffff':`rgba(255,80,255,${.62+pulse*.28})`;ctx.lineWidth=fl?3.5:2.5;
+      ctx.beginPath();ctx.arc(portal.x,portal.y,portal.r,0,Math.PI*2);ctx.stroke();
+      ctx.shadowBlur=0;ctx.strokeStyle=`rgba(200,100,255,${.38+pulse*.2})`;ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.arc(portal.x,portal.y,portal.r*.58,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle=fl?'#ffffff':'#cc66ff';
+      ctx.beginPath();ctx.arc(portal.x,portal.y,portal.r*.22,0,Math.PI*2);ctx.fill();
+      for(let i=0;i<4;i++){const a=t*3.5+i*Math.PI*.5;const px=portal.x+Math.cos(a)*portal.r*.82,py=portal.y+Math.sin(a)*portal.r*.82;ctx.fillStyle=`rgba(210,120,255,${.6+pulse*.3})`;ctx.beginPath();ctx.arc(px,py,2.2,0,Math.PI*2);ctx.fill();}
       ctx.restore();
     }
   }
 }
 
 function drawSpeedRails() {
-  const t = Date.now() * 0.005;
+  const t=Date.now()*.005;
   for (const r of board.speedRails) {
-    const fl    = r.flashTimer > 0;
-    const pulse = (Math.sin(t * 4) + 1) / 2;
-    ctx.save();
-    ctx.shadowColor = '#44ffaa';
-    ctx.shadowBlur  = fl ? 28 : 9 + pulse * 7;
-    ctx.lineCap     = 'round';
-    ctx.lineWidth   = 8;
-    ctx.strokeStyle = fl ? '#ffffff' : `rgba(50,255,155,${0.68 + pulse * 0.22})`;
-    ctx.beginPath(); ctx.moveTo(r.x1, r.y1); ctx.lineTo(r.x2, r.y2); ctx.stroke();
-
-    // Arrow
-    ctx.shadowBlur  = 0;
-    const dx = r.x2 - r.x1, dy = r.y2 - r.y1;
-    const ln = Math.hypot(dx, dy) || 1;
-    const nx = dx/ln, ny = dy/ln;
-    const mx = (r.x1+r.x2)/2, my = (r.y1+r.y2)/2;
-    ctx.strokeStyle = 'rgba(200,255,230,0.75)';
-    ctx.lineWidth   = 2;
-    const al = 8;
-    ctx.beginPath();
-    ctx.moveTo(mx - nx*al, my - ny*al);
-    ctx.lineTo(mx + nx*al, my + ny*al);
-    ctx.lineTo(mx + nx*al - ny*6, my + ny*al + nx*6);
-    ctx.moveTo(mx + nx*al, my + ny*al);
-    ctx.lineTo(mx + nx*al + ny*6, my + ny*al - nx*6);
-    ctx.stroke();
+    const fl=r.flashTimer>0,pulse=(Math.sin(t*4)+1)/2;
+    ctx.save();ctx.shadowColor='#44ffaa';ctx.shadowBlur=fl?28:9+pulse*7;
+    ctx.lineCap='round';ctx.lineWidth=8;ctx.strokeStyle=fl?'#ffffff':`rgba(50,255,155,${.68+pulse*.22})`;
+    ctx.beginPath();ctx.moveTo(r.x1,r.y1);ctx.lineTo(r.x2,r.y2);ctx.stroke();
+    ctx.shadowBlur=0;const dx=r.x2-r.x1,dy=r.y2-r.y1,ln=Math.hypot(dx,dy)||1;
+    const nx=dx/ln,ny=dy/ln,mx=(r.x1+r.x2)/2,my=(r.y1+r.y2)/2,al=8;
+    ctx.strokeStyle='rgba(200,255,230,.75)';ctx.lineWidth=2;ctx.beginPath();
+    ctx.moveTo(mx-nx*al,my-ny*al);ctx.lineTo(mx+nx*al,my+ny*al);
+    ctx.lineTo(mx+nx*al-ny*6,my+ny*al+nx*6);ctx.moveTo(mx+nx*al,my+ny*al);ctx.lineTo(mx+nx*al+ny*6,my+ny*al-nx*6);ctx.stroke();
     ctx.restore();
   }
 }
 
 function drawGravFlipZones() {
-  if (!board.gravFlipZones || !board.gravFlipZones.length) return;
-  const t = Date.now() * 0.003;
+  if (!board.gravFlipZones||!board.gravFlipZones.length) return;
+  const t=Date.now()*.003;
   for (const z of board.gravFlipZones) {
-    const active = disc && disc.gravFlipTimer > 0;
-    const pulse  = (Math.sin(t * (active ? 7 : 2)) + 1) / 2;
+    const active=discs.some(d=>d.gravFlipTimer>0), pulse=(Math.sin(t*(active?7:2))+1)/2;
     ctx.save();
-    ctx.fillStyle   = `rgba(255,${active?170:50},${active?80:50},${active ? 0.12+pulse*0.09 : 0.04+pulse*0.03})`;
-    ctx.strokeStyle = `rgba(255,${active?190:80},${active?90:80},${active ? 0.75+pulse*0.25 : 0.28+pulse*0.14})`;
-    ctx.lineWidth   = active ? 2.2 : 1.5;
-    ctx.setLineDash(active ? [] : [4, 6]);
-    ctx.beginPath(); ctx.rect(z.x, z.y, z.w, z.h);
-    ctx.fill(); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle   = `rgba(255,${active?210:130},${active?130:130},${active ? 0.9 : 0.38+pulse*0.18})`;
-    ctx.font        = `${active ? 'bold ' : ''}10px system-ui`;
-    ctx.textAlign   = 'center';
-    ctx.textBaseline= 'middle';
-    ctx.fillText('↑ GRAVITY FLIP ↑', z.x + z.w/2, z.y + z.h/2);
+    ctx.fillStyle=`rgba(255,${active?170:50},${active?80:50},${active?.12+pulse*.09:.04+pulse*.03})`;
+    ctx.strokeStyle=`rgba(255,${active?190:80},${active?90:80},${active?.75+pulse*.25:.28+pulse*.14})`;
+    ctx.lineWidth=active?2.2:1.5;ctx.setLineDash(active?[]:[4,6]);
+    ctx.beginPath();ctx.rect(z.x,z.y,z.w,z.h);ctx.fill();ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=`rgba(255,${active?210:130},${active?130:130},${active?.9:.38+pulse*.18})`;
+    ctx.font=`${active?'bold ':''}10px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('↑ GRAVITY FLIP ↑',z.x+z.w/2,z.y+z.h/2);
+    ctx.restore();
+  }
+}
+
+function drawMultiplierZones() {
+  const t=Date.now()*.002;
+  for (const mz of board.multiplierZones) {
+    const active=mz.glowTimer>0, pulse=(Math.sin(t*2.5)+1)/2;
+    ctx.save();
+    ctx.fillStyle=hexRgba(mz.col, active?.14+pulse*.08:.03+pulse*.02);
+    ctx.strokeStyle=hexRgba(mz.col, active?.85:.18+pulse*.1);
+    ctx.lineWidth=active?2:1;ctx.setLineDash(active?[]:[3,5]);
+    ctx.beginPath();ctx.rect(mz.x,mz.y,mz.w,mz.h);ctx.fill();ctx.stroke();ctx.setLineDash([]);
+    if(active) {
+      ctx.fillStyle=hexRgba(mz.col,.85);ctx.font='bold 9px system-ui';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('✦ MULTIPLIER ✦',mz.x+mz.w/2,mz.y+mz.h/2);
+    }
     ctx.restore();
   }
 }
 
 function drawSlots() {
-  const sw = board.slotWidth, st = board.slotTop, sh = board.slotH;
-  const ns = board.numSlots, ct = state.celebTicks;
+  const sw=board.slotWidth,st=board.slotTop,sh=board.slotH,ns=board.numSlots,ct=state.celebTicks;
+  const useVertical = sw < 52; // rotate text when slots are narrow
 
-  for (let i = 0; i < ns; i++) {
-    const x    = board.left + i * sw;
-    const name = state.names[i] || '';
-    const col  = name ? (state.colorMap[name] || COLORS[i % COLORS.length]) : '#556677';
-    const win  = ct > 0 && state.winnerSlot === i;
-    const pulse= win ? (Math.sin(ct * 0.18) * 0.5 + 0.5) : 0;
+  for (let i=0;i<ns;i++) {
+    const x=board.left+i*sw;
+    const name=state.names[i]||'';
+    const col=name?(state.colorMap[name]||COLORS[i%COLORS.length]):'#556677';
+    const win=ct>0&&state.winnerSlot===i;
+    const pulse=win?(Math.sin(ct*.18)*.5+.5):0;
+    const glow=slotGlows[i];
 
     ctx.save();
-    ctx.fillStyle = hexRgba(col, win ? 0.42 + pulse * 0.2 : 0.12);
-    ctx.fillRect(x + 1, st, sw - 2, sh);
+    ctx.fillStyle=hexRgba(col, win?.42+pulse*.2: glow?.22:.12);
+    ctx.fillRect(x+1,st,sw-2,sh);
 
     if (win) {
-      ctx.shadowColor = col;
-      ctx.shadowBlur  = 18 + pulse * 18;
-      ctx.strokeStyle = hexRgba(col, 0.9);
-      ctx.lineWidth   = 2;
-      ctx.strokeRect(x + 1, st, sw - 2, sh);
-      ctx.shadowBlur  = 0;
+      ctx.shadowColor=col;ctx.shadowBlur=18+pulse*18;
+      ctx.strokeStyle=hexRgba(col,.9);ctx.lineWidth=2;
+      ctx.strokeRect(x+1,st,sw-2,sh);ctx.shadowBlur=0;
+    }
+    if (glow&&!win) {
+      ctx.shadowColor=glow.color;ctx.shadowBlur=10;
+      ctx.strokeStyle=hexRgba(glow.color, .6+(glow.timer/35)*.3);ctx.lineWidth=2;
+      ctx.strokeRect(x+1,st,sw-2,sh);ctx.shadowBlur=0;
     }
 
-    ctx.strokeStyle = hexRgba(col, win ? 0.6 : 0.25);
-    ctx.lineWidth   = 1;
-    ctx.beginPath(); ctx.moveTo(x, st); ctx.lineTo(x, st + sh); ctx.stroke();
-    if (i === ns - 1) {
-      ctx.beginPath(); ctx.moveTo(x + sw, st); ctx.lineTo(x + sw, st + sh); ctx.stroke();
-    }
+    ctx.strokeStyle=hexRgba(col,win?.6:glow?.4:.25);ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,st);ctx.lineTo(x,st+sh);ctx.stroke();
+    if(i===ns-1){ctx.beginPath();ctx.moveTo(x+sw,st);ctx.lineTo(x+sw,st+sh);ctx.stroke();}
 
     if (name) {
-      const fs = Math.max(8, Math.min(14, sw * 0.22, sh * 0.32));
-      ctx.font = `700 ${fs}px 'Segoe UI', system-ui, sans-serif`;
-      ctx.textAlign    = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.beginPath(); ctx.rect(x + 2, st + 1, sw - 4, sh - 2); ctx.clip();
-      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 4;
-      ctx.fillStyle   = win ? '#ffffff' : col;
-      ctx.fillText(name, x + sw / 2, st + sh / 2);
+      ctx.beginPath();ctx.rect(x+2,st+1,sw-4,sh-2);ctx.clip();
+      ctx.shadowColor='rgba(0,0,0,.6)';ctx.shadowBlur=4;
+      ctx.fillStyle=win?'#ffffff':col;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+
+      if (useVertical) {
+        // Vertical text: rotate -90deg around slot center
+        const fs=Math.max(6,Math.min(11, sh/Math.max(name.length,1)*1.4, sw*0.6));
+        ctx.font=`700 ${fs}px 'Segoe UI',system-ui,sans-serif`;
+        ctx.translate(x+sw/2, st+sh/2);
+        ctx.rotate(-Math.PI/2);
+        ctx.fillText(name, 0, 0);
+      } else {
+        const fs=Math.max(8,Math.min(14,sw*.22,sh*.32));
+        ctx.font=`700 ${fs}px 'Segoe UI',system-ui,sans-serif`;
+        ctx.fillText(name, x+sw/2, st+sh/2);
+      }
     }
     ctx.restore();
   }
 }
 
-function drawTrail() {
-  if (!disc || disc.teleporting || disc.trail.length < 2) return;
-  for (let i = 0; i < disc.trail.length; i++) {
-    const t = i / disc.trail.length;
-    const p = disc.trail[i];
-    const r = board.discR * t * 0.75;
-    if (r < 1) continue;
-    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(124,92,252,${t * 0.28})`;
-    ctx.fill();
+function drawTrailsAndDiscs() {
+  // Trails first (behind balls)
+  for (const disc of discs) {
+    if (disc.teleporting||disc.trail.length<2) continue;
+    for (let i=0;i<disc.trail.length;i++) {
+      const alpha=i/disc.trail.length;
+      const p=disc.trail[i];
+      const r=board.discR*alpha*.72;
+      if(r<1) continue;
+      ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);
+      ctx.fillStyle=hexRgba(disc.color,alpha*.3);
+      ctx.fill();
+    }
+  }
+  // Discs
+  for (const disc of discs) {
+    if (disc.teleporting) continue;
+    drawSingleDisc(disc);
   }
 }
 
-function drawDisc() {
-  if (!disc || disc.teleporting) return;
-  const r  = board.discR;
-  const hx = disc.x - r * 0.28, hy = disc.y - r * 0.32;
-
+function drawSingleDisc(disc) {
+  const r=board.discR, hx=disc.x-r*.28, hy=disc.y-r*.32;
   ctx.save();
-  ctx.shadowColor = 'rgba(124,92,252,0.85)';
-  ctx.shadowBlur  = 18;
-
-  const grad = ctx.createRadialGradient(hx, hy, r * 0.06, disc.x, disc.y, r);
-  grad.addColorStop(0, '#bca8ff');
-  grad.addColorStop(0.45, '#7c5cfc');
-  grad.addColorStop(1, '#4a36cc');
-  ctx.fillStyle = grad;
-  ctx.beginPath(); ctx.arc(disc.x, disc.y, r, 0, Math.PI * 2); ctx.fill();
-
-  ctx.shadowBlur = 0;
-  ctx.fillStyle  = 'rgba(255,255,255,0.38)';
-  ctx.beginPath(); ctx.arc(disc.x - r * 0.24, disc.y - r * 0.28, r * 0.4, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowColor=disc.color; ctx.shadowBlur=18;
+  const grad=ctx.createRadialGradient(hx,hy,r*.06,disc.x,disc.y,r);
+  // Lighten color for highlight
+  grad.addColorStop(0,lightenColor(disc.color,.4));
+  grad.addColorStop(.45,disc.color);
+  grad.addColorStop(1,darkenColor(disc.color,.35));
+  ctx.fillStyle=grad;ctx.beginPath();ctx.arc(disc.x,disc.y,r,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;ctx.fillStyle='rgba(255,255,255,.38)';
+  ctx.beginPath();ctx.arc(disc.x-r*.24,disc.y-r*.28,r*.4,0,Math.PI*2);ctx.fill();
   ctx.restore();
 }
 
+function lightenColor(hex, amt) {
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.min(255,((n>>16)&255)+Math.round(amt*255));
+  const g=Math.min(255,((n>>8)&255)+Math.round(amt*255));
+  const b=Math.min(255,(n&255)+Math.round(amt*255));
+  return `rgb(${r},${g},${b})`;
+}
+function darkenColor(hex, amt) {
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.max(0,((n>>16)&255)-Math.round(amt*255));
+  const g=Math.max(0,((n>>8)&255)-Math.round(amt*255));
+  const b=Math.max(0,(n&255)-Math.round(amt*255));
+  return `rgb(${r},${g},${b})`;
+}
+
 function drawWinnerBanner() {
-  if (state.celebTicks <= 0 || !state.winner) return;
-  const W      = canvas.clientWidth;
-  const fadeIn = Math.min(1, (220 - state.celebTicks) / 18);
-  const fadeOut= state.celebTicks < 45 ? state.celebTicks / 45 : 1;
-  const alpha  = fadeIn * fadeOut;
-  if (alpha <= 0) return;
-
-  const bw = Math.min(480, W * 0.75);
-  const bh = 78;
-  const bx = (W - bw) / 2;
-  const by = board.top + board.height * 0.38;
-
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle   = 'rgba(5,5,15,0.88)';
-  rrect(bx, by, bw, bh, 14); ctx.fill();
-
-  ctx.shadowColor = '#ffd700'; ctx.shadowBlur  = 22;
-  ctx.strokeStyle = 'rgba(255,215,0,0.85)'; ctx.lineWidth = 2;
-  rrect(bx, by, bw, bh, 14); ctx.stroke();
-  ctx.shadowBlur  = 0;
-
-  ctx.fillStyle    = '#ffd700';
-  ctx.font         = '700 12px "Segoe UI", system-ui, sans-serif';
-  ctx.textAlign    = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('🏆 WINNER', bx + bw / 2, by + bh * 0.28);
-
-  ctx.fillStyle = '#ffffff';
-  const fs = Math.min(30, bw * 0.07);
-  ctx.font = `700 ${fs}px "Segoe UI", system-ui, sans-serif`;
-  ctx.fillText(state.winner, bx + bw / 2, by + bh * 0.68);
+  if (state.celebTicks<=0||!state.winner) return;
+  const W=canvas.clientWidth;
+  const fadeIn=Math.min(1,(220-state.celebTicks)/18), fadeOut=state.celebTicks<45?state.celebTicks/45:1;
+  const alpha=fadeIn*fadeOut; if(alpha<=0) return;
+  const bw=Math.min(480,W*.75),bh=78,bx=(W-bw)/2,by=board.top+board.height*.38;
+  ctx.save();ctx.globalAlpha=alpha;
+  ctx.fillStyle='rgba(5,5,15,.88)';rrect(bx,by,bw,bh,14);ctx.fill();
+  ctx.shadowColor='#ffd700';ctx.shadowBlur=22;ctx.strokeStyle='rgba(255,215,0,.85)';ctx.lineWidth=2;
+  rrect(bx,by,bw,bh,14);ctx.stroke();ctx.shadowBlur=0;
+  ctx.fillStyle='#ffd700';ctx.font='700 12px "Segoe UI",system-ui,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🏆 WINNER',bx+bw/2,by+bh*.28);
+  ctx.fillStyle='#ffffff';const fs=Math.min(30,bw*.07);
+  ctx.font=`700 ${fs}px "Segoe UI",system-ui,sans-serif`;ctx.fillText(state.winner,bx+bw/2,by+bh*.68);
   ctx.restore();
 }
 
 function drawConfetti() {
   for (const c of state.confetti) {
-    ctx.save();
-    ctx.globalAlpha = c.life;
-    ctx.translate(c.x, c.y); ctx.rotate(c.rot);
-    ctx.fillStyle = c.col;
-    ctx.fillRect(-c.sz/2, -c.sz/4, c.sz, c.sz/2);
-    ctx.restore();
+    ctx.save();ctx.globalAlpha=c.life;ctx.translate(c.x,c.y);ctx.rotate(c.rot);
+    ctx.fillStyle=c.col;ctx.fillRect(-c.sz/2,-c.sz/4,c.sz,c.sz/2);ctx.restore();
   }
 }
 
 function drawIdleHint() {
-  if (state.names.length === 0) {
-    const W = canvas.clientWidth, H = canvas.clientHeight;
-    ctx.save();
-    ctx.fillStyle    = 'rgba(136,136,170,0.55)';
-    ctx.font         = '400 14px "Segoe UI", system-ui, sans-serif';
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Add players in the admin panel to begin', W / 2, H / 2);
-    ctx.restore();
-    return;
+  const anyActive=discs.some(d=>d.active||d.settling||d.teleporting);
+  if (state.names.length===0) {
+    const W=canvas.clientWidth,H=canvas.clientHeight;
+    ctx.save();ctx.fillStyle='rgba(136,136,170,.55)';ctx.font='400 14px "Segoe UI",system-ui,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Add players in the admin panel to begin',W/2,H/2);ctx.restore();return;
   }
-  if (!state.dropping && !disc) {
-    const W     = canvas.clientWidth;
-    const pulse = (Math.sin(Date.now() * 0.0028) + 1) / 2;
-    ctx.save();
-    ctx.fillStyle    = `rgba(124,92,252,${0.35 + pulse * 0.25})`;
-    ctx.font         = '600 12px "Segoe UI", system-ui, sans-serif';
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('Press Space or click Drop Disc', W / 2, board.top - 8);
-    ctx.restore();
+  if (!state.dropping&&!anyActive) {
+    const W=canvas.clientWidth,pulse=(Math.sin(Date.now()*.0028)+1)/2;
+    ctx.save();ctx.fillStyle=`rgba(124,92,252,${.35+pulse*.25})`;ctx.font='600 12px "Segoe UI",system-ui,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillText(state.numDrops>1?`Press Space — drops ${state.numDrops} balls simultaneously`:'Press Space or click Drop',W/2,board.top-8);ctx.restore();
   }
-  if (state.awaitingClick && !disc?.active) {
-    const W     = canvas.clientWidth;
-    const pulse = (Math.sin(Date.now() * 0.005) + 1) / 2;
-    ctx.save();
-    ctx.fillStyle    = `rgba(124,92,252,${0.5 + pulse * 0.3})`;
-    ctx.font         = '700 13px "Segoe UI", system-ui, sans-serif';
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText(`Drop ${state.dropsLeft} more — click top of board or press Space`, W / 2, board.top - 8);
-    ctx.restore();
+  if (state.awaitingClick&&!anyActive) {
+    const W=canvas.clientWidth,pulse=(Math.sin(Date.now()*.005)+1)/2;
+    ctx.save();ctx.fillStyle=`rgba(124,92,252,${.5+pulse*.3})`;ctx.font='700 13px "Segoe UI",system-ui,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('Click top of board to drop — or press Space',W/2,board.top-8);ctx.restore();
   }
 }
 
 function drawDropCursor(xNorm) {
-  if (!state.awaitingClick || disc?.active || xNorm === null) return;
-  const x     = board.left + xNorm * board.width;
-  const pulse = (Math.sin(Date.now() * 0.006) + 1) / 2;
-
-  ctx.save();
-  ctx.shadowColor = '#7c5cfc'; ctx.shadowBlur = 6 + pulse * 8;
-  ctx.strokeStyle = `rgba(124,92,252,${0.55 + pulse * 0.3})`;
-  ctx.lineWidth   = 2; ctx.setLineDash([5, 5]);
-  ctx.beginPath(); ctx.moveTo(x, board.top); ctx.lineTo(x, board.top + board.height * 0.18); ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle  = '#7c5cfc'; ctx.shadowBlur = 10;
-  ctx.beginPath(); ctx.moveTo(x - 7, board.top - 2); ctx.lineTo(x + 7, board.top - 2); ctx.lineTo(x, board.top + 12); ctx.closePath(); ctx.fill();
+  if(!state.awaitingClick||xNorm===null) return;
+  const anyActive=discs.some(d=>d.active||d.teleporting);
+  if(anyActive) return;
+  const x=board.left+xNorm*board.width,pulse=(Math.sin(Date.now()*.006)+1)/2;
+  ctx.save();ctx.shadowColor='#7c5cfc';ctx.shadowBlur=6+pulse*8;
+  ctx.strokeStyle=`rgba(124,92,252,${.55+pulse*.3})`;ctx.lineWidth=2;ctx.setLineDash([5,5]);
+  ctx.beginPath();ctx.moveTo(x,board.top);ctx.lineTo(x,board.top+board.height*.18);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#7c5cfc';ctx.shadowBlur=10;
+  ctx.beginPath();ctx.moveTo(x-7,board.top-2);ctx.lineTo(x+7,board.top-2);ctx.lineTo(x,board.top+12);ctx.closePath();ctx.fill();
   ctx.restore();
 }
 
-// ── Main loop ─────────────────────────────────────────────────────────────────
-let hoverXNorm = null;
+// ── Main loop ──────────────────────────────────────────────────────────────────
+let hoverXNorm=null;
 
 function frame() {
-  const W = canvas.clientWidth, H = canvas.clientHeight;
-  ctx.clearRect(0, 0, W, H);
+  const W=canvas.clientWidth,H=canvas.clientHeight;
+  ctx.clearRect(0,0,W,H);
 
   tickObstacles();
+  tickParticles();
+  tickConfetti();
 
-  // Disc update / teleport countdown
-  if (disc?.active) {
-    updateDisc();
-  } else if (disc?.teleporting) {
-    if (disc.teleportTimer > 0) {
-      disc.teleportTimer--;
-    } else {
-      executeTeleport();
-    }
+  // Update discs
+  updateAllDiscs();
+  // Teleport countdowns
+  for (const disc of discs) {
+    if (disc.teleporting&&disc.teleportTimer>0) disc.teleportTimer--;
+    else if (disc.teleporting&&disc.teleportTimer<=0) executeTeleport(disc);
   }
 
-  // Draw order: bg → obstacles → pegs → disc → fx
+  // Draw back to front
   drawBoard();
   drawGravFlipZones();
+  drawMultiplierZones();
   drawSpeedRails();
   drawTeleporters();
   drawFunnelWalls();
@@ -1910,332 +1384,207 @@ function frame() {
   drawBumpers();
   drawPegs();
   drawSlots();
-  drawTrail();
-  drawDisc();
-  tickConfetti();
+  drawTrailsAndDiscs();
+  drawParticles();
   drawConfetti();
-
-  if (state.celebTicks > 0) { drawWinnerBanner(); state.celebTicks--; }
-
+  if(state.celebTicks>0){drawWinnerBanner();state.celebTicks--;}
   drawIdleHint();
-  if (state.awaitingClick) drawDropCursor(hoverXNorm);
+  if(state.awaitingClick) drawDropCursor(hoverXNorm);
 
   requestAnimationFrame(frame);
 }
 
-// ── Canvas interaction ────────────────────────────────────────────────────────
-canvas.addEventListener('mousemove', (e) => {
-  if (!state.awaitingClick) { hoverXNorm = null; return; }
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left, y = e.clientY - rect.top;
-  if (y < board.top + 30) {
-    hoverXNorm = Math.max(0, Math.min(1, (x - board.left) / board.width));
-    canvas.style.cursor = 'crosshair';
-  } else { hoverXNorm = null; canvas.style.cursor = 'default'; }
+// ── Canvas events ──────────────────────────────────────────────────────────────
+canvas.addEventListener('mousemove',(e)=>{
+  if(!state.awaitingClick){hoverXNorm=null;return;}
+  const rect=canvas.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;
+  if(y<board.top+30){hoverXNorm=Math.max(0,Math.min(1,(x-board.left)/board.width));canvas.style.cursor='crosshair';}
+  else{hoverXNorm=null;canvas.style.cursor='default';}
 });
-
-canvas.addEventListener('mouseleave', () => { hoverXNorm = null; });
-
-canvas.addEventListener('click', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left, y = e.clientY - rect.top;
-  if (y > board.top + 30) return;
-  const xFrac = Math.max(0, Math.min(1, (x - board.left) / board.width));
-  if (state.awaitingClick && !disc?.active) {
-    doNextDrop(xFrac);
-  } else if (!state.dropping && state.names.length > 0 && state.dropMode === 'click') {
-    startSession();
+canvas.addEventListener('mouseleave',()=>{hoverXNorm=null;});
+canvas.addEventListener('click',(e)=>{
+  const rect=canvas.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;
+  if(y>board.top+30) return;
+  const xFrac=Math.max(0,Math.min(1,(x-board.left)/board.width));
+  const anyActive=discs.some(d=>d.active||d.settling||d.teleporting);
+  if(state.awaitingClick&&!anyActive) { startSession(xFrac); }
+  else if(!state.dropping&&state.names.length>0&&state.dropMode==='click') {
+    state.awaitingClick=true; updateDropBtn(); updateDropHint();
   }
 });
 
-// ── UI helpers ────────────────────────────────────────────────────────────────
-function setStatus(msg) { document.getElementById('status-bar').textContent = msg; }
-
+// ── UI helpers ─────────────────────────────────────────────────────────────────
+function setStatus(msg){document.getElementById('status-bar').textContent=msg;}
 function updateDropBtn() {
-  const btn = document.getElementById('drop-btn');
-  if (state.dropping && !state.awaitingClick) {
-    btn.disabled = true;
-    btn.textContent = `🎯 Dropping… (${state.dropsLeft} left)`;
-  } else if (state.awaitingClick) {
-    btn.disabled = false;
-    btn.textContent = `🎯 Drop Next (${state.dropsLeft} left)`;
+  const btn=document.getElementById('drop-btn');
+  const anyActive=discs.some(d=>d.active||d.settling||d.teleporting);
+  if(state.dropping&&anyActive){
+    btn.disabled=true;
+    btn.textContent=`🎯 ${state.activeBalls} ball${state.activeBalls!==1?'s':''} in play…`;
+  } else if(state.awaitingClick) {
+    btn.disabled=false;btn.textContent=`🎯 Drop ${state.numDrops} Ball${state.numDrops>1?'s':''}`;
   } else {
-    btn.disabled = state.names.length === 0;
-    btn.textContent = '🎯 Drop Disc (Space)';
+    btn.disabled=state.names.length===0;
+    btn.textContent=state.numDrops>1?`🎯 Drop ${state.numDrops} Balls (Space)`:'🎯 Drop Ball (Space)';
   }
 }
-
 function updateDropHint() {
-  const hint = document.getElementById('drop-hint');
-  hint.textContent = (state.awaitingClick && !disc?.active) ? 'Click near the top of the board to drop' : '';
+  document.getElementById('drop-hint').textContent=
+    (state.awaitingClick&&!discs.some(d=>d.active||d.settling||d.teleporting))
+      ? 'Click near the top of the board to drop' : '';
 }
-
 function renderNameList() {
-  const ul  = document.getElementById('name-list');
-  const cnt = document.getElementById('name-count');
-  cnt.textContent = `${state.names.length} player${state.names.length !== 1 ? 's' : ''}`;
-  ul.innerHTML = '';
-  state.names.forEach((name, i) => {
-    const color = state.colorMap[name] || COLORS[i % COLORS.length];
-    const li = document.createElement('li');
-    li.className = 'name-item';
-    li.innerHTML = `
-      <span class="color-dot" style="background:${color}"></span>
-      <span class="name-text">${escHtml(name)}</span>
-      <span class="slot-badge">#${i + 1}</span>
-      <button class="remove-btn" data-name="${escHtml(name)}" title="Remove">✕</button>`;
+  const ul=document.getElementById('name-list'),cnt=document.getElementById('name-count');
+  cnt.textContent=`${state.names.length} player${state.names.length!==1?'s':''}`;
+  ul.innerHTML='';
+  state.names.forEach((name,i)=>{
+    const color=state.colorMap[name]||COLORS[i%COLORS.length];
+    const li=document.createElement('li'); li.className='name-item';
+    li.innerHTML=`<span class="color-dot" style="background:${color}"></span><span class="name-text">${escHtml(name)}</span><span class="slot-badge">#${i+1}</span><button class="remove-btn" data-name="${escHtml(name)}" title="Remove">✕</button>`;
     ul.appendChild(li);
   });
-  ul.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.addEventListener('click', () => removeName(btn.dataset.name));
-  });
-  updateDropBtn();
-  computeBoard();
-  setStatus(state.names.length === 0 ? 'Ready · Add players to begin' : `${state.names.length} players loaded`);
+  ul.querySelectorAll('.remove-btn').forEach(btn=>btn.addEventListener('click',()=>removeName(btn.dataset.name)));
+  updateDropBtn();computeBoard();
+  setStatus(state.names.length===0?'Ready · Add players to begin':`${state.names.length} players loaded`);
 }
-
 function renderResults() {
-  const sec  = document.getElementById('results-section');
-  const list = document.getElementById('results-list');
-  const tal  = document.getElementById('tally-list');
-  if (state.results.length === 0) { sec.style.display = 'none'; return; }
-  sec.style.display = '';
-  list.innerHTML = '';
-  state.results.forEach((r, i) => {
-    const d = document.createElement('div');
-    d.className = 'result-item';
-    d.innerHTML = `
-      <span class="result-num">${i + 1}</span>
-      <span class="result-color" style="background:${r.color}"></span>
-      <span class="result-name">${escHtml(r.name || '(empty)')}</span>
-      <span class="result-slot">slot ${r.slot + 1}</span>`;
+  const sec=document.getElementById('results-section'),list=document.getElementById('results-list'),tal=document.getElementById('tally-list');
+  if(state.results.length===0){sec.style.display='none';return;}
+  sec.style.display='';list.innerHTML='';
+  state.results.forEach((r,i)=>{
+    const d=document.createElement('div');d.className='result-item';
+    d.innerHTML=`<span class="result-num">${i+1}</span><span class="result-color" style="background:${r.ballColor||r.color}"></span><span class="result-name">${escHtml(r.name||'(empty)')}</span><span class="result-slot">slot ${r.slot+1}</span>`;
     list.appendChild(d);
   });
-  if (state.numDrops > 1) {
-    tal.innerHTML = '';
-    const sorted = Object.entries(state.winCounts).sort((a, b) => b[1] - a[1]);
-    sorted.forEach(([name, cnt]) => {
-      const col = state.colorMap[name] || '#888';
-      const d = document.createElement('div');
-      d.className = 'tally-item';
-      d.innerHTML = `
-        <span class="tally-color" style="background:${col}"></span>
-        <span class="tally-name">${escHtml(name)}</span>
-        <span class="tally-count">${cnt}×</span>`;
+  if(state.numDrops>1){
+    tal.innerHTML='';
+    Object.entries(state.winCounts).sort((a,b)=>b[1]-a[1]).forEach(([name,cnt])=>{
+      const col=state.colorMap[name]||'#888';
+      const d=document.createElement('div');d.className='tally-item';
+      d.innerHTML=`<span class="tally-color" style="background:${col}"></span><span class="tally-name">${escHtml(name)}</span><span class="tally-count">${cnt}×</span>`;
       tal.appendChild(d);
     });
   }
 }
-
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function addName(raw) {
-  const name = raw.trim().slice(0, 30);
-  if (!name || state.names.includes(name)) return;
-  if (!state.colorMap[name]) state.colorMap[name] = COLORS[state.names.length % COLORS.length];
-  state.names.push(name);
-  savePersist();
-  renderNameList();
+  const name=raw.trim().slice(0,30);
+  if(!name||state.names.includes(name)) return;
+  if(!state.colorMap[name]) state.colorMap[name]=COLORS[state.names.length%COLORS.length];
+  state.names.push(name);savePersist();renderNameList();
 }
-
 function removeName(name) {
-  const i = state.names.indexOf(name);
-  if (i === -1) return;
-  state.names.splice(i, 1);
-  savePersist();
-  renderNameList();
+  const i=state.names.indexOf(name); if(i===-1) return;
+  state.names.splice(i,1);savePersist();renderNameList();
 }
 
-// ── PostMessage API ───────────────────────────────────────────────────────────
-window.addEventListener('message', (e) => {
-  const d = e.data;
-  if (!d || typeof d.type !== 'string') return;
-  switch (d.type) {
+// ── PostMessage API ────────────────────────────────────────────────────────────
+window.addEventListener('message',(e)=>{
+  const d=e.data; if(!d||typeof d.type!=='string') return;
+  switch(d.type) {
     case 'plinko:add':
-      if (d.names && Array.isArray(d.names)) d.names.forEach(n => addName(n));
-      else if (d.name) addName(d.name);
-      break;
-    case 'plinko:remove':
-      if (d.name) removeName(d.name);
-      break;
-    case 'plinko:clear':
-      state.names = []; state.colorMap = {};
-      savePersist(); renderNameList();
-      break;
-    case 'plinko:drop': {
-      if (state.dropping && !state.awaitingClick) break;
-      if (state.names.length === 0) break;
-      if (state.awaitingClick) {
-        doNextDrop(d.position !== undefined ? d.position : Math.random());
-      } else {
-        if (d.position !== undefined) { state.dropMode = 'click'; state.awaitingClick = false; }
-        state.dropsLeft = state.numDrops;
-        state.results = []; state.winCounts = {};
-        renderResults();
-        dropDisc(d.position !== undefined ? d.position : Math.random());
-      }
-      break;
-    }
+      if(d.names&&Array.isArray(d.names)) d.names.forEach(n=>addName(n));
+      else if(d.name) addName(d.name); break;
+    case 'plinko:remove': if(d.name) removeName(d.name); break;
+    case 'plinko:clear': state.names=[];state.colorMap={};savePersist();renderNameList(); break;
+    case 'plinko:drop':
+      if(state.dropping&&discs.some(disc=>disc.active||disc.settling||disc.teleporting)) break;
+      if(state.names.length===0) break;
+      state.results=[];state.winCounts={};renderResults();
+      startSession(d.position); break;
     case 'plinko:names':
-      window.parent.postMessage({ type: 'plinko:names', names: [...state.names] }, '*');
-      break;
+      window.parent.postMessage({type:'plinko:names',names:[...state.names]},'*'); break;
   }
 });
 
-// ── Persistence ───────────────────────────────────────────────────────────────
-function savePersist() {
-  try {
-    localStorage.setItem('plinko_names',    JSON.stringify(state.names));
-    localStorage.setItem('plinko_colorMap', JSON.stringify(state.colorMap));
-  } catch(e) {}
-}
-function loadPersist() {
-  try {
-    const n = localStorage.getItem('plinko_names');
-    const c = localStorage.getItem('plinko_colorMap');
-    if (n) state.names    = JSON.parse(n);
-    if (c) state.colorMap = JSON.parse(c);
-  } catch(e) {}
-}
+// ── Persistence ────────────────────────────────────────────────────────────────
+function savePersist(){try{localStorage.setItem('plinko_names',JSON.stringify(state.names));localStorage.setItem('plinko_colorMap',JSON.stringify(state.colorMap));}catch(e){}}
+function loadPersist(){try{const n=localStorage.getItem('plinko_names'),c=localStorage.getItem('plinko_colorMap');if(n)state.names=JSON.parse(n);if(c)state.colorMap=JSON.parse(c);}catch(e){}}
 
-// ── URL parameters ────────────────────────────────────────────────────────────
+// ── URL params ─────────────────────────────────────────────────────────────────
 function applyUrlParams() {
-  const p = new URLSearchParams(location.search);
-  if (p.get('bg') === 'transparent') document.body.classList.add('transparent-bg');
-  applyTheme(p.get('theme') || 'dark');
-  if (p.get('admin') === 'false') {
-    state.adminVisible = false;
-    document.getElementById('admin-panel').classList.add('hidden');
-    document.getElementById('admin-toggle').style.display = 'none';
-  }
-  const names = p.get('names');
-  if (names) names.split(',').forEach(n => n.trim() && addName(n.trim()));
+  const p=new URLSearchParams(location.search);
+  if(p.get('bg')==='transparent') document.body.classList.add('transparent-bg');
+  applyTheme(p.get('theme')||'dark');
+  if(p.get('admin')==='false'){state.adminVisible=false;document.getElementById('admin-panel').classList.add('hidden');document.getElementById('admin-toggle').style.display='none';}
+  const names=p.get('names');
+  if(names) names.split(',').forEach(n=>n.trim()&&addName(n.trim()));
 }
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);const sel=document.getElementById('theme-select');if(sel)sel.value=t;}
 
-function applyTheme(t) {
-  document.documentElement.setAttribute('data-theme', t);
-  const sel = document.getElementById('theme-select');
-  if (sel) sel.value = t;
-}
-
-// ── Event wiring ──────────────────────────────────────────────────────────────
+// ── Wire UI ────────────────────────────────────────────────────────────────────
 function wireUI() {
-  document.getElementById('admin-toggle').addEventListener('click', () => {
-    state.adminVisible = !state.adminVisible;
-    document.getElementById('admin-panel').classList.toggle('hidden', !state.adminVisible);
+  document.getElementById('admin-toggle').addEventListener('click',()=>{
+    state.adminVisible=!state.adminVisible;
+    document.getElementById('admin-panel').classList.toggle('hidden',!state.adminVisible);
   });
-
-  document.getElementById('drop-btn').addEventListener('click', () => {
+  document.getElementById('drop-btn').addEventListener('click',()=>{
     ensureAudio();
-    if (state.awaitingClick && !disc?.active) {
-      doNextDrop(Math.random());
-    } else if (!state.dropping) {
+    const anyActive=discs.some(d=>d.active||d.settling||d.teleporting);
+    if(state.dropping&&anyActive) return;
+    if(state.dropMode==='click'){
+      state.awaitingClick=true;updateDropBtn();updateDropHint();
+      setStatus('Click top of board to drop');
+    } else {
       startSession();
     }
   });
-
-  document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.dropMode = btn.dataset.mode;
-      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b === btn));
-    });
+  document.querySelectorAll('.mode-btn').forEach(btn=>btn.addEventListener('click',()=>{
+    state.dropMode=btn.dataset.mode;
+    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  }));
+  document.querySelectorAll('.drops-btn').forEach(btn=>btn.addEventListener('click',()=>{
+    state.numDrops=parseInt(btn.dataset.drops,10);
+    document.querySelectorAll('.drops-btn').forEach(b=>b.classList.toggle('active',b===btn));
+    updateDropBtn();
+  }));
+  document.querySelectorAll('.rows-btn').forEach(btn=>btn.addEventListener('click',()=>{
+    state.boardRows=parseInt(btn.dataset.rows,10);
+    document.querySelectorAll('.rows-btn').forEach(b=>b.classList.toggle('active',b===btn));
+    computeBoard();
+  }));
+  document.querySelectorAll('.chaos-btn').forEach(btn=>btn.addEventListener('click',()=>{
+    state.chaosLevel=btn.dataset.chaos;
+    document.querySelectorAll('.chaos-btn').forEach(b=>b.classList.toggle('active',b===btn));
+    computeBoard();setStatus({mild:'Mild chaos',wild:'Wild chaos',insane:'INSANE chaos'}[state.chaosLevel]+' — board regenerated');
+  }));
+  const ni=document.getElementById('name-input');
+  document.getElementById('add-btn').addEventListener('click',()=>{ensureAudio();addName(ni.value);ni.value='';ni.focus();});
+  ni.addEventListener('keydown',(e)=>{if(e.key==='Enter'){addName(ni.value);ni.value='';}});
+  document.getElementById('bulk-add-btn').addEventListener('click',()=>{
+    const ta=document.getElementById('bulk-input');ta.value.split('\n').forEach(n=>addName(n));ta.value='';
   });
-
-  document.querySelectorAll('.drops-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.numDrops = parseInt(btn.dataset.drops, 10);
-      document.querySelectorAll('.drops-btn').forEach(b => b.classList.toggle('active', b === btn));
-    });
+  document.getElementById('theme-select').addEventListener('change',(e)=>applyTheme(e.target.value));
+  const sndBtn=document.getElementById('sound-btn');
+  sndBtn.addEventListener('click',()=>{state.soundOn=!state.soundOn;sndBtn.textContent=state.soundOn?'🔊 On':'🔇 Off';if(state.soundOn)ensureAudio();});
+  document.getElementById('reset-results-btn').addEventListener('click',()=>{
+    state.results=[];state.winCounts={};state.dropping=false;discs=[];slotGlows={};
+    renderResults();updateDropBtn();setStatus('Results cleared');
   });
-
-  document.querySelectorAll('.rows-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.boardRows = parseInt(btn.dataset.rows, 10);
-      document.querySelectorAll('.rows-btn').forEach(b => b.classList.toggle('active', b === btn));
-      computeBoard();
-    });
+  document.getElementById('clear-btn').addEventListener('click',()=>{
+    if(state.names.length===0) return;
+    state.names=[];state.colorMap={};state.results=[];state.winCounts={};
+    state.dropping=false;discs=[];slotGlows={};
+    savePersist();renderNameList();renderResults();updateDropBtn();setStatus('Ready · Add players to begin');
   });
-
-  document.querySelectorAll('.chaos-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.chaosLevel = btn.dataset.chaos;
-      document.querySelectorAll('.chaos-btn').forEach(b => b.classList.toggle('active', b === btn));
-      computeBoard();
-      const labels = { mild: 'Mild chaos', wild: 'Wild chaos', insane: 'INSANE chaos' };
-      setStatus(labels[state.chaosLevel] + ' — board regenerated');
-    });
-  });
-
-  const nameInput = document.getElementById('name-input');
-  document.getElementById('add-btn').addEventListener('click', () => {
-    ensureAudio(); addName(nameInput.value); nameInput.value = ''; nameInput.focus();
-  });
-  nameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { addName(nameInput.value); nameInput.value = ''; }
-  });
-
-  document.getElementById('bulk-add-btn').addEventListener('click', () => {
-    const ta = document.getElementById('bulk-input');
-    ta.value.split('\n').forEach(n => addName(n));
-    ta.value = '';
-  });
-
-  document.getElementById('theme-select').addEventListener('change', (e) => applyTheme(e.target.value));
-
-  const sndBtn = document.getElementById('sound-btn');
-  sndBtn.addEventListener('click', () => {
-    state.soundOn = !state.soundOn;
-    sndBtn.textContent = state.soundOn ? '🔊 On' : '🔇 Off';
-    if (state.soundOn) ensureAudio();
-  });
-
-  document.getElementById('reset-results-btn').addEventListener('click', () => {
-    state.results = []; state.winCounts = {};
-    state.dropping = false; state.dropsLeft = 0;
-    disc = null;
-    renderResults(); updateDropBtn(); setStatus('Results cleared');
-  });
-
-  document.getElementById('clear-btn').addEventListener('click', () => {
-    if (state.names.length === 0) return;
-    state.names = []; state.colorMap = {};
-    state.results = []; state.winCounts = {};
-    state.dropping = false; disc = null;
-    savePersist(); renderNameList(); renderResults(); updateDropBtn();
-    setStatus('Ready · Add players to begin');
-  });
-
-  window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && e.target === document.body) {
-      e.preventDefault();
-      ensureAudio();
-      if (state.awaitingClick && !disc?.active) {
-        doNextDrop(Math.random());
-      } else if (!state.dropping && state.names.length > 0) {
-        startSession();
-      }
+  window.addEventListener('keydown',(e)=>{
+    if(e.code==='Space'&&e.target===document.body){
+      e.preventDefault();ensureAudio();
+      const anyActive=discs.some(d=>d.active||d.settling||d.teleporting);
+      if(!state.dropping||!anyActive) startSession();
     }
   });
-
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('resize',resizeCanvas);
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+// ── Init ───────────────────────────────────────────────────────────────────────
 function init() {
-  loadPersist();
-  applyUrlParams();
-  wireUI();
-  resizeCanvas();
-  renderNameList();
-  renderResults();
-  updateDropBtn();
+  loadPersist();applyUrlParams();wireUI();resizeCanvas();
+  renderNameList();renderResults();updateDropBtn();
   requestAnimationFrame(frame);
 }
 
 init();
-
 })();
 </script>
 </body>
