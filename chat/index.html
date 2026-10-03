@@ -92,6 +92,12 @@ const KEY_RE = /^[A-Za-z0-9_-]{16,64}$/;
    act(name, arg) returns the message to post, or a string to reply with instead.                 */
 const GAMES = {
   "spin-wheel":   { title: "Spin Wheel",     p: "spinwheel", join: "add",  help: "<code>!play</code> to get on the wheel" },
+  "wheel-legends":{ title: "Wheel of Legends", p: "legends", join: "add",  help: "<code>!play</code> to enter, <code>!play charge</code> to power the spin, finalists <code>!play rock</code> / <code>paper</code> / <code>scissors</code>, winners <code>!play claim</code>",
+    act: (name, a) => /^(rock|paper|scissors)$/.test(a) ? { type: "legends:pick", name, choice: a }
+      : /^(spin|charge|power)$/.test(a) ? { type: "legends:charge", name }
+      : a === "claim" ? { type: "legends:claim", name } : null,
+    ok: a => /^(rock|paper|scissors)$/.test(a) ? `${a} locked in (counts if you're a finalist)`
+      : a === "claim" ? "claim sent, watch the screen" : "⚡ power added to the spin (looks only, the result stays fair)" },
   "slot-machine": { title: "Slot Machine",   p: "slots",     join: "add",  help: "<code>!play</code> to get on the reels" },
   "elimination":  { title: "Elimination",    p: "eliminate", join: "join", help: "<code>!play</code> to enter" },
   "marble-race":  { title: "Marble Race",    p: "marble",    join: "join", help: "<code>!play</code> to get a marble" },

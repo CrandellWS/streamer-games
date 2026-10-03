@@ -6,6 +6,7 @@ A free, open-source collection of interactive games designed for live streamers.
 
 | Game | Description | Status |
 |------|-------------|--------|
+| [Wheel of Legends](wheel-legends/) | Provably fair giveaway wheel — Classic or Gauntlet eliminations, RPS final duel, chat power meter, claim timer | ✅ Ready |
 | [Spin Wheel](spin-wheel/) | Colorful spin wheel for giveaways, viewer picks, and random selection | ✅ Ready |
 | [Bingo](bingo/) | Classic 5x5 bingo — caller draws numbers, viewers mark unique auto-generated cards | ✅ Ready |
 | [Trivia](trivia/) | Multi-round trivia — host sets questions, viewers answer A/B/C/D, scoreboard | ✅ Ready |
