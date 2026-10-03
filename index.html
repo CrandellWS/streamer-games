@@ -122,6 +122,14 @@ body {
   margin-bottom: 8px;
 }
 
+.chatplay {
+  display: block; margin: -12px 0 28px; padding: 14px 18px; border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--accent); color: var(--text);
+  text-decoration: none; box-shadow: 0 0 18px var(--accent-glow);
+}
+.chatplay b { color: var(--gold); }
+.chatplay code { color: var(--gold); }
+.chatplay:hover { background: var(--surface2); }
 .games-section .subtitle {
   color: var(--text-dim);
   margin-bottom: 32px;
@@ -322,6 +330,7 @@ footer .footer-links {
 <section class="games-section" id="games">
   <h2>Games</h2>
   <p class="subtitle">Every game is a single HTML file. No installs, no accounts, no dependencies.</p>
+  <a class="chatplay" href="chat/">💬 <b>New: Chat Play</b> — viewers join and play any game from chat with one Slot Tools command (<code>!play</code>). Open it, pick a game, paste the command. →</a>
 
   <div class="games-grid">
 

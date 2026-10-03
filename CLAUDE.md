@@ -99,3 +99,12 @@ Each game must include a `test.html` that:
 4. Create `README.md` with streamer setup instructions
 5. Add the game to the root `README.md` table
 6. Commit with message: `feat: add game-name`
+
+## Chat Play (`chat/`)
+
+`chat/index.html` wraps any game in an iframe and feeds it MyPrize chat through one Slot Tools command
+(`!play` → `$(urlfetch https://blingo-relay.floral-meadow-2593.workers.dev/c/<key>?user=$(user)&q=$(query))`).
+The relay (source: CrandellWS/blingo `relay/`) forwards to the open page over a WebSocket; page closed = empty reply.
+The page speaks each game's postMessage protocol (the `GAMES` table maps folder → prefix, join verb, chat moves),
+so games stay untouched. A new game needs one `GAMES` entry. Keys are random per streamer, kept in localStorage;
+`?key=` pre-issues one. Scratch Card has no viewer input, so it isn't listed.

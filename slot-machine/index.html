@@ -4003,12 +4003,13 @@ function setStatus(msg, active, win) {
 function emitMessage(type, data) {
   const msg = Object.assign({ type }, data || {});
   window.parent.postMessage(msg, '*');
-  window.dispatchEvent(new MessageEvent('message', { data: msg }));
+  // Local echo is tagged so our own handler below doesn't answer it (slots:names looped forever).
+  window.dispatchEvent(new MessageEvent('message', { data: Object.assign({ _echo: true }, msg) }));
 }
 
 window.addEventListener('message', function(e) {
   const d = e.data;
-  if (!d || typeof d.type !== 'string') return;
+  if (!d || typeof d.type !== 'string' || d._echo) return;
   switch (d.type) {
     // Inbound: names
     case 'slots:add':

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat Play — Home Office Studios</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+<style>
+/* Chat Play: wraps any game in an iframe and feeds it chat from Slot Tools.
+   Slot Tools $(urlfetch) -> blingo-relay Worker -> this tab (WebSocket) -> game postMessage -> reply text.
+   The games themselves are untouched; this page speaks their postMessage protocol (see ../CLAUDE.md). */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d0d14; --surface: #1a1a2e; --surface2: #22223a; --border: #2a2a4a;
+  --text: #e8e8f0; --text-dim: #8888aa; --accent: #7c5cfc; --gold: #ffd700; --success: #44ff88; --danger: #ff5c7a;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif; --mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+}
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); }
+body.transparent { background: transparent; }
+#game { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
+#pill {
+  position: fixed; top: 10px; left: 10px; z-index: 10; display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 100px; background: rgba(26,26,46,.92); border: 1px solid var(--border);
+  font-size: 13px; cursor: pointer; user-select: none;
+}
+#pill .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-dim); }
+#pill .dot.on { background: var(--success); box-shadow: 0 0 8px var(--success); }
+#pill .dot.off { background: var(--danger); }
+#panel {
+  position: fixed; top: 48px; left: 10px; z-index: 10; width: min(460px, calc(100vw - 20px));
+  max-height: calc(100vh - 60px); overflow: auto; display: none;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; font-size: 14px;
+}
+#panel.open { display: block; }
+#panel h2 { font-size: 16px; margin-bottom: 10px; }
+#panel label { display: block; color: var(--text-dim); font-size: 12px; margin: 12px 0 4px; }
+#panel select, #panel input, #panel textarea {
+  width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text); font: 13px var(--font);
+}
+#panel textarea { font-family: var(--mono); font-size: 12px; resize: none; height: 64px; }
+#panel button {
+  margin-top: 8px; margin-right: 6px; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text); font: 13px var(--font); cursor: pointer;
+}
+#panel button.primary { background: var(--accent); border-color: var(--accent); }
+#panel .help { color: var(--text-dim); font-size: 13px; line-height: 1.55; margin-top: 10px; }
+#panel .help code { color: var(--gold); font-family: var(--mono); }
+#panel ol { padding-left: 20px; }
+#log { margin-top: 12px; font: 12px/1.5 var(--mono); color: var(--text-dim); max-height: 140px; overflow: auto; }
+#secret { display: none; }
+</style>
+</head>
+<body>
+<iframe id="game" title="game" allow="autoplay"></iframe>
+
+<div id="pill" title="Chat Play settings"><span class="dot" id="dot"></span><span id="pillText">Chat off</span></div>
+
+<div id="panel">
+  <h2>💬 Chat Play</h2>
+  <label for="gamePick">Game</label>
+  <select id="gamePick"></select>
+  <div class="help" id="gameHelp"></div>
+
+  <button id="toggle" class="primary">Turn chat on</button>
+  <button id="showCmd">Show Slot Tools command</button>
+  <div id="secret">
+    <label for="cmd">Slot Tools → Add Custom Command → Response (Command: <b>play</b>, Permission: Everyone)</label>
+    <textarea id="cmd" readonly></textarea>
+    <label for="keyIn">Your key (change it anytime; then paste the new command into Slot Tools)</label>
+    <input id="keyIn" spellcheck="false">
+    <button id="saveKey">Save key</button>
+    <button id="newKey">New random key</button>
+  </div>
+
+  <div class="help">
+    <ol>
+      <li>Pick a game and click <b>Turn chat on</b>. The dot goes green.</li>
+      <li>Click <b>Show Slot Tools command</b> and paste it as the Response of a Slot Tools command named <code>play</code>, Permission Everyone. It holds your private key: keep it off stream.</li>
+      <li>Keep this page open (a browser tab, or an OBS browser source pointed at this page). Viewers type <code>!play</code>. Page closed = the command stays quiet.</li>
+      <li>One command works for every game: switching games here needs no Slot Tools change.</li>
+    </ol>
+  </div>
+  <div id="log"></div>
+</div>
+
+<script>
+const RELAY = new URLSearchParams(location.search).get("relay") || "https://blingo-relay.floral-meadow-2593.workers.dev";
+const KEY_RE = /^[A-Za-z0-9_-]{16,64}$/;
+
+/* Each game: its folder, postMessage prefix, how a viewer joins, and what words it takes from chat.
+   act(name, arg) returns the message to post, or a string to reply with instead.                 */
+const GAMES = {
+  "spin-wheel":   { title: "Spin Wheel",     p: "spinwheel", join: "add",  help: "<code>!play</code> to get on the wheel" },
+  "slot-machine": { title: "Slot Machine",   p: "slots",     join: "add",  help: "<code>!play</code> to get on the reels" },
+  "elimination":  { title: "Elimination",    p: "eliminate", join: "join", help: "<code>!play</code> to enter" },
+  "marble-race":  { title: "Marble Race",    p: "marble",    join: "join", help: "<code>!play</code> to get a marble" },
+  "hot-potato":   { title: "Hot Potato",     p: "potato",    join: "join", help: "<code>!play</code> to join the circle" },
+  "dice-roll":    { title: "Dice Roll",      p: "dice",      join: "join", help: "<code>!play</code> to roll in" },
+  "bingo":        { title: "Bingo",          p: "bingo",     join: "join", help: "<code>!play</code> to get a card" },
+  "pinko":        { title: "Pinko",          p: "pinko",     join: "add",  help: "<code>!play</code> to get a chip" },
+  "plinko":       { title: "Plinko",         p: "plinko",    join: "add",  help: "<code>!play</code> to get a chip" },
+  "rps-battle":   { title: "RPS Battle",     p: "rps",       join: "join", help: "<code>!play</code> to enter, then <code>!play rock</code> / <code>paper</code> / <code>scissors</code>",
+    act: (name, a) => /^(rock|paper|scissors)$/.test(a) ? { type: "rps:pick", name, choice: a } : null,
+    ok: a => `${a} locked in` },
+  "treasure-dig": { title: "Treasure Dig",   p: "treasure",  join: "add",  help: "<code>!play</code> to join, <code>!play B4</code> to dig a square",
+    act: (name, a) => /^[a-j]\d{1,2}$/i.test(a) ? { type: "treasure:dig", name, coord: a.toUpperCase() } : null,
+    ok: a => `digging ${a.toUpperCase()}` },
+  "auction":      { title: "Auction",        p: "auction",   join: "join", help: "<code>!play</code> to get a paddle, <code>!play 250</code> to bid",
+    act: (name, a) => /^\d+$/.test(a) ? { type: "auction:bid", name, amount: +a } : null,
+    ok: a => `bid ${a} placed` },
+  "coin-flip":    { title: "Coin Flip",      p: "coin",      join: null,   help: "<code>!play heads</code> or <code>!play tails</code>",
+    act: (name, a) => /^(heads|tails|h|t)$/.test(a) ? { type: "coin:pick", name, side: a[0] === "h" ? "heads" : "tails" } : null,
+    ok: a => `you're on ${a[0] === "h" ? "heads" : "tails"}` },
+  "number-guess": { title: "Number Guess",   p: "guess",     join: null,   help: "<code>!play 42</code> to guess",
+    act: (name, a) => /^-?\d+$/.test(a) ? { type: "guess:submit", name, number: +a } : null,
+    ok: a => `guess ${a} is in` },
+  "trivia":       { title: "Trivia",         p: "trivia",    join: null,   help: "<code>!play A</code> / <code>B</code> / <code>C</code> / <code>D</code> to answer",
+    act: (name, a) => /^[a-d]$/.test(a) ? { type: "trivia:answer", name, choice: a.toUpperCase() } : null,
+    ok: a => `answer ${a.toUpperCase()} locked` },
+  "word-scramble":{ title: "Word Scramble",  p: "scramble",  join: null,   help: "<code>!play yourword</code> to guess",
+    act: (name, a) => /^[a-z]{2,30}$/.test(a) ? { type: "scramble:guess", name, word: a } : null,
+    ok: a => `guess "${a}" is in` },
+};
+
+const $ = id => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+                set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+const randKey = () => Array.from(crypto.getRandomValues(new Uint8Array(18)), b => b.toString(36).padStart(2, "0")).join("").slice(0, 24);
+const log = t => { const d = document.createElement("div"); d.textContent = new Date().toLocaleTimeString() + "  " + t; $("log").prepend(d); while ($("log").children.length > 40) $("log").lastChild.remove(); };
+
+// ?key= hands out a key ahead of time; save it and drop it from the address bar so it never shows on stream.
+let key = qs.get("key");
+if (key && KEY_RE.test(key)) {
+  store.set("hos.chatKey", key); store.set("hos.chatOn", "1");
+  qs.delete("key"); history.replaceState(null, "", location.pathname + (qs.toString() ? "?" + qs : ""));
+} else key = store.get("hos.chatKey");
+if (!key || !KEY_RE.test(key)) { key = randKey(); store.set("hos.chatKey", key); }
+
+/* ---------- game frame ---------- */
+let game = qs.get("game") in GAMES ? qs.get("game") : (store.get("hos.chatGame") in GAMES ? store.get("hos.chatGame") : "spin-wheel");
+for (const [id, g] of Object.entries(GAMES)) $("gamePick").add(new Option(g.title, id));
+function loadGame() {
+  $("gamePick").value = game; store.set("hos.chatGame", game);
+  const pass = new URLSearchParams(qs); pass.delete("game"); pass.delete("relay");   // admin/bg/theme/names flow through
+  $("game").src = "../" + game + "/" + (pass.toString() ? "?" + pass : "");
+  $("gameHelp").innerHTML = "Chat: " + GAMES[game].help + ". Also <code>!play count</code>.";
+  document.title = GAMES[game].title + " · Chat Play";
+}
+$("gamePick").onchange = () => {
+  game = $("gamePick").value;
+  qs.set("game", game); history.replaceState(null, "", location.pathname + "?" + qs);
+  loadGame();
+};
+if (qs.get("bg") === "transparent") document.body.classList.add("transparent");
+if (qs.get("admin") === "false") $("pill").style.display = "none";
+loadGame();
+
+/* Ask the game for its player list; resolves null if it doesn't answer quickly. */
+function askNames() {
+  const g = GAMES[game];
+  return new Promise(resolve => {
+    const t = setTimeout(() => { removeEventListener("message", on); resolve(null); }, 700);
+    function on(e) {
+      if (e.source !== $("game").contentWindow || !e.data || e.data.type !== g.p + ":names") return;
+      clearTimeout(t); removeEventListener("message", on);
+      const d = e.data;
+      resolve(Array.isArray(d.names) ? d.names : [...(d.heads || []), ...(d.tails || [])]);
+    }
+    addEventListener("message", on);
+    $("game").contentWindow.postMessage({ type: g.p + ":names" }, "*");
+  });
+}
+const post = msg => $("game").contentWindow.postMessage(msg, "*");
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- chat command -> game ---------- */
+async function answer(user, q) {
+  const g = GAMES[game];
+  const name = String(user || "").trim().slice(0, 24);
+  const words = String(q || "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const verb = words[0] || "join", arg = words.slice(1).join(" ");
+
+  if (verb === "count" || verb === "list") {
+    const names = await askNames();
+    if (!names) return `🎮 ${g.title} is live`;
+    if (verb === "count") return `🎮 ${names.length} in ${g.title}`;
+    return names.length ? `🎮 ${names.length} in: ${names.join(", ")}`.slice(0, 400) : `🎮 Nobody in ${g.title} yet`;
+  }
+  if (verb === "help") return `🎮 ${g.title}: ${g.help.replace(/<[^>]+>/g, "")}`;
+
+  // $(user) sometimes arrives as a raw MyPrize id: never add it, never echo it.
+  if (!name || /^[0-9a-f]{8}-[0-9a-f]{4}-|^\d{6,}$/i.test(name)) return "🎮 Couldn't read your name, try again in a sec";
+
+  if (verb === "join" || verb === "enter" || verb === "in") {
+    if (!g.join) return `🎮 ${g.title}: ${g.help.replace(/<[^>]+>/g, "")}`;
+    const before = await askNames();
+    if (before && before.some(n => String(n).toLowerCase() === name.toLowerCase())) return `🎮 ${name}, you're already in`;
+    post({ type: `${g.p}:${g.join}`, name });
+    await sleep(150);
+    const after = await askNames();
+    if (!after) return `🎮 ${name} you're in!`;
+    return after.some(n => String(n).toLowerCase() === name.toLowerCase())
+      ? `🎮 ${name} you're in! ${after.length} playing` : `🎮 ${name}, ${g.title} isn't taking players right now`;
+  }
+
+  // Anything else is this game's chat move: "!play rock", "!play 42", "!play B4", "!play A"...
+  const move = g.act && g.act(name, verb === "pick" || verb === "guess" || verb === "bid" || verb === "dig" ? arg : words.join(" "));
+  if (!move) return `🎮 ${g.title}: ${g.help.replace(/<[^>]+>/g, "")}`;
+  post(move);
+  return `🎮 ${name}, ${g.ok(verb === "pick" || verb === "guess" || verb === "bid" || verb === "dig" ? arg : words.join(" "))}`;
+}
+
+/* ---------- relay socket ---------- */
+let ws = null, on = false, ping = null;
+function setPill(state, text) { $("dot").className = "dot " + state; $("pillText").textContent = text; }
+function connect() {
+  if (!on) return;
+  ws = new WebSocket(RELAY.replace(/^http/, "ws") + "/ws/" + key);
+  ws.onopen = () => { setPill("on", "Chat live"); log("connected"); };
+  ws.onmessage = async e => {
+    if (e.data === "pong") return;
+    let m; try { m = JSON.parse(e.data); } catch { return; }
+    const text = await answer(m.user, m.q);
+    log(`!play ${m.q || ""}  →  ${text}`);
+    try { ws.send(JSON.stringify({ id: m.id, text })); } catch {}
+  };
+  ws.onclose = e => {
+    if (e.code === 4000) { setPill("off", "Chat moved to another tab"); on = false; $("toggle").textContent = "Turn chat on"; return; }
+    if (on) { setPill("", "Chat reconnecting…"); setTimeout(connect, 3000); }
+  };
+}
+function setOn(v) {
+  on = v; store.set("hos.chatOn", v ? "1" : "");
+  $("toggle").textContent = v ? "Turn chat off" : "Turn chat on";
+  clearInterval(ping);
+  if (v) { setPill("", "Chat connecting…"); connect(); ping = setInterval(() => ws && ws.readyState === 1 && ws.send("ping"), 30000); }
+  else { if (ws) ws.close(1000); setPill("", "Chat off"); }
+}
+$("toggle").onclick = () => setOn(!on);
+$("pill").onclick = () => $("panel").classList.toggle("open");
+
+const command = () => `$(urlfetch ${RELAY}/c/${key}?user=$(user)&q=$(query))`;
+$("showCmd").onclick = () => {
+  const s = $("secret"), open = s.style.display === "block";
+  s.style.display = open ? "none" : "block";
+  $("showCmd").textContent = open ? "Show Slot Tools command" : "Hide command";
+  $("cmd").value = command(); $("keyIn").value = key;
+};
+function useKey(k) {
+  if (!KEY_RE.test(k)) { log("key must be 16-64 letters, numbers, - or _"); return; }
+  key = k; store.set("hos.chatKey", k); $("cmd").value = command(); $("keyIn").value = k;
+  log("key changed: paste the new command into Slot Tools");
+  if (on) { setOn(false); setOn(true); }
+}
+$("saveKey").onclick = () => useKey($("keyIn").value.trim());
+$("newKey").onclick = () => useKey(randKey());
+
+if (store.get("hos.chatOn")) setOn(true);
+</script>
+</body>
+</html>
