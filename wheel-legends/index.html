@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wheel of Legends — Home Office Studios</title>
+<meta name="description" content="Free, provably fair giveaway wheel for streamers: Classic or Gauntlet mode, final rock-paper-scissors duel, chat power meter, claim timer.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎡</text></svg>">
+<style>
+/* Wheel of Legends: a provably fair giveaway wheel. One file, no dependencies (see ../CLAUDE.md).
+   Layout: #stage holds one canvas (#cv) that draws the wheel, frame, hub and pointer, so the
+   near-miss zoom stays crisp at any resolution. DOM overlays sit on top for text and cards. */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+:root {
+  --bg: #07060f; --bg2: #16123a; --panel: #121027; --panel2: #1c1940; --line: #2d2858;
+  --text: #f4f1ff; --dim: #a39bd0; --accent: #8b5cff; --accent2: #00d4ff; --gold: #ffcf4a;
+  --danger: #ff3b5c; --ok: #3ddc84;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  --pw: clamp(290px, 21vw, 380px);
+}
+[data-theme="light"] { --bg: #ece8f8; --bg2: #ffffff; --panel: #ffffff; --panel2: #f2eefc; --line: #d8d0f0; --text: #1b1530; --dim: #675f8e; }
+[data-theme="neon"] { --bg: #000000; --bg2: #0a0418; --accent: #ff00e6; --accent2: #00fff0; --gold: #b6ff00; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); }
+html.transparent, body.transparent { background: transparent !important; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+#app { position: fixed; inset: 0; display: flex; }
+#stage { position: relative; flex: 1; min-width: 0; overflow: hidden; user-select: none; -webkit-user-select: none; }
+#stage.shake { animation: shake .45s cubic-bezier(.36,.07,.19,.97); }
+@keyframes shake { 10%,90% { transform: translate(-2px,1px); } 20%,80% { transform: translate(4px,-2px); } 30%,50%,70% { transform: translate(-7px,3px); } 40%,60% { transform: translate(7px,-3px); } }
+#stage { background: radial-gradient(circle at 50% 51.5%, var(--bg2), var(--bg) 78%); }
+html.transparent #stage { background: none; }
+/* light rays behind the wheel: CSS so the GPU composites them for free */
+#rays { position: absolute; left: 50%; top: 51.5%; width: 260vmax; height: 260vmax; margin: -130vmax 0 0 -130vmax; pointer-events: none;
+  background: repeating-conic-gradient(var(--ray, rgba(139,92,255,.2)) 0 10.7deg, transparent 10.7deg 25.714deg);
+  -webkit-mask: radial-gradient(circle, transparent 0 9%, #000 13%, transparent 50%); mask: radial-gradient(circle, transparent 0 9%, #000 13%, transparent 50%);
+  animation: spinrays 60s linear infinite; opacity: .6; transition: opacity .6s; }
+html.transparent #rays { display: none; }
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; }
+#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 90; }
+
+/* ---------- title + mode chip ---------- */
+#title { position: absolute; top: 1.6vmin; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; white-space: nowrap; z-index: 5; }
+#title h1 { font-size: clamp(16px, 3.6vmin, 140px); font-weight: 900; letter-spacing: .22em; line-height: 1.1;
+  background: linear-gradient(100deg, #fff3c4, var(--gold) 35%, #ff8a3d 60%, #ffe58a); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 1.2vmin rgba(255,190,60,.45)); }
+#chip, #claimBar { display: inline-block; margin-top: .9vmin; padding: .55vmin 1.8vmin; border-radius: 999px; font-weight: 800;
+  font-size: clamp(11px, 1.7vmin, 64px); letter-spacing: .14em; background: rgba(15,12,35,.78); border: .2vmin solid rgba(139,92,255,.6);
+  color: #e9e4ff; box-shadow: 0 0 2vmin rgba(139,92,255,.35); }
+#chip b { color: var(--gold); }
+#claimBar { pointer-events: auto; cursor: pointer; border-color: var(--gold); box-shadow: 0 0 2.4vmin rgba(255,207,74,.45); letter-spacing: .04em; }
+#claimBar b { color: var(--gold); font-variant-numeric: tabular-nums; }
+#claimBar.urgent { border-color: var(--danger); animation: pulse .5s infinite alternate; }
+#claimBar.done { border-color: var(--ok); box-shadow: 0 0 2.4vmin rgba(61,220,132,.45); }
+@keyframes pulse { to { transform: scale(1.06); } }
+
+/* ---------- sealed code strip ---------- */
+#seal { position: absolute; bottom: 1.8vmin; left: 50%; transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 1.2vmin;
+  padding: .7vmin 1.8vmin; border-radius: 999px; background: rgba(10,8,26,.82); border: .18vmin solid rgba(255,255,255,.14);
+  font-size: clamp(10px, 1.45vmin, 56px); color: #d6d0f5; white-space: nowrap; max-width: 96%; }
+#seal .lbl { font-weight: 800; letter-spacing: .14em; color: var(--gold); }
+#seal code { font-family: var(--mono); color: #fff; }
+#seal button { border: 0; border-radius: 999px; padding: .35vmin 1.3vmin; background: var(--ok); color: #062b16; font-weight: 800; font-size: inherit; }
+#seal.open .lbl { color: var(--ok); }
+
+/* ---------- chat power meter (cosmetic) ---------- */
+#meter { position: absolute; left: 2.4vmin; top: 50%; transform: translateY(-50%); width: clamp(54px, 9vmin, 340px); z-index: 5;
+  display: flex; flex-direction: column; align-items: center; gap: 1vmin; pointer-events: none; }
+#meter .m-lbl { font-size: clamp(9px, 1.35vmin, 52px); font-weight: 900; letter-spacing: .16em; color: var(--accent2); text-align: center; line-height: 1.2; }
+#meter .m-tube { position: relative; width: 38%; height: 42vmin; border-radius: 999px; background: rgba(10,8,26,.85); border: .25vmin solid rgba(0,212,255,.45); overflow: hidden;
+  box-shadow: inset 0 0 1.5vmin rgba(0,0,0,.8), 0 0 1.6vmin rgba(0,212,255,.25); }
+#meter .m-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; border-radius: 999px; transition: height .35s cubic-bezier(.2,1.4,.4,1);
+  background: linear-gradient(0deg, #00d4ff, #8b5cff 55%, #ff3d7f); box-shadow: 0 0 2vmin #00d4ff; }
+#meter .m-fill::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 1.2vmin, rgba(255,255,255,.18) 1.2vmin 1.5vmin); animation: rise 1s linear infinite; }
+@keyframes rise { to { background-position: 0 -3vmin; } }
+#meter .m-pct { font-size: clamp(12px, 2.2vmin, 84px); font-weight: 900; font-variant-numeric: tabular-nums; color: #fff; }
+#meter .m-hint { font-size: clamp(9px, 1.2vmin, 46px); color: var(--dim); text-align: center; line-height: 1.25; }
+#meter.full .m-tube { border-color: #ff3d7f; animation: throb .35s infinite alternate; }
+#meter.full .m-lbl { color: #ff3d7f; }
+@keyframes throb { to { box-shadow: inset 0 0 1.5vmin rgba(0,0,0,.8), 0 0 4vmin #ff3d7f; } }
+.zap { position: absolute; left: 100%; white-space: nowrap; font-size: clamp(10px, 1.5vmin, 56px); font-weight: 800; color: #9ff3ff; text-shadow: 0 0 1vmin #00d4ff;
+  animation: zap 1.6s ease-out forwards; }
+@keyframes zap { 0% { opacity: 0; transform: translate(-1vmin, 0) scale(.6); } 15% { opacity: 1; transform: translate(.8vmin, -1vmin) scale(1.05); } 100% { opacity: 0; transform: translate(2vmin, -9vmin) scale(.9); } }
+
+/* ---------- fallen list (gauntlet) ---------- */
+#fallen { position: absolute; right: 2.2vmin; top: 50%; transform: translateY(-50%); z-index: 5; width: clamp(110px, 17vmin, 640px); pointer-events: none;
+  font-size: clamp(10px, 1.45vmin, 56px); }
+#fallen h4 { font-size: 1em; letter-spacing: .2em; color: var(--danger); margin-bottom: .8vmin; }
+#fallen div { padding: .35vmin 0; color: #b9b2da; text-decoration: line-through; text-decoration-color: var(--danger); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: drop .5s ease-out; }
+#fallen div.more { text-decoration: none; color: var(--dim); }
+@keyframes drop { from { opacity: 0; transform: translateY(-1vmin); } }
+
+/* ---------- flying entries ---------- */
+.fly { position: absolute; left: 0; top: 0; z-index: 6; pointer-events: none; padding: .5vmin 1.5vmin; border-radius: 999px; white-space: nowrap;
+  font-weight: 900; font-size: clamp(12px, 2.2vmin, 80px); color: #fff; background: linear-gradient(100deg, #8b5cff, #ff3d7f);
+  box-shadow: 0 0 2.5vmin rgba(255,61,127,.7); will-change: transform, opacity; opacity: 0; }
+
+/* ---------- gear ---------- */
+#gear { position: absolute; top: 12px; right: 12px; z-index: 40; width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--line);
+  background: rgba(18,16,39,.85); color: #d6d0f5; font-size: 20px; }
+#gear:hover { border-color: var(--accent); }
+
+/* ---------- admin panel ---------- */
+#panel { width: var(--pw); flex-shrink: 0; height: 100%; overflow-y: auto; background: var(--panel); border-left: 1px solid var(--line); z-index: 50;
+  padding: 14px 16px 24px; font-size: 13px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+body.closed #panel { display: none; }
+#panel .p-head b { display: block; font-size: 16px; }
+#panel .p-head span { color: var(--dim); font-size: 12px; }
+#panel section { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+#panel h3 { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); margin-bottom: 8px; }
+#panel h3 span { color: var(--gold); }
+#panel label { display: block; color: var(--dim); font-size: 12px; margin: 8px 0 4px; }
+#panel label.chk { display: flex; gap: 8px; align-items: center; color: var(--text); font-size: 13px; }
+#panel select, #panel input[type=text], #panel textarea { width: 100%; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel2); outline: none; }
+#panel select:focus, #panel input:focus, #panel textarea:focus { border-color: var(--accent); }
+#panel textarea { height: 64px; resize: none; font-family: var(--mono); font-size: 12px; }
+#panel .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+#panel .btns button, #panel .solo { flex: 1; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel2); font-size: 13px; font-weight: 600; white-space: nowrap; }
+#panel .btns button:hover, #panel .solo:hover { border-color: var(--accent); }
+#panel .danger { color: var(--danger); }
+#spinBtn { width: 100%; margin-top: 12px; padding: 14px; border: 0; border-radius: 14px; font-size: 18px; font-weight: 900; letter-spacing: .2em; color: #fff;
+  background: linear-gradient(100deg, #8b5cff, #ff3d7f 60%, #ffb800); box-shadow: 0 6px 26px rgba(255,61,127,.4); }
+#spinBtn:disabled { opacity: .45; cursor: not-allowed; }
+#pStatus { margin-top: 8px; color: var(--dim); font-size: 12px; min-height: 16px; }
+#list { list-style: none; max-height: 210px; overflow-y: auto; margin-top: 8px; scrollbar-width: thin; }
+#list li { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 7px; }
+#list li:hover { background: var(--panel2); }
+#list li i { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+#list li span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#list li.out span { text-decoration: line-through; color: var(--dim); }
+#list li button { border: 0; background: none; color: var(--dim); font-size: 14px; padding: 0 4px; }
+#list li button:hover { color: var(--danger); }
+#panel .hint { color: var(--dim); font-size: 12px; line-height: 1.5; margin-top: 8px; }
+#panel code { color: var(--gold); font-family: var(--mono); font-size: 12px; }
+#panel a { color: var(--accent2); }
+
+/* ---------- elimination card ---------- */
+#elim { position: absolute; inset: 0; z-index: 30; display: grid; place-items: center; pointer-events: none; background: radial-gradient(circle, rgba(120,0,20,.45), transparent 65%); animation: fade .25s; }
+#elim .e-card { text-align: center; padding: 3vmin 6vmin; border-radius: 3vmin; background: rgba(12,4,10,.92); border: .4vmin solid var(--danger);
+  box-shadow: 0 0 6vmin rgba(255,59,92,.6); animation: slam .5s cubic-bezier(.2,1.6,.4,1); max-width: 90%; }
+#elim .e-skull { font-size: clamp(28px, 8vmin, 300px); line-height: 1; filter: drop-shadow(0 0 2vmin #ff3b5c); }
+#elim .e-name { position: relative; display: inline-block; font-size: clamp(22px, 7vmin, 260px); font-weight: 900; color: #fff; margin: 1vmin 0; overflow-wrap: anywhere; }
+#elim .e-name::after { content: ''; position: absolute; left: -4%; top: 52%; height: .9vmin; width: 0; background: var(--danger); box-shadow: 0 0 2vmin var(--danger); transform: rotate(-4deg); animation: strike .4s .45s ease-out forwards; }
+@keyframes strike { to { width: 108%; } }
+#elim .e-stamp { display: inline-block; font-size: clamp(18px, 5.5vmin, 200px); font-weight: 900; letter-spacing: .18em; color: var(--danger); border: .6vmin solid var(--danger);
+  padding: .4vmin 2.4vmin; border-radius: 1.2vmin; transform: rotate(-6deg); animation: stamp .45s .7s cubic-bezier(.2,1.8,.4,1) both; }
+@keyframes stamp { from { opacity: 0; transform: rotate(-6deg) scale(3); } }
+#elim .e-left { margin-top: 2vmin; font-size: clamp(12px, 2.3vmin, 90px); color: #e8b3c0; font-weight: 700; letter-spacing: .1em; }
+@keyframes slam { from { opacity: 0; transform: scale(1.6); } }
+@keyframes fade { from { opacity: 0; } }
+
+/* ---------- final duel ---------- */
+#duel { position: absolute; inset: 0; z-index: 25; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.6vmin;
+  background: radial-gradient(circle at 50% 55%, rgba(20,10,50,.55), rgba(5,3,15,.85)); animation: fade .4s; }
+#duel .d-kick { font-size: clamp(20px, 6.5vmin, 250px); font-weight: 900; letter-spacing: .2em; text-align: center;
+  background: linear-gradient(100deg, #ff3d7f, #ffcf4a, #00d4ff); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 2vmin rgba(255,61,127,.5)); }
+#duel .d-how { font-size: clamp(12px, 2.4vmin, 90px); color: #ddd6ff; text-align: center; padding: 0 2vmin; }
+#duel .d-how b { color: var(--gold); }
+#duel .d-row { display: flex; align-items: center; gap: 4vmin; }
+.d-card { width: clamp(130px, 34vmin, 1300px); padding: 2.6vmin 2vmin; border-radius: 3vmin; text-align: center; background: rgba(18,14,44,.92);
+  border: .35vmin solid rgba(139,92,255,.7); box-shadow: 0 0 4vmin rgba(139,92,255,.35); transition: transform .2s, border-color .2s; }
+body.admin .d-card:hover { transform: translateY(-.6vmin); border-color: var(--gold); }
+body:not(.admin) .d-card { cursor: default; }
+.d-card.locked { border-color: var(--ok); box-shadow: 0 0 4vmin rgba(61,220,132,.4); }
+.d-card.win { border-color: var(--gold); box-shadow: 0 0 7vmin rgba(255,207,74,.8); transform: scale(1.08); }
+.d-card.lose { opacity: .45; filter: grayscale(.7); }
+.d-hand { font-size: clamp(36px, 15vmin, 560px); line-height: 1.1; display: inline-block; }
+#dA .d-hand { transform: scaleX(-1); }
+.d-shake .d-hand { animation: rps .5s ease-in-out 3; }
+#dA.d-shake .d-hand, .d-shake#dA .d-hand { animation-name: rpsL; }
+@keyframes rps { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4vmin) rotate(-12deg); } }
+@keyframes rpsL { 0%,100% { transform: scaleX(-1) translateY(0); } 50% { transform: scaleX(-1) translateY(-4vmin) rotate(-12deg); } }
+.d-name { font-size: clamp(16px, 4.4vmin, 170px); font-weight: 900; margin-top: 1vmin; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.d-st { font-size: clamp(11px, 2vmin, 76px); color: var(--dim); margin-top: .6vmin; font-weight: 700; letter-spacing: .06em; }
+.d-card.locked .d-st { color: var(--ok); }
+#duel .d-vs { text-align: center; font-size: clamp(20px, 6vmin, 230px); font-weight: 900; color: #fff; text-shadow: 0 0 3vmin #ff3d7f; }
+.d-timer { position: relative; width: clamp(54px, 11vmin, 420px); height: clamp(54px, 11vmin, 420px); margin: 1.4vmin auto 0; border-radius: 50%;
+  background: conic-gradient(var(--gold) calc(var(--p, 1) * 360deg), rgba(255,255,255,.1) 0); display: grid; place-items: center; }
+.d-timer::before { content: ''; position: absolute; inset: 12%; border-radius: 50%; background: #0c0a20; }
+.d-timer span { position: relative; font-size: clamp(16px, 4vmin, 150px); font-variant-numeric: tabular-nums; }
+.d-timer.urgent { background: conic-gradient(var(--danger) calc(var(--p, 1) * 360deg), rgba(255,255,255,.1) 0); }
+#duel .d-msg { min-height: 3vmin; font-size: clamp(13px, 2.8vmin, 104px); font-weight: 800; text-align: center; color: #fff; max-width: 92%; }
+#duel .d-msg.note { color: #ffd98a; }
+#duel .d-admin { font-size: clamp(10px, 1.5vmin, 56px); color: var(--dim); }
+body:not(.admin) #duel .d-admin { display: none; }
+
+/* ---------- winner card ---------- */
+#win { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: radial-gradient(circle, rgba(40,20,4,.86), rgba(3,2,10,.95) 70%); animation: fade .35s; overflow: hidden; }
+#win .w-rays { position: absolute; left: 50%; top: 50%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax; pointer-events: none;
+  background: repeating-conic-gradient(rgba(255,207,74,.13) 0 6deg, transparent 6deg 18deg); animation: spinrays 30s linear infinite;
+  -webkit-mask: radial-gradient(circle, #000 0, transparent 45%); mask: radial-gradient(circle, #000 0, transparent 45%); }
+@keyframes spinrays { to { transform: rotate(360deg); } }
+#win .w-card { position: relative; text-align: center; padding: 3vmin 6vmin 3.4vmin; max-width: 94vw; animation: pop .7s cubic-bezier(.2,1.5,.4,1); }
+@keyframes pop { from { opacity: 0; transform: scale(.4); } }
+.w-kick { font-size: clamp(12px, 2.6vmin, 100px); font-weight: 900; letter-spacing: .35em; color: var(--gold); text-shadow: 0 0 2vmin rgba(255,207,74,.7); }
+.w-trophy { font-size: clamp(40px, 13vmin, 500px); line-height: 1.15; filter: drop-shadow(0 0 3vmin rgba(255,207,74,.8)); animation: bob 2s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-1.2vmin) rotate(3deg); } }
+.w-name { font-weight: 900; line-height: 1.05; color: #fff; overflow-wrap: anywhere;
+  text-shadow: 0 0 2vmin #ffcf4a, 0 0 6vmin #ff8a3d, 0 .6vmin 0 #8a4b00; }
+.w-sub { margin-top: 1.4vmin; font-size: clamp(12px, 2.3vmin, 90px); color: #f4e3c0; font-weight: 700; letter-spacing: .08em; }
+.w-claim { margin-top: 2vmin; padding: .9vmin 2.6vmin; border-radius: 999px; border: .3vmin solid var(--gold); background: rgba(20,14,0,.75);
+  font-size: clamp(13px, 2.6vmin, 100px); font-weight: 800; color: #fff; }
+.w-claim b { color: var(--gold); font-variant-numeric: tabular-nums; }
+.w-claim.claimed { border-color: var(--ok); color: var(--ok); }
+.w-claim.missed { border-color: #777; color: #aaa; }
+.w-claim.urgent { border-color: var(--danger); animation: pulse .5s infinite alternate; }
+.w-proof { margin-top: 1.8vmin; font-size: clamp(10px, 1.5vmin, 56px); color: #cbbf9e; font-family: var(--mono); }
+.w-proof b { color: var(--ok); font-family: var(--font); }
+.w-btns { margin-top: 2.4vmin; display: flex; gap: 1vmin; justify-content: center; flex-wrap: wrap; }
+.w-btns button { padding: 1vmin 2.2vmin; border-radius: 999px; border: .2vmin solid rgba(255,255,255,.25); background: rgba(20,16,40,.85);
+  font-size: clamp(12px, 1.8vmin, 68px); font-weight: 700; color: #fff; }
+.w-btns button:hover { border-color: var(--gold); }
+.w-btns #wNew { background: linear-gradient(100deg, #8b5cff, #ff3d7f); border: 0; }
+body:not(.admin) .admin-only { display: none !important; }
+
+/* ---------- modals (verify, winner log) ---------- */
+.modal { position: fixed; inset: 0; z-index: 95; display: grid; place-items: center; background: rgba(3,2,10,.78); padding: 16px; }
+.modal .box { width: min(760px, 100%); max-height: 92vh; overflow-y: auto; background: #120f2a; border: 1px solid #3a3470; border-radius: 16px;
+  padding: 20px 22px; color: #eeeaff; font-size: 14px; box-shadow: 0 20px 80px rgba(0,0,0,.6); scrollbar-width: thin; }
+.modal h2 { font-size: 18px; margin-bottom: 4px; }
+.modal .sub { color: #a39bd0; font-size: 13px; margin-bottom: 14px; }
+.modal .kv { margin: 10px 0; }
+.modal .kv span { display: block; color: #a39bd0; font-size: 12px; margin-bottom: 3px; }
+.modal .kv code, .modal pre { display: block; font: 12px/1.5 var(--mono); background: #0a0820; border: 1px solid #2d2858; border-radius: 8px; padding: 7px 9px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.modal .check { margin: 8px 0; padding: 9px 12px; border-radius: 10px; background: #0d1a14; border: 1px solid #1f5c3c; }
+.modal .check.bad { background: #2a0c14; border-color: #7a2036; }
+.modal .check b { color: var(--ok); }
+.modal .check.bad b { color: var(--danger); }
+.modal ol.names { list-style: none; max-height: 150px; overflow-y: auto; font: 12px/1.6 var(--mono); background: #0a0820; border: 1px solid #2d2858; border-radius: 8px; padding: 6px 10px; columns: 2; }
+.modal ol.names li.hit { color: var(--gold); font-weight: 700; }
+.modal .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
+.modal .row button { padding: 8px 14px; border-radius: 9px; border: 1px solid #3a3470; background: #1c1940; font-size: 13px; font-weight: 600; }
+.modal .row button:hover { border-color: var(--accent); }
+.modal .row .grow { flex: 1; }
+.modal .round { padding: 9px 0; border-bottom: 1px solid #2d2858; }
+.modal .round time { color: #a39bd0; font-size: 12px; display: block; }
+.modal .round .nm { font-weight: 800; font-size: 15px; }
+.modal .round small { color: #a39bd0; font-family: var(--mono); font-size: 11px; }
+.modal .empty { color: #a39bd0; padding: 18px 0; text-align: center; }
+
+#toast { position: fixed; left: 50%; bottom: 9vmin; transform: translateX(-50%); z-index: 99; padding: 8px 16px; border-radius: 10px; background: rgba(18,16,39,.95);
+  border: 1px solid var(--line); color: #fff; font-size: 14px; opacity: 0; transition: opacity .25s; pointer-events: none; }
+#toast.on { opacity: 1; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+@media (max-width: 760px) {
+  #panel { position: absolute; right: 0; top: 0; bottom: 0; width: min(92vw, 360px); box-shadow: -10px 0 40px rgba(0,0,0,.5); }
+  #fallen { display: none; }
+}
+@media (max-aspect-ratio: 4/5) {
+  #meter { top: auto; bottom: 8vmin; transform: none; }
+  #meter .m-tube { height: 24vmin; }
+}
+</style>
+</head>
+<body class="admin">
+<div id="app">
+  <main id="stage">
+    <div id="rays"></div>
+    <canvas id="cv" aria-label="Wheel of Legends" role="img"></canvas>
+
+    <div id="title"><h1>WHEEL OF LEGENDS</h1><div><span id="chip"></span><span id="claimBar" hidden title="Tap to mark the prize claimed"></span></div></div>
+
+    <div id="meter" aria-hidden="true">
+      <div class="m-lbl">⚡ CHAT<br>POWER</div>
+      <div class="m-tube"><div class="m-fill" id="mFill"></div></div>
+      <div class="m-pct" id="mPct">0%</div>
+      <div class="m-hint" id="mHint"></div>
+    </div>
+
+    <div id="fallen" hidden></div>
+
+    <div id="seal" hidden><span class="lbl" id="sealLbl">🔒 SEALED CODE</span><code id="sealCode"></code><button id="sealVerify" hidden>✔ VERIFY</button></div>
+
+    <div id="elim" hidden><div class="e-card"><div class="e-skull">☠</div><div class="e-name" id="eName"></div><div><span class="e-stamp">ELIMINATED</span></div><div class="e-left" id="eLeft"></div></div></div>
+
+    <div id="duel" hidden>
+      <div class="d-kick">⚔ FINAL DUEL ⚔</div>
+      <div class="d-how" id="dHow"></div>
+      <div class="d-row">
+        <button class="d-card" id="dA" data-i="0"><div class="d-hand" id="dHandA">✊</div><div class="d-name" id="dNameA"></div><div class="d-st" id="dStA"></div></button>
+        <div class="d-vs">VS<div class="d-timer" id="dTimer"><span id="dSec">30</span></div></div>
+        <button class="d-card" id="dB" data-i="1"><div class="d-hand" id="dHandB">✊</div><div class="d-name" id="dNameB"></div><div class="d-st" id="dStB"></div></button>
+      </div>
+      <div class="d-msg" id="dMsg"></div>
+      <div class="d-admin">Streamer: tap a finalist to declare them the winner</div>
+    </div>
+
+    <button id="gear" title="Streamer controls" aria-label="Streamer controls">⚙</button>
+  </main>
+
+  <aside id="panel" aria-label="Streamer controls">
+    <div class="p-head"><b>🎡 Wheel of Legends</b><span>Free from Home Office Studios · provably fair</span></div>
+    <button id="spinBtn">SPIN</button>
+    <div id="pStatus" aria-live="polite"></div>
+
+    <section>
+      <h3>Mode</h3>
+      <select id="modeSel" aria-label="Mode">
+        <option value="classic">Classic: one spin, one winner</option>
+        <option value="gauntlet">Gauntlet: eliminate down to a final duel</option>
+      </select>
+      <label for="paceSel">Gauntlet elimination spins</label>
+      <select id="paceSel"><option value="epic">Epic (6 to 10 s each)</option><option value="quick">Quick (about 3 s each)</option></select>
+      <div class="btns"><button id="newBtn">↺ New round (restore everyone)</button></div>
+    </section>
+
+    <section>
+      <h3>Entries <span id="count"></span></h3>
+      <textarea id="paste" placeholder="Paste names, one per line or comma separated" aria-label="Paste names"></textarea>
+      <div class="btns"><button id="addBtn">➕ Add names</button><button id="clearBtn" class="danger">🗑 Clear all</button></div>
+      <ul id="list"></ul>
+      <p class="hint" id="chatHint"></p>
+    </section>
+
+    <section>
+      <h3>After the win</h3>
+      <label for="claimSel">Claim timer (winner types the claim command)</label>
+      <select id="claimSel"><option value="0">Off</option><option value="30">30 seconds</option><option value="60">60 seconds</option><option value="90">90 seconds</option><option value="120">120 seconds</option></select>
+      <label class="chk"><input type="checkbox" id="rmWin"> Classic: take the winner off the wheel after</label>
+      <div class="btns"><button id="tabBtn" title="Opens one tab that always shows the latest winner">🪟 Winner tab</button><button id="logBtn">📜 Winner log</button></div>
+    </section>
+
+    <section>
+      <h3>Your brand</h3>
+      <label for="hubText">Center hub text</label>
+      <input type="text" id="hubText" maxlength="24" placeholder="LEGENDS">
+      <div class="btns"><button id="logoBtn">🖼 Upload logo</button><button id="logoClr">Remove logo</button></div>
+      <input type="file" id="logoFile" accept="image/*" hidden>
+      <label for="palSel">Wheel colours</label>
+      <select id="palSel"></select>
+    </section>
+
+    <section>
+      <h3>Sound</h3>
+      <label class="chk"><input type="checkbox" id="sndChk" checked> Sound effects</label>
+      <label class="chk"><input type="checkbox" id="musChk" checked> Spin music</label>
+    </section>
+
+    <section>
+      <h3>Fair and square</h3>
+      <p class="hint">Before every spin the wheel shows a <b>sealed code</b>: the SHA-256 of a secret random seed. The result comes from that seed before the wheel moves, and the wheel lands on it. After the spin the seed is revealed so anyone can check it. Chat power only changes the show, never the result.</p>
+      <div class="btns"><button id="verifyBtn">✔ Verify last spin</button></div>
+      <p class="hint">Keys: <code>Space</code> spin · <code>V</code> verify · <code>Esc</code> close. <a href="README.md" target="_blank" rel="noopener">How it works</a></p>
+    </section>
+  </aside>
+</div>
+
+<div id="win" hidden>
+  <div class="w-rays"></div>
+  <div class="w-card">
+    <div class="w-kick" id="wKick">THE WHEEL HAS SPOKEN</div>
+    <div class="w-trophy">🏆</div>
+    <div class="w-name" id="wName"></div>
+    <div class="w-sub" id="wSub"></div>
+    <button class="w-claim" id="wClaim" hidden title="Streamer: tap to mark claimed"></button>
+    <div class="w-proof" id="wProof"></div>
+    <div class="w-btns admin-only"><button id="wVerify">✔ Verify</button><button id="wTab">🪟 Winner tab</button><button id="wNew">▶ New round</button><button id="wClose">✕ Close</button></div>
+  </div>
+</div>
+
+<div id="verify" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="vTitle"><div class="box">
+  <h2 id="vTitle">✔ Verify spin</h2>
+  <div class="sub">Everything below is recomputed right now in this page from the revealed seed.</div>
+  <div id="vBody"></div>
+  <div class="row"><button id="vPrev">◀ Earlier spin</button><button id="vNext">Later spin ▶</button><span class="grow"></span><button id="vCopy">📋 Copy proof</button><button id="vClose">Close</button></div>
+</div></div>
+
+<div id="winlog" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="lTitle"><div class="box">
+  <h2 id="lTitle">📜 Winner log</h2>
+  <div class="sub">Every winner is saved in this browser and survives a refresh.</div>
+  <div id="lRows"></div>
+  <div class="row"><button id="lCopy">📋 Copy</button><button id="lClear">🗑 Clear log</button><span class="grow"></span><button id="lClose">Close</button></div>
+</div></div>
+
+<canvas id="fx"></canvas>
+<div id="toast"></div>
+<div class="sr" id="live" aria-live="assertive"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   Basics
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+const store = {
+  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  del: k => { try { localStorage.removeItem(k); } catch {} },
+};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const TAU = Math.PI * 2;
+const mod = (a, m) => ((a % m) + m) % m;
+// ?speed=N runs every animation N times faster (demos and automated tests). Cosmetic only.
+const SPEED = Math.min(20, Math.max(0.25, +qs.get('speed') || 1));
+const T = ms => ms / SPEED;
+const CMD = (qs.get('cmd') || '!play').slice(0, 20);   // the chat command viewers type (Chat Play uses !play)
+const randInt = n => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; };  // tiny n only; bias is negligible
+
+const stage = $('stage'), cv = $('cv'), ctx = cv.getContext('2d');
+let toastT = 0;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2400); }
+function announce(msg) { $('live').textContent = msg; }
+
+/* =====================================================================
+   Fairness: SHA-256 (crypto.subtle, with a pure JS fallback for file:// in old embeds)
+   commit = SHA-256(seedHex)
+   index  = first 8 bytes of SHA-256(seedHex + ":" + spinNumber), big-endian, mod entries
+   ===================================================================== */
+const ror = (x, n) => (x >>> n) | (x << (32 - n));
+const PRIMES = (() => { const p = []; for (let n = 2; p.length < 64; n++) if (p.every(q => n % q)) p.push(n); return p; })();
+const SHA_K = PRIMES.map(p => (Math.cbrt(p) % 1) * 2 ** 32 >>> 0);
+const SHA_H = PRIMES.slice(0, 8).map(p => (Math.sqrt(p) % 1) * 2 ** 32 >>> 0);
+function sha256js(msg) {
+  const l = msg.length, buf = new Uint8Array(((l + 9 + 63) >> 6) << 6);
+  buf.set(msg); buf[l] = 0x80;
+  const dv = new DataView(buf.buffer);
+  dv.setUint32(buf.length - 4, (l * 8) >>> 0); dv.setUint32(buf.length - 8, Math.floor(l / 2 ** 29));
+  const h = SHA_H.slice(), w = new Uint32Array(64);
+  for (let o = 0; o < buf.length; o += 64) {
+    for (let i = 0; i < 16; i++) w[i] = dv.getUint32(o + i * 4);
+    for (let i = 16; i < 64; i++) {
+      const a = w[i - 15], b = w[i - 2];
+      w[i] = (w[i - 16] + (ror(a, 7) ^ ror(a, 18) ^ (a >>> 3)) + w[i - 7] + (ror(b, 17) ^ ror(b, 19) ^ (b >>> 10))) | 0;
+    }
+    let [a, b, c, d, e, f, g, k] = h;
+    for (let i = 0; i < 64; i++) {
+      const t1 = (k + (ror(e, 6) ^ ror(e, 11) ^ ror(e, 25)) + ((e & f) ^ (~e & g)) + SHA_K[i] + w[i]) | 0;
+      const t2 = ((ror(a, 2) ^ ror(a, 13) ^ ror(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      k = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    [a, b, c, d, e, f, g, k].forEach((v, i) => { h[i] = (h[i] + v) | 0; });
+  }
+  const out = new Uint8Array(32), odv = new DataView(out.buffer);
+  h.forEach((v, i) => odv.setUint32(i * 4, v >>> 0));
+  return out;
+}
+const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+async function sha256(text) {
+  const data = new TextEncoder().encode(text);
+  let bytes;
+  try { bytes = crypto.subtle ? new Uint8Array(await crypto.subtle.digest('SHA-256', data)) : sha256js(data); }
+  catch { bytes = sha256js(data); }
+  return { bytes, hex: hex(bytes) };
+}
+async function deriveIndex(seed, spin, n) {
+  const h = await sha256(seed + ':' + spin);
+  let big = 0n;
+  for (let i = 0; i < 8; i++) big = (big << 8n) | BigInt(h.bytes[i]);
+  return { index: Number(big % BigInt(n)), hash: h.hex, first8: h.hex.slice(0, 16), big };
+}
+let nextSeal = null, sealing = null;
+function reseal() {
+  sealing = (async () => {
+    const seed = hex(crypto.getRandomValues(new Uint8Array(32)));
+    const commit = (await sha256(seed)).hex;
+    nextSeal = { seed, commit };
+    renderSeal();
+    return nextSeal;
+  })();
+  return sealing;
+}
+
+/* =====================================================================
+   Palettes (streamer branding)
+   ===================================================================== */
+const PALETTES = {
+  legends: { name: 'Legends (rainbow)', colors: ['#7c4dff', '#ff2e7e', '#ffb300', '#00c6ff', '#1fd68b', '#ff6a21', '#c13dff', '#2f6bff'], rim: '#ffd76a', glow: '#8b5cff' },
+  inferno: { name: 'Inferno', colors: ['#e3122b', '#ff7a00', '#ffc400', '#9e0b20', '#ff4d6d', '#ff9e00'], rim: '#ffcf70', glow: '#ff4d00' },
+  ocean:   { name: 'Deep ocean', colors: ['#0066ff', '#00b8ff', '#00d9b0', '#2238d6', '#4cc9f0', '#0089b8'], rim: '#a6ecff', glow: '#00b4ff' },
+  neon:    { name: 'Neon arcade', colors: ['#ff00d4', '#00f0e0', '#a6ff00', '#7a00ff', '#ff2e88', '#00ff85'], rim: '#ffffff', glow: '#ff00e6' },
+  royal:   { name: 'Royal gold', colors: ['#4b1f75', '#d4a52c', '#2c1250', '#efc95a', '#6c34a8', '#b0841a'], rim: '#f2d16b', glow: '#d4a52c' },
+  candy:   { name: 'Candy pop', colors: ['#ff7aa2', '#ffc2d4', '#7fdcd8', '#a8f0c0', '#ffe3a8', '#c7a6e8'], rim: '#ffffff', glow: '#ff7aa2' },
+  noir:    { name: 'Black and gold', colors: ['#17151f', '#d4af37'], rim: '#ffd700', glow: '#ffd700' },
+  emerald: { name: 'Emerald', colors: ['#0f8a52', '#22c97a', '#0b5e3a', '#7ce8b0', '#139c64', '#c8f7dc'], rim: '#e6ffd0', glow: '#22c97a' },
+};
+let palKey = store.get('legends_palette') || (qs.get('theme') === 'neon' ? 'neon' : 'legends');
+if (!PALETTES[palKey]) palKey = 'legends';
+const pal = () => PALETTES[palKey];
+function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function shade(h, amt) { const [r, g, b] = hexRgb(h); const f = v => Math.max(0, Math.min(255, Math.round(amt > 0 ? v + (255 - v) * amt : v * (1 + amt)))); return `rgb(${f(r)},${f(g)},${f(b)})`; }
+function lum(h) { const [r, g, b] = hexRgb(h); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; }
+function sliceColor(i, n) {
+  const c = pal().colors, L = c.length;
+  let col = c[i % L];
+  if (n > 1 && i === n - 1 && col === c[0]) {   // last slice would touch slice 0 in the same colour
+    const prev = c[(i - 1) % L];
+    col = [...c, pal().rim].find(x => x !== c[0] && x !== prev) || col;
+  }
+  return col;
+}
+
+/* =====================================================================
+   State
+   ===================================================================== */
+// entries: the roster in entry order. out = eliminated this gauntlet. w = drawn slice weight (animates 0..1).
+let entries = [];
+let mode = store.get('legends_mode') === 'gauntlet' ? 'gauntlet' : 'classic';
+let phase = 'idle';           // idle | spinning | elim | duel | won
+let gLive = false;            // a gauntlet is in progress (entries locked)
+let rotation = -Math.PI / 2;  // wheel angle (radians, clockwise)
+let spin = null;              // the running spin
+let spinNo = 0;               // spin number within this round, used in the fairness formula
+let proofs = [];              // every spin this round
+let landedName = '';          // slice highlighted after landing
+let hubName = '';             // name shown in the hub while spinning
+let winner = null, lastWinnerForRemoval = null;
+let meter = 0;                // chat power, 0..1. COSMETIC ONLY: never touches the result.
+const chargeSeen = new Map();
+let soundOn = store.get('legends_sound') !== '0', musicOn = store.get('legends_music') !== '0';
+let hubText = store.get('legends_hubText') || '';
+let hubImg = null;
+let timers = [];
+const later = (fn, ms) => { const t = setTimeout(() => { timers = timers.filter(x => x !== t); fn(); }, ms); timers.push(t); return t; };
+const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+
+const alive = () => entries.filter(e => !e.out);
+const aliveNames = () => alive().map(e => e.name);
+const find = name => entries.find(e => e.name.toLowerCase() === String(name).toLowerCase());
+const entriesOpen = () => !gLive && phase !== 'spinning' && phase !== 'duel' && phase !== 'elim';
+const saveNames = () => store.set('legends_names', JSON.stringify(entries.map(e => e.name)));
+
+function cleanName(s) { return String(s ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24); }
+
+/* =====================================================================
+   Outbound messages
+   ===================================================================== */
+function emit(msg) { if (window.parent !== window) { try { window.parent.postMessage(msg, '*'); } catch {} } }
+const listed = () => (gLive ? aliveNames() : entries.map(e => e.name));
+
+/* =====================================================================
+   Entries
+   ===================================================================== */
+let flying = 0;
+function addNames(list, opts = {}) {
+  if (!entriesOpen()) return 0;
+  let added = 0, k = 0;
+  for (const raw of list) {
+    const name = cleanName(raw);
+    if (!name || find(name) || entries.length >= 500) continue;
+    const e = { name, out: false, w: 0, growAt: Infinity };
+    entries.push(e); added++;
+    if (opts.instant) { e.w = 1; e.growAt = 0; }
+    else flyIn(e, (k++) * T(110));
+  }
+  if (added) { saveNames(); renderList(); wheelDirty = true; renderChip(); }
+  return added;
+}
+function removeName(name) {
+  const e = find(name);
+  if (!e || phase === 'spinning') return;
+  if (gLive && !e.out) return toast('Finish or stop the gauntlet first');
+  entries = entries.filter(x => x !== e);
+  saveNames(); renderList(); wheelDirty = true; renderChip();
+}
+function clearNames() {
+  if (phase === 'spinning') return;
+  stopRound(true);
+  entries = []; saveNames(); renderList(); wheelDirty = true; renderChip();
+}
+function flyIn(e, delay) {
+  const flight = T(1050);
+  e.growAt = performance.now() + delay + flight * 0.8;
+  if (flying >= 14 || document.hidden) { e.growAt = performance.now() + delay; return; }
+  flying++;
+  const el = document.createElement('div');
+  el.className = 'fly'; el.textContent = e.name;
+  stage.appendChild(el);
+  const r = stage.getBoundingClientRect();
+  const left = Math.random() < 0.5;
+  const x0 = left ? -r.width * 0.05 : r.width * 1.05, y0 = r.height * (0.2 + Math.random() * 0.7);
+  const x1 = geo.cx / DPR, y1 = geo.cy / DPR;
+  const mx = (x0 + x1) / 2 + (left ? 1 : -1) * r.width * 0.05, my = Math.min(y0, y1) - r.height * 0.18;
+  const tf = (x, y, s) => `translate(${x}px,${y}px) translate(-50%,-50%) scale(${s})`;
+  try {
+    el.animate([
+      { transform: tf(x0, y0, 1.4), opacity: 0 },
+      { transform: tf(x0 + (mx - x0) * 0.3, y0 + (my - y0) * 0.3, 1.3), opacity: 1, offset: 0.15 },
+      { transform: tf(mx, my, 1.1), opacity: 1, offset: 0.55 },
+      { transform: tf(x1, y1, 0.25), opacity: 0 },
+    ], { duration: flight, delay, easing: 'cubic-bezier(.35,.6,.5,1)', fill: 'both' });
+  } catch {}
+  setTimeout(() => { if (soundOn) sfx.whoosh(); }, delay);
+  setTimeout(() => { el.remove(); flying--; sparkBurst(geo.cx, geo.cy, 10); }, delay + flight + 30);
+}
+
+/* =====================================================================
+   Canvas geometry + wheel image
+   ===================================================================== */
+let DPR = 1, W = 0, H = 0;
+const geo = { cx: 0, cy: 0, R: 100 };
+let wheelImg = document.createElement('canvas'), wheelDirty = true;
+function resize() {
+  const r = stage.getBoundingClientRect();
+  DPR = Math.min(3, window.devicePixelRatio || 1);
+  W = Math.max(1, Math.round(r.width * DPR)); H = Math.max(1, Math.round(r.height * DPR));
+  cv.width = W; cv.height = H;
+  geo.cx = W / 2; geo.cy = H * 0.515; geo.R = Math.max(40, Math.min(W * 0.36, H * 0.35));
+  const fx = $('fx'); fx.width = Math.round(innerWidth * DPR); fx.height = Math.round(innerHeight * DPR);
+  wheelDirty = true; layersDirty = true;
+}
+function renderWheelImage() {
+  wheelDirty = false;
+  const R = geo.R, os = Math.min(1.6, 4096 / (2 * R));      // supersample so the zoom stays sharp
+  const S = Math.ceil(2 * R * os), r = S / 2;
+  if (wheelImg.width !== S) { wheelImg.width = S; wheelImg.height = S; }
+  const g = wheelImg.getContext('2d');
+  g.clearRect(0, 0, S, S);
+  g.save(); g.translate(r, r);
+  const vis = entries.filter(e => e.w > 0.001);
+  const total = vis.reduce((s, e) => s + e.w, 0);
+  if (!vis.length) {
+    const gr = g.createRadialGradient(0, 0, r * 0.2, 0, 0, r);
+    gr.addColorStop(0, 'rgba(60,50,120,.35)'); gr.addColorStop(1, 'rgba(20,16,50,.6)');
+    g.fillStyle = gr; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+    g.setLineDash([r * 0.04, r * 0.03]); g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = r * 0.01;
+    g.beginPath(); g.arc(0, 0, r * 0.7, 0, TAU); g.stroke();
+    g.restore(); return;
+  }
+  const font = getComputedStyle(document.documentElement).getPropertyValue('--font').trim() || 'sans-serif';
+  let a0 = 0;
+  vis.forEach((e, i) => {
+    const a = e.w / total * TAU, col = sliceColor(i, vis.length);
+    g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, r, a0, a0 + a); g.closePath();
+    const gr = g.createRadialGradient(0, 0, r * 0.15, 0, 0, r);
+    gr.addColorStop(0, shade(col, 0.35)); gr.addColorStop(0.55, col); gr.addColorStop(1, shade(col, -0.35));
+    g.fillStyle = gr; g.fill();
+    // text: reads outward, ends near the rim
+    const lane = r * 0.70, xEnd = r * 0.93;
+    let fs = Math.min(a * r * 0.6 * 0.62, r * 0.085);
+    if (fs * DPR >= 6 * os && e.w > 0.3) {
+      g.save(); g.rotate(a0 + a / 2);
+      g.font = `800 ${fs}px ${font}`;
+      let text = e.name;
+      while (g.measureText(text).width > lane && fs > r * 0.03) { fs *= 0.92; g.font = `800 ${fs}px ${font}`; }
+      if (g.measureText(text).width > lane) { while (text.length > 2 && g.measureText(text + '…').width > lane) text = text.slice(0, -1); text += '…'; }
+      const dark = lum(col) > 0.62;
+      g.textAlign = 'right'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+      g.globalAlpha = Math.min(1, e.w * 1.4);
+      g.lineWidth = fs * 0.2; g.strokeStyle = dark ? 'rgba(255,255,255,.75)' : 'rgba(0,0,0,.55)'; g.strokeText(text, xEnd, 0);
+      g.fillStyle = dark ? '#1b1530' : '#ffffff'; g.fillText(text, xEnd, 0);
+      g.restore();
+    }
+    a0 += a;
+  });
+  // dividers
+  if (vis.length > 1) {
+    a0 = 0;
+    g.strokeStyle = 'rgba(255,240,200,.55)'; g.lineWidth = Math.max(1, r * 0.006);
+    vis.forEach(e => { g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a0) * r, Math.sin(a0) * r); g.stroke(); a0 += e.w / total * TAU; });
+  }
+  // depth: darker toward the rim
+  const sh = g.createRadialGradient(0, 0, r * 0.6, 0, 0, r);
+  sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,.32)');
+  g.fillStyle = sh; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+  g.restore();
+}
+
+// Static layers, rebuilt only on resize / palette change: the glow halo sprite and the CSS ray colour.
+const haloLayer = document.createElement('canvas');
+let layersDirty = true, raysOpacity = 0;
+function buildLayers() {
+  layersDirty = false;
+  const [gr, gg, gb] = hexRgb(pal().glow);
+  stage.style.setProperty('--ray', `rgba(${gr},${gg},${gb},.2)`);
+  haloLayer.width = haloLayer.height = 256;
+  const g = haloLayer.getContext('2d');
+  g.clearRect(0, 0, 256, 256);
+  const hg = g.createRadialGradient(128, 128, 128 * 0.62, 128, 128, 128);
+  hg.addColorStop(0, `rgba(${gr},${gg},${gb},.85)`); hg.addColorStop(0.3, `rgba(${gr},${gg},${gb},.35)`); hg.addColorStop(1, `rgba(${gr},${gg},${gb},0)`);
+  g.fillStyle = hg; g.fillRect(0, 0, 256, 256);
+}
+
+/* =====================================================================
+   Spin: result first (from the sealed seed), then an animation that lands on it
+   ===================================================================== */
+async function startSpin(auto) {
+  if (phase === 'spinning' || phase === 'elim' || phase === 'duel') return;
+  if (phase === 'won' && !auto) closeWinCard();
+  if (mode === 'gauntlet' && !gLive) {
+    entries.forEach(e => { e.out = false; });          // fresh gauntlet: everyone back on
+    gLive = true; proofs = []; spinNo = 0; renderFallen();
+  }
+  if (mode === 'classic' && lastWinnerForRemoval) { const n = lastWinnerForRemoval; lastWinnerForRemoval = null; if ($('rmWin').checked) { entries = entries.filter(e => e.name !== n); saveNames(); renderList(); } }
+  const names = aliveNames();
+  if (names.length < 2) { gLive = false; toast(names.length ? 'Need at least 2 names to spin' : 'Add some names first'); renderChip(); return; }
+  if (mode === 'gauntlet' && names.length === 2) { startDuel(); return; }   // two entrants: straight to the final duel
+  phase = 'spinning'; landedName = ''; winner = null; stopClaim();
+  entries.forEach(e => { e.w = e.out ? 0 : 1; e.growAt = 0; });   // equal slices, always
+  wheelDirty = true;
+  renderChip(); renderButtons();
+  const seal = nextSeal || await (sealing || reseal());
+  nextSeal = null;
+  spinNo++;
+  const n = names.length;
+  const { index } = await deriveIndex(seal.seed, spinNo, n);   // the result is fixed HERE, before anything moves
+  renderSealSpinning(seal.commit);
+
+  // Everything below is presentation. power is COSMETIC: more turns and glow, never a different index.
+  const power = meter;
+  meter = 0; renderMeter();
+  const quick = mode === 'gauntlet' && $('paceSel').value === 'quick' && names.length > 2;
+  let dur = quick ? 3000 : Math.min(10000, 6000 + Math.random() * 2500 + power * 1500);
+  const turns = (quick ? 3 : 6 + randInt(3)) + Math.round(power * 6);
+  const arc = TAU / n;
+  // Where inside the slice the pointer stops: cosmetic. Half the time it's a hair from the edge (near miss).
+  const off = Math.random() < 0.5 ? (Math.random() < 0.5 ? 0.07 + Math.random() * 0.1 : 0.83 + Math.random() * 0.1) : 0.25 + Math.random() * 0.5;
+  const finalRot = -Math.PI / 2 - (index + off) * arc;    // puts slice[index] under the pointer (12 o'clock)
+  const delta = mod(finalRot - rotation, TAU) + turns * TAU;
+  const tb = quick ? 800 : 1500;                          // slow-motion tail
+  const S = Math.min(delta * 0.3, Math.PI, arc * (1.1 + Math.random() * 0.9));
+  const ta = dur - tb, DA = delta - S;
+  const r = Math.min(0.9, (2 * S / tb) * ta / DA);
+  spin = { t0: performance.now(), dur: T(dur), ta: T(ta), tb: T(tb), from: rotation, delta, DA, S, r, n, names, index, seal, spinNo: spinNo, power, last: -1, slow: false, quick };
+  hubName = '';
+  musicStart(power);
+  spin.failsafe = later(() => finishSpin(), T(dur) + 400);   // lands even if frames stall (hidden source)
+}
+function sliceUnderPointer(rot, n) { return Math.floor(mod(-Math.PI / 2 - rot, TAU) / (TAU / n)) % n; }
+function stepSpin(now) {
+  const s = spin, el = now - s.t0;
+  if (el >= s.dur) { finishSpin(); return; }
+  let x;
+  if (el < s.ta) { const u = el / s.ta; x = s.DA * (s.r * u + (1 - s.r) * (1 - Math.pow(1 - u, 3))); }
+  else {
+    const v = (el - s.ta) / s.tb; x = s.DA + s.S * (1 - (1 - v) * (1 - v));
+    if (!s.slow) { s.slow = true; if (!s.quick) { zoomTarget = 1.9; musicDuck(); } }
+  }
+  rotation = s.from + x;
+  const cur = sliceUnderPointer(rotation, s.n);
+  if (cur !== s.last) { s.last = cur; hubName = s.names[cur]; kick = 1; if (soundOn) sfx.tick(s.slow); }
+}
+function finishSpin() {
+  if (!spin) return;
+  const s = spin; spin = null;
+  clearTimeout(s.failsafe);
+  rotation = s.from + s.delta;
+  const under = sliceUnderPointer(rotation, s.n);
+  if (under !== s.index) console.error('Wheel of Legends: landed', under, 'expected', s.index);
+  cv.dataset.rotation = String(rotation); cv.dataset.n = String(s.n); cv.dataset.landed = String(under);
+  landedName = s.names[s.index]; hubName = landedName;
+  musicStop(); flash = 1; zoomHold = performance.now() + T(900);
+  stage.classList.remove('shake'); void stage.offsetWidth; stage.classList.add('shake');
+  const name = s.names[s.index];
+  const proof = { spin: s.spinNo, commit: s.seal.commit, seed: s.seal.seed, names: s.names.slice(), index: s.index, name, mode, at: Date.now() };
+  proofs.push(proof);
+  renderSealRevealed(proof);
+  emit({ type: 'legends:result', seedCommit: proof.commit, seed: proof.seed, index: proof.index, name, spin: proof.spin, names: proof.names });
+  reseal();
+  if (mode === 'gauntlet' && gLive) eliminate(name);
+  else { if (soundOn) sfx.bass(); declareWinner(name, 'classic'); }
+}
+
+/* =====================================================================
+   Gauntlet + final duel
+   ===================================================================== */
+function eliminate(name) {
+  phase = 'elim';
+  if (soundOn) sfx.doom();
+  const e = find(name); if (e) e.out = true;
+  emit({ type: 'legends:eliminated', name });
+  announce(name + ' eliminated');
+  const left = alive().length;
+  $('eName').textContent = name;
+  $('eLeft').textContent = left === 2 ? 'Two legends remain. Final duel incoming!' : `${left} legends remain`;
+  const quick = $('paceSel').value === 'quick' && left > 2;
+  $('elim').hidden = false;
+  renderFallen(); renderList(); renderChip();
+  later(() => {
+    $('elim').hidden = true;
+    landedName = ''; hubName = '';
+    entries.forEach(x => { if (x.out) x.growAt = Infinity; });   // slice shrinks out
+    later(() => {
+      if (alive().length > 2) { phase = 'idle'; startSpin(true); }
+      else if (alive().length === 2) startDuel();
+      else { phase = 'idle'; const a = alive()[0]; if (a) declareWinner(a.name, 'gauntlet'); }
+    }, T(900));
+  }, T(quick ? 1700 : 2600));
+}
+
+const RPS = ['rock', 'paper', 'scissors'];
+const HAND = { rock: '✊', paper: '✋', scissors: '✌️' };
+const BEATS = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+let duel = null, duelTick = null;
+function startDuel() {
+  phase = 'duel';
+  const f = aliveNames();
+  duel = { f, picks: new Map(), random: new Set(), round: 0, until: 0, busy: false };
+  emit({ type: 'legends:duel', finalists: f });
+  announce('Final duel: ' + f.join(' versus '));
+  $('dNameA').textContent = f[0]; $('dNameB').textContent = f[1];
+  $('dHow').innerHTML = `Finalists type <b>${esc(CMD)} rock</b>, <b>${esc(CMD)} paper</b> or <b>${esc(CMD)} scissors</b>`;
+  $('duel').hidden = false;
+  if (soundOn) sfx.slam();
+  duelRound('');
+  renderChip(); renderButtons();
+}
+function duelRound(note) {
+  duel.picks.clear(); duel.random.clear(); duel.round++; duel.busy = false;
+  duel.until = Date.now() + T(30000);
+  ['A', 'B'].forEach(k => { $('d' + k).className = 'd-card'; $('dHand' + k).textContent = '✊'; });
+  $('dMsg').className = 'd-msg' + (note ? ' note' : ''); $('dMsg').textContent = note || (duel.round > 1 ? `Round ${duel.round}` : '30 seconds to pick. No pick = a fair random pick is made for you.');
+  clearInterval(duelTick); duelTick = setInterval(renderDuel, 200); renderDuel();
+}
+function renderDuel() {
+  if (!duel) return;
+  const left = Math.max(0, duel.until - Date.now()), secs = Math.ceil(left / 1000 * SPEED);
+  $('dSec').textContent = duel.busy ? '!' : secs;
+  $('dTimer').style.setProperty('--p', duel.busy ? 0 : left / T(30000));
+  $('dTimer').classList.toggle('urgent', secs <= 10);
+  duel.f.forEach((n, i) => {
+    const k = i ? 'B' : 'A';
+    if (!duel.busy) {
+      const has = duel.picks.has(n);
+      $('d' + k).classList.toggle('locked', has);
+      $('dSt' + k).textContent = has ? '✓ LOCKED IN' : 'waiting for a pick…';
+    }
+  });
+  if (!duel.busy && !left) duelTimeout();
+}
+function duelPick(name, choice) {
+  if (!duel || duel.busy) return false;
+  choice = String(choice || '').toLowerCase();
+  if (!RPS.includes(choice)) return false;
+  const f = duel.f.find(x => x.toLowerCase() === String(name).toLowerCase());
+  if (!f || duel.picks.has(f)) return false;   // finalists only, first pick counts
+  duel.picks.set(f, choice);
+  if (soundOn) sfx.pick();
+  renderDuel();
+  if (duel.picks.size === 2) duelReveal();
+  return true;
+}
+function duelTimeout() {
+  // A no-show gets a fair random pick (crypto random), and the screen says so plainly.
+  const missing = duel.f.filter(n => !duel.picks.has(n));
+  missing.forEach(n => { duel.picks.set(n, RPS[randInt(3)]); duel.random.add(n); });
+  // Random picks never cause an endless tie: redraw only the random pick(s) until someone wins (still 50/50).
+  while (duel.picks.get(duel.f[0]) === duel.picks.get(duel.f[1])) missing.forEach(n => duel.picks.set(n, RPS[randInt(3)]));
+  duelReveal();
+}
+function duelReveal() {
+  duel.busy = true;
+  const [a, b] = duel.f, pa = duel.picks.get(a), pb = duel.picks.get(b);
+  ['A', 'B'].forEach(k => { $('d' + k).classList.remove('locked'); $('d' + k).classList.add('d-shake'); $('dSt' + k).textContent = ''; });
+  $('dMsg').className = 'd-msg'; $('dMsg').textContent = 'ROCK… PAPER… SCISSORS…';
+  renderDuel();
+  if (soundOn) { sfx.slam(); setTimeout(() => sfx.slam(), T(500)); setTimeout(() => sfx.slam(), T(1000)); }
+  later(() => {
+    ['A', 'B'].forEach(k => $('d' + k).classList.remove('d-shake'));
+    $('dHandA').textContent = HAND[pa]; $('dHandB').textContent = HAND[pb];
+    $('dStA').textContent = pa.toUpperCase() + (duel.random.has(a) ? ' (random)' : '');
+    $('dStB').textContent = pb.toUpperCase() + (duel.random.has(b) ? ' (random)' : '');
+    const notes = [...duel.random].map(n => `${n} didn't pick in time, so a fair random pick was made: ${duel.picks.get(n).toUpperCase()}.`);
+    if (pa === pb) {
+      $('dMsg').textContent = `TIE! Both threw ${pa.toUpperCase()}. Go again!`;
+      if (soundOn) sfx.pick();
+      later(() => duelRound(''), T(2200));
+      return;
+    }
+    const w = BEATS[pa] === pb ? a : b, l = w === a ? b : a;
+    $(w === a ? 'dA' : 'dB').classList.add('win'); $(w === a ? 'dB' : 'dA').classList.add('lose');
+    $('dMsg').className = 'd-msg' + (notes.length ? ' note' : '');
+    $('dMsg').textContent = (notes.length ? notes.join(' ') + ' ' : '') + `${duel.picks.get(w).toUpperCase()} beats ${duel.picks.get(l).toUpperCase()}: ${w} wins!`;
+    if (soundOn) sfx.bass();
+    later(() => finishDuel(w, notes.length ? 'duel-random' : 'duel'), T(notes.length ? 3600 : 2200));
+  }, T(1500));
+}
+function finishDuel(w, how) {
+  clearInterval(duelTick); duelTick = null;
+  const l = duel.f.find(x => x !== w); const le = l && find(l); if (le) le.out = true;
+  duel = null; $('duel').hidden = true;
+  entries.forEach(x => { if (x.out) x.growAt = Infinity; });
+  declareWinner(w, how);
+}
+function declareFinalist(i) {
+  if (!duel || !document.body.classList.contains('admin')) return;
+  const w = duel.f[i];
+  duel.busy = true; clearInterval(duelTick);
+  later(() => finishDuel(w, 'declared'), 50);
+}
+
+/* =====================================================================
+   Winner, claim timer, winner log, winner tab (patterns from Blingo)
+   ===================================================================== */
+let claim = null, claimTick = null, roundId = 0;   // claim = { name, secs, until, status: waiting|claimed|missed }
+const HOW = {
+  classic: 'Chosen by the wheel', gauntlet: 'Last legend standing',
+  duel: 'Last legend standing: won the final duel', 'duel-random': 'Won the final duel (a no-show got a fair random pick)',
+  declared: 'Winner of the final duel (declared by the streamer)',
+};
+function declareWinner(name, how) {
+  phase = 'won'; gLive = false; winner = name;
+  if (mode === 'gauntlet') { entries.forEach(e => { if (e.name !== name) e.out = true; }); landedName = ''; }
+  lastWinnerForRemoval = mode === 'classic' ? name : null;
+  emit({ type: 'legends:winner', winner: name });
+  announce('Winner: ' + name);
+  if (soundOn) { sfx.fanfare(); }
+  confettiWin();
+  const secs = +$('claimSel').value;
+  claim = secs ? { name, secs, until: 0, status: 'waiting' } : null;
+  const p = proofs[proofs.length - 1];
+  roundId = Date.now();
+  writeLog([{ id: roundId, at: roundId, mode, how, players: entries.length, winner: name, status: claim ? 'waiting' : 'won',
+    spin: p && p.spin, commit: p && p.commit, seed: p && p.seed }, ...readLog()]);
+  showWinCard(name, how);
+  if (claim) startClaim(); else renderClaim();
+  updateWinTab(false);
+  renderChip(); renderButtons(); renderList(); renderFallen();
+}
+function showWinCard(name, how) {
+  $('wKick').textContent = mode === 'gauntlet' ? 'LAST LEGEND STANDING' : 'THE WHEEL HAS SPOKEN';
+  $('wName').textContent = name;
+  $('wName').style.fontSize = `min(${Math.min(16, 150 / Math.max(4, name.length))}vmin, ${Math.min(14, 120 / Math.max(4, name.length))}vw)`;
+  $('wSub').textContent = `${HOW[how] || ''} · ${mode === 'gauntlet' ? 'Gauntlet' : 'Classic'} · ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`;
+  const p = proofs[proofs.length - 1];
+  $('wProof').innerHTML = p ? `🔒 sealed ${esc(p.commit.slice(0, 12))}… · 🔓 seed ${esc(p.seed.slice(0, 12))}… · <b>✔ verifiable</b>` : '';
+  $('win').hidden = false;
+}
+function closeWinCard() {
+  $('win').hidden = true; stopConfetti();
+  if (lastWinnerForRemoval && $('rmWin').checked) {
+    const n = lastWinnerForRemoval; lastWinnerForRemoval = null;
+    entries = entries.filter(e => e.name !== n); saveNames(); renderList(); wheelDirty = true; landedName = '';
+  }
+  renderClaim();
+}
+const LOG_KEY = 'legends_winners';
+const readLog = () => { try { return JSON.parse(localStorage.getItem(LOG_KEY)) || []; } catch { return []; } };
+const writeLog = l => { try { localStorage.setItem(LOG_KEY, JSON.stringify(l.slice(0, 300))); } catch {} };
+function syncLog() {
+  if (!claim || !roundId) return;
+  const l = readLog(), r = l.find(x => x.id === roundId);
+  if (r && r.status !== claim.status) { r.status = claim.status; writeLog(l); }
+}
+function startClaim() {
+  if (!claim) return;
+  if (claim.status !== 'claimed') claim.status = 'waiting';
+  claim.until = Date.now() + T(claim.secs * 1000);
+  clearInterval(claimTick); claimTick = setInterval(renderClaim, 200); renderClaim();
+}
+function stopClaim() { claim = null; clearInterval(claimTick); claimTick = null; renderClaim(); }
+function renderClaim() {
+  const bar = $('claimBar'), wc = $('wClaim');
+  if (!claim) { bar.hidden = true; wc.hidden = true; $('chip').hidden = false; return; }
+  const left = Math.max(0, Math.ceil((claim.until - Date.now()) / 1000 * SPEED));
+  if (claim.status === 'waiting' && !left) {
+    claim.status = 'missed'; clearInterval(claimTick); claimTick = null;
+    emit({ type: 'legends:missed', name: claim.name });
+  }
+  let html, cls = '';
+  if (claim.status === 'claimed') { html = `✅ ${esc(claim.name)} claimed the prize!`; cls = 'done'; clearInterval(claimTick); claimTick = null; }
+  else if (claim.status === 'missed') html = `⌛ Time's up: ${esc(claim.name)} missed it`;
+  else { html = `✋ ${esc(claim.name)}: type <b>${esc(CMD)} claim</b> · <b>${left}s</b>`; if (left <= 10) cls = 'urgent'; }
+  bar.innerHTML = html; bar.className = cls; bar.hidden = !$('win').hidden; $('chip').hidden = !bar.hidden;
+  wc.innerHTML = html; wc.className = 'w-claim ' + (cls === 'done' ? 'claimed' : claim.status === 'missed' ? 'missed' : cls); wc.hidden = false;
+  syncLog(); updateWinTab(false);
+}
+function claimBy(name) {
+  name = cleanName(name);
+  if (!claim || !name) return false;
+  if (name.toLowerCase() !== claim.name.toLowerCase()) { toast(`🚨 Nice try ${name}! That's ${claim.name}'s prize`); return false; }
+  if (claim.status !== 'waiting') return false;
+  setClaimed(true);
+  return true;
+}
+function setClaimed(on) {
+  if (!claim) return;
+  claim.status = on ? 'claimed' : (Date.now() < claim.until ? 'waiting' : 'missed');
+  if (on) { if (soundOn) sfx.claim(); confettiBurst(60); emit({ type: 'legends:claimed', name: claim.name }); }
+  else if (claim.status === 'waiting' && !claimTick) claimTick = setInterval(renderClaim, 200);
+  renderClaim();
+}
+const toggleClaim = () => { if (claim && document.body.classList.contains('admin')) setClaimed(claim.status !== 'claimed'); };
+$('claimBar').onclick = toggleClaim; $('wClaim').onclick = toggleClaim;
+
+let winTab = null;
+function winTabUrl() {
+  if (!winner) return 'winners.html';
+  return 'winners.html?w=' + encodeURIComponent(winner) + (claim ? '&s=' + claim.status : '') + '&m=' + mode + '&t=' + (roundId || Date.now());
+}
+function updateWinTab(openIfClosed) {
+  const url = winTabUrl();
+  if (winTab && !winTab.closed) { try { if (!winTab.location.href.endsWith(url)) winTab.location.replace(url); return; } catch {} }
+  if (openIfClosed) winTab = window.open(url, 'legendsWinners');   // opened from a click so popup blockers allow it
+}
+function renderWinlog() {
+  const l = readLog(), icon = { claimed: '✅', missed: '⌛', waiting: '⏳', won: '🏆' };
+  $('lRows').innerHTML = l.length ? l.map(r => `<div class="round"><time>${esc(new Date(r.at).toLocaleString())} · ${esc(r.mode)} · ${+r.players || 0} entries</time>` +
+    `<span class="nm">${icon[r.status] || '🏆'} ${esc(r.winner)}</span> <small>${esc(r.status)}${r.commit ? ' · spin ' + esc(r.spin) + ' · sealed ' + esc(r.commit.slice(0, 10)) + '… seed ' + esc(String(r.seed).slice(0, 10)) + '…' : ''}</small></div>`).join('')
+    : '<div class="empty">No winners yet. Every winner lands here and stays, even after a refresh.</div>';
+}
+
+/* =====================================================================
+   Verify panel
+   ===================================================================== */
+let vIdx = -1;
+async function openVerify(i) {
+  if (!proofs.length) { toast('No spins to verify yet'); return; }
+  vIdx = i == null ? proofs.length - 1 : Math.max(0, Math.min(proofs.length - 1, i));
+  const p = proofs[vIdx];
+  $('verify').hidden = false;
+  $('vPrev').disabled = vIdx === 0; $('vNext').disabled = vIdx === proofs.length - 1;
+  const c = await sha256(p.seed);
+  const d = await deriveIndex(p.seed, p.spin, p.names.length);
+  const ok1 = c.hex === p.commit, ok2 = d.index === p.index && p.names[d.index] === p.name;
+  $('vBody').dataset.ok1 = ok1; $('vBody').dataset.ok2 = ok2; $('vBody').dataset.index = d.index; $('vBody').dataset.spin = p.spin;
+  $('vTitle').textContent = `✔ Verify spin #${p.spin} of this round (${vIdx + 1}/${proofs.length})`;
+  $('vBody').innerHTML = `
+    <div class="kv"><span>Sealed code, shown before the spin started</span><code>${esc(p.commit)}</code></div>
+    <div class="kv"><span>Seed, revealed after the spin</span><code id="vSeed">${esc(p.seed)}</code></div>
+    <div class="check ${ok1 ? '' : 'bad'}"><b>${ok1 ? '✅ Seal matches' : '❌ Seal does NOT match'}</b><br>SHA-256(seed) = <code style="display:inline">${esc(c.hex)}</code></div>
+    <div class="kv"><span>Entries on the wheel at spin #${p.spin} (n = ${p.names.length}, numbered from 0 in entry order)</span>
+      <ol class="names">${p.names.map((n, k) => `<li class="${k === d.index ? 'hit' : ''}">${k}. ${esc(n)}</li>`).join('')}</ol></div>
+    <div class="check ${ok2 ? '' : 'bad'}"><b>${ok2 ? '✅ Result matches the wheel' : '❌ Result does NOT match'}</b><br>
+      SHA-256(seed + ":${p.spin}") = <code style="display:inline">${esc(d.hash)}</code><br>
+      first 8 bytes = 0x${esc(d.first8)} = ${d.big.toString()}<br>
+      ${d.big.toString()} mod ${p.names.length} = <b style="color:var(--gold)">${d.index}</b> → ${esc(p.names[d.index])}</div>
+    <div class="kv"><span>Check it yourself (any terminal)</span><pre>echo -n "${esc(p.seed)}" | sha256sum
+python3 -c "import hashlib;h=hashlib.sha256(b'${esc(p.seed)}:${p.spin}').digest();print(int.from_bytes(h[:8],'big') % ${p.names.length})"</pre></div>`;
+}
+function proofText(p) {
+  return `Wheel of Legends spin #${p.spin} (${p.mode}) ${new Date(p.at).toISOString()}\nsealed code: ${p.commit}\nseed: ${p.seed}\n` +
+    `entries (n=${p.names.length}): ${p.names.map((n, k) => k + '=' + n).join(', ')}\nresult: index ${p.index} = ${p.name}\n` +
+    `check: sha256(seed) == sealed code; int(first 8 bytes of sha256(seed + ":${p.spin}")) mod ${p.names.length} == ${p.index}`;
+}
+
+/* =====================================================================
+   Chat power meter (COSMETIC ONLY)
+   Charges add turns, glow and sparks to the next spin. They are applied after the
+   result is fixed and can never change which slice wins.
+   ===================================================================== */
+function charge(name) {
+  name = cleanName(name) || 'chat';
+  const k = name.toLowerCase(), now = Date.now();
+  if (now - (chargeSeen.get(k) || 0) < 2500) return false;   // one charge per person every 2.5 s
+  chargeSeen.set(k, now);
+  const was = meter;
+  meter = Math.min(1, meter + 0.07);
+  renderMeter();
+  const z = document.createElement('div'); z.className = 'zap'; z.textContent = '+⚡ ' + name;
+  z.style.top = (30 + Math.random() * 40) + '%';
+  $('meter').appendChild(z); setTimeout(() => z.remove(), 1700);
+  if (soundOn) (meter >= 1 && was < 1 ? sfx.overcharge : sfx.charge)();
+  if (meter >= 1 && was < 1) { toast('⚡ OVERCHARGED! The next spin goes wild (looks only, the result stays fair)'); sparkBurst(geo.cx, geo.cy - geo.R, 40); }
+  return true;
+}
+function renderMeter() {
+  $('mFill').style.height = (meter * 100).toFixed(1) + '%';
+  $('mPct').textContent = meter >= 1 ? 'MAX' : Math.round(meter * 100) + '%';
+  $('meter').classList.toggle('full', meter >= 1);
+}
+
+/* =====================================================================
+   Audio: Web Audio only
+   ===================================================================== */
+let AC = null, master = null, musicBus = null, sfxBus = null;
+function au() {
+  if (!soundOn) return null;
+  try {
+    if (!AC) {
+      const C = window.AudioContext || window.webkitAudioContext; if (!C) return null;
+      AC = new C(); master = AC.createGain(); master.gain.value = 0.8; master.connect(AC.destination);
+      musicBus = AC.createGain(); musicBus.gain.value = 0; musicBus.connect(master);
+      sfxBus = AC.createGain(); sfxBus.connect(master);
+    }
+    if (AC.state === 'suspended') AC.resume().catch(() => {});
+    return AC;
+  } catch { return null; }
+}
+function osc(type, f0, f1, dur, vol, when = 0, bus) {
+  const a = au(); if (!a) return;
+  try {
+    const t = a.currentTime + when, o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t);
+    if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(bus || sfxBus); o.start(t); o.stop(t + dur + 0.03);
+  } catch {}
+}
+function noise(dur, vol, freq, when = 0, type = 'lowpass', bus) {
+  const a = au(); if (!a) return;
+  try {
+    const len = Math.max(1, Math.floor(a.sampleRate * dur)), b = a.createBuffer(1, len, a.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
+    const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+    s.buffer = b; f.type = type; f.frequency.value = freq; g.gain.value = vol;
+    s.connect(f); f.connect(g); g.connect(bus || sfxBus); s.start(a.currentTime + when);
+  } catch {}
+}
+let lastWhoosh = 0;
+const sfx = {
+  tick: slow => slow ? (osc('square', 950, 600, 0.06, 0.12), noise(0.03, 0.2, 2500, 0, 'bandpass')) : osc('square', 1700 + Math.random() * 300, 1300, 0.025, 0.045),
+  bass: () => { osc('sine', 150, 34, 1.2, 0.95); osc('triangle', 75, 30, 0.9, 0.45); noise(0.6, 0.5, 500); },
+  doom: () => { osc('sawtooth', 120, 40, 1.2, 0.18); osc('sine', 60, 28, 1.5, 0.8); noise(0.9, 0.35, 260); },
+  fanfare: () => {
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { osc('sawtooth', f, f, 0.5, 0.06, 0.15 + i * 0.11); osc('triangle', f * 2, f * 2, 0.45, 0.05, 0.15 + i * 0.11); });
+    [1046.5, 1318.5, 1567.98].forEach(f => osc('triangle', f, f, 1.6, 0.06, 0.65));
+  },
+  whoosh: () => { const n = performance.now(); if (n - lastWhoosh < 90) return; lastWhoosh = n; noise(0.32, 0.1, 1800, 0, 'bandpass'); osc('sine', 300, 900, 0.25, 0.025); },
+  charge: () => osc('triangle', 500 + meter * 800, 900 + meter * 900, 0.15, 0.06),
+  overcharge: () => { osc('sawtooth', 200, 1600, 0.6, 0.08); noise(0.4, 0.15, 3000, 0, 'highpass'); },
+  pick: () => osc('square', 660, 880, 0.08, 0.06),
+  claim: () => [784, 987.8, 1318.5].forEach((f, i) => osc('triangle', f, f, 0.3, 0.1, i * 0.08)),
+  slam: () => { osc('sine', 95, 40, 0.25, 0.6); noise(0.15, 0.3, 1200); },
+};
+let musicTimer = null, beatTimer = null, mStep = 0;
+function musicStart(power) {
+  if (!musicOn || !soundOn) return;
+  const a = au(); if (!a) return;
+  try { musicBus.gain.cancelScheduledValues(a.currentTime); musicBus.gain.setTargetAtTime(0.5, a.currentTime, 0.05); } catch {}
+  mStep = 0; clearInterval(musicTimer); clearInterval(beatTimer);
+  const seq = [0, 7, 12, 7, 3, 10, 15, 10], ms = Math.max(70, 125 - power * 40);
+  musicTimer = setInterval(() => {
+    const root = mStep % 32 < 16 ? 110 : 98;
+    osc('sawtooth', root * 2 * Math.pow(2, seq[mStep % 8] / 12), null, 0.11, 0.05, 0, musicBus);
+    if (mStep % 4 === 0) osc('sine', root / 2, root / 2.05, 0.25, 0.4, 0, musicBus);
+    if (mStep % 4 === 2) noise(0.05, 0.08, 6000, 0, 'highpass', musicBus);
+    mStep++;
+  }, ms);
+}
+function musicDuck() {   // the near-miss slow-mo: music drops away under a heartbeat
+  if (!AC || !musicBus) return;
+  try { musicBus.gain.setTargetAtTime(0.1, AC.currentTime, 0.12); } catch {}
+  clearInterval(beatTimer);
+  const beat = () => { osc('sine', 62, 40, 0.18, 0.55); osc('sine', 58, 38, 0.2, 0.4, 0.2); };
+  if (soundOn) { beat(); beatTimer = setInterval(beat, T(650)); }
+}
+function musicStop() {
+  clearInterval(musicTimer); clearInterval(beatTimer); musicTimer = beatTimer = null;
+  if (AC && musicBus) try { musicBus.gain.setTargetAtTime(0, AC.currentTime, 0.08); } catch {}
+}
+
+/* =====================================================================
+   Confetti + sparks
+   ===================================================================== */
+const fxc = $('fx'), fctx = fxc.getContext('2d');
+let parts = [], fxRun = false;
+function confettiColors() { return [...pal().colors, pal().rim, '#ffd700', '#ffffff']; }
+function addPart(x, y, vx, vy) {
+  const cols = confettiColors();
+  parts.push({ x, y, vx, vy, rot: Math.random() * TAU, vr: (Math.random() - 0.5) * 0.4, w: (6 + Math.random() * 8) * DPR, h: (4 + Math.random() * 6) * DPR,
+    c: cols[randInt(cols.length)], life: 1, sway: Math.random() * TAU, round: Math.random() < 0.25 });
+}
+function confettiBurst(n) {
+  const w = fxc.width, h = fxc.height;
+  for (let i = 0; i < n && parts.length < 900; i++) addPart(w / 2, h * 0.45, (Math.random() - 0.5) * 30 * DPR, (-Math.random() * 22 - 6) * DPR);
+  runFx();
+}
+function confettiWin() {
+  const w = fxc.width, h = fxc.height;
+  for (let i = 0; i < 220 && parts.length < 900; i++) addPart(Math.random() * w, -Math.random() * h * 0.6, (Math.random() - 0.5) * 4 * DPR, Math.random() * 4 * DPR);
+  for (let i = 0; i < 90 && parts.length < 900; i++) { addPart(0, h * 0.85, (12 + Math.random() * 18) * DPR, (-20 - Math.random() * 16) * DPR); addPart(w, h * 0.85, (-12 - Math.random() * 18) * DPR, (-20 - Math.random() * 16) * DPR); }
+  confettiBurst(120);
+}
+function runFx() { if (!fxRun) { fxRun = true; requestAnimationFrame(fxLoop); } }
+function stopConfetti() { parts = []; }
+function fxLoop() {
+  const w = fxc.width, h = fxc.height;
+  fctx.clearRect(0, 0, w, h);
+  parts = parts.filter(p => p.y < h + 40 * DPR && p.life > 0);
+  for (const p of parts) {
+    p.vy += 0.42 * DPR; p.vx *= 0.985; p.vy = Math.min(p.vy, 9 * DPR);
+    p.sway += 0.08; p.x += p.vx + Math.sin(p.sway) * 1.2 * DPR; p.y += p.vy; p.rot += p.vr;
+    if (p.vy > 0) p.life -= 0.0015;
+    fctx.save(); fctx.translate(p.x, p.y); fctx.rotate(p.rot); fctx.fillStyle = p.c; fctx.globalAlpha = Math.min(1, p.life * 2);
+    if (p.round) { fctx.beginPath(); fctx.arc(0, 0, p.h * 0.6, 0, TAU); fctx.fill(); }
+    else fctx.fillRect(-p.w / 2, -p.h / 2 * Math.abs(Math.cos(p.sway)), p.w, p.h * Math.abs(Math.cos(p.sway)) + 1);
+    fctx.restore();
+  }
+  if (parts.length) requestAnimationFrame(fxLoop); else { fxRun = false; fctx.clearRect(0, 0, w, h); }
+}
+let sparks = [];
+function sparkBurst(x, y, n) {
+  const cols = [pal().rim, pal().glow, '#ffffff'];
+  for (let i = 0; i < n && sparks.length < 400; i++) { const a = Math.random() * TAU, s = (2 + Math.random() * 7) * DPR; sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, c: cols[i % 3] }); }
+}
+
+/* =====================================================================
+   Render loop
+   ===================================================================== */
+let last = performance.now(), kick = 0, flash = 0, zoom = 1, zoomTarget = 1, zoomHold = 0, glowPow = 0;
+const imgCache = {};
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  // slice weights (entry fly-in growth, elimination shrink). Spins always use equal slices.
+  if (!spin) for (const e of entries) {
+    const target = e.out ? (e.growAt === Infinity ? 0 : e.w) : (now >= e.growAt ? 1 : 0);
+    if (Math.abs(target - e.w) > 0.002) { e.w += (target - e.w) * Math.min(1, dt * 7 * SPEED); wheelDirty = true; }
+    else if (e.w !== target) { e.w = target; wheelDirty = true; }
+  }
+  if (spin) stepSpin(now);
+  else if (phase === 'idle') rotation += dt * 0.12;
+  if (!spin && zoomTarget > 1 && now > zoomHold) zoomTarget = 1;
+  zoom += (zoomTarget - zoom) * Math.min(1, dt * 5 * Math.min(4, SPEED));
+  kick *= Math.pow(0.0005, dt); flash *= Math.pow(0.02, dt);
+  const pow = spin ? spin.power : meter * 0.5;
+  glowPow += (pow - glowPow) * Math.min(1, dt * 3);
+  if (spin && spin.power > 0.55 && Math.random() < spin.power * 0.6) {
+    const a = Math.random() * TAU; sparks.push({ x: geo.cx + Math.cos(a) * geo.R * 1.05, y: geo.cy + Math.sin(a) * geo.R * 1.05, vx: Math.cos(a) * 6 * DPR, vy: Math.sin(a) * 6 * DPR, life: 1, c: Math.random() < 0.5 ? pal().rim : pal().glow });
+  }
+  draw(now, dt);
+}
+function draw(now, dt) {
+  const { cx, cy, R } = geo, P = pal();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  if (layersDirty) buildLayers();
+  const ro = Math.min(1, 0.6 + glowPow * 0.8 + flash * 0.4);
+  if (Math.abs(ro - raysOpacity) > 0.03) { raysOpacity = ro; $('rays').style.opacity = ro.toFixed(2); }
+  ctx.save();
+  if (phase === 'duel') ctx.globalAlpha = 0.22;   // the duel takes the stage; the wheel fades back
+  if (zoom > 1.001) {   // near-miss zoom: scale up around the pointer tip and drift it toward the middle
+    const k = (zoom - 1) / 0.9, tipX = cx, tipY = cy - R;
+    ctx.translate(tipX, tipY + (cy - R * 0.2 - tipY) * k); ctx.scale(zoom, zoom); ctx.translate(-tipX, -tipY);
+  }
+  // glow: a pre-rendered halo sprite (cheap at 4K, unlike shadowBlur)
+  const hs = R * (1.5 + glowPow * 0.35 + flash * 0.3), ga = ctx.globalAlpha;
+  ctx.globalAlpha = ga * Math.min(1, 0.75 + glowPow * 0.5 + flash);
+  ctx.drawImage(haloLayer, cx - hs, cy - hs, hs * 2, hs * 2);
+  ctx.globalAlpha = ga;
+  ctx.fillStyle = '#05040c'; ctx.beginPath(); ctx.arc(cx, cy, R * 1.075, 0, TAU); ctx.fill();
+  // wheel disc
+  if (wheelDirty) renderWheelImage();
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(rotation);
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(wheelImg, -R, -R, 2 * R, 2 * R);
+  if (landedName && !spin) {   // the winning (or eliminated) slice glows
+    const vis = entries.filter(e => e.w > 0.001), tot = vis.reduce((s, e) => s + e.w, 0);
+    let a0 = 0;
+    for (const e of vis) {
+      const a = e.w / tot * TAU;
+      if (e.name === landedName) {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = `rgba(255,255,255,${0.16 + 0.12 * Math.sin(now / 160)})`;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, R, a0, a0 + a); ctx.closePath(); ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      a0 += a;
+    }
+  }
+  ctx.restore();
+  // gloss (static, does not rotate)
+  const gl = ctx.createLinearGradient(cx - R, cy - R, cx + R * 0.3, cy + R * 0.4);
+  gl.addColorStop(0, 'rgba(255,255,255,.16)'); gl.addColorStop(0.45, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
+  drawFrame(now);
+  if (phase !== 'duel') drawHub();
+  drawPointer();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  // sparks
+  if (sparks.length) {
+    ctx.globalCompositeOperation = 'lighter';
+    for (const s of sparks) { s.x += s.vx; s.y += s.vy; s.vx *= 0.96; s.vy = s.vy * 0.96 + 0.08 * DPR; s.life -= dt * 1.6; ctx.globalAlpha = Math.max(0, s.life); ctx.fillStyle = s.c; ctx.beginPath(); ctx.arc(s.x, s.y, 2.2 * DPR, 0, TAU); ctx.fill(); }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    sparks = sparks.filter(s => s.life > 0);
+  }
+  if (flash > 0.01) { ctx.fillStyle = `rgba(255,255,255,${flash * 0.35})`; ctx.fillRect(0, 0, W, H); }
+}
+function drawFrame(now) {
+  const { cx, cy, R } = geo, P = pal();
+  const ring = ctx.createRadialGradient(cx, cy, R, cx, cy, R * 1.075);
+  ring.addColorStop(0, shade(P.rim, -0.55)); ring.addColorStop(0.35, P.rim); ring.addColorStop(0.7, shade(P.rim, -0.3)); ring.addColorStop(1, shade(P.rim, -0.65));
+  ctx.lineWidth = R * 0.075; ctx.strokeStyle = ring; ctx.beginPath(); ctx.arc(cx, cy, R * 1.0375, 0, TAU); ctx.stroke();
+  // chasing bulbs
+  const N = 32, speed = spin ? (spin.slow ? 70 : 45) : phase === 'won' ? 0 : 180;
+  const step = speed ? Math.floor(now / speed) : 0, blink = phase === 'won' && Math.floor(now / 220) % 2;
+  for (let i = 0; i < N; i++) {
+    const a = i / N * TAU - Math.PI / 2, x = cx + Math.cos(a) * R * 1.0375, y = cy + Math.sin(a) * R * 1.0375;
+    const on = phase === 'won' ? blink === i % 2 : (i + step) % 4 === 0;
+    const br = R * 0.017 * (on ? 1.15 : 0.85);
+    const bg = ctx.createRadialGradient(x, y, 0, x, y, br * (on ? 3.2 : 1.6));
+    bg.addColorStop(0, on ? '#ffffff' : shade(P.rim, -0.1)); bg.addColorStop(0.3, on ? P.rim : shade(P.rim, -0.45)); bg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(x, y, br * (on ? 3.2 : 1.6), 0, TAU); ctx.fill();
+  }
+}
+function fitText(text, maxW, maxSize, weight) {
+  const font = getComputedStyle(document.documentElement).getPropertyValue('--font').trim() || 'sans-serif';
+  let s = maxSize; ctx.font = `${weight} ${s}px ${font}`;
+  const w = ctx.measureText(text).width; if (w > maxW) { s = Math.max(maxSize * 0.3, s * maxW / w); ctx.font = `${weight} ${s}px ${font}`; }
+  return s;
+}
+function drawHub() {
+  const { cx, cy, R } = geo, P = pal(), hr = R * 0.2;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = R * 0.05;
+  const hg = ctx.createRadialGradient(cx - hr * 0.3, cy - hr * 0.3, hr * 0.1, cx, cy, hr);
+  hg.addColorStop(0, '#2b2560'); hg.addColorStop(1, '#0a081a');
+  ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(cx, cy, hr, 0, TAU); ctx.fill();
+  ctx.restore();
+  ctx.lineWidth = R * 0.022; ctx.strokeStyle = P.rim; ctx.beginPath(); ctx.arc(cx, cy, hr, 0, TAU); ctx.stroke();
+  ctx.lineWidth = R * 0.006; ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(cx, cy, hr * 0.86, 0, TAU); ctx.stroke();
+  const showName = (spin || landedName || phase === 'elim') && hubName;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (showName) {
+    fitText(hubName, hr * 1.55, hr * 0.42, 900);
+    ctx.fillStyle = '#fff'; ctx.shadowColor = P.glow; ctx.shadowBlur = R * 0.03;
+    ctx.fillText(hubName, cx, cy); ctx.shadowBlur = 0;
+  } else if (hubImg && hubImg.complete && hubImg.naturalWidth) {
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, hr * 0.86, 0, TAU); ctx.clip();
+    const s = Math.max(hr * 1.72 / hubImg.naturalWidth, hr * 1.72 / hubImg.naturalHeight);
+    ctx.drawImage(hubImg, cx - hubImg.naturalWidth * s / 2, cy - hubImg.naturalHeight * s / 2, hubImg.naturalWidth * s, hubImg.naturalHeight * s);
+    ctx.restore();
+  } else {
+    const t = (hubText || (entries.length ? 'LEGENDS' : 'ENTER')).toUpperCase();
+    fitText(t, hr * 1.5, hr * 0.36, 900);
+    const tg = ctx.createLinearGradient(cx, cy - hr * 0.3, cx, cy + hr * 0.3);
+    tg.addColorStop(0, '#fff6d0'); tg.addColorStop(1, P.rim);
+    ctx.fillStyle = tg; ctx.fillText(t, cx, cy - (entries.length ? 0 : hr * 0.1));
+    if (!entries.length) { fitText(CMD, hr * 1.2, hr * 0.2, 700); ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillText(CMD, cx, cy + hr * 0.32); }
+  }
+}
+function drawPointer() {
+  const { cx, cy, R } = geo, P = pal();
+  const baseY = cy - R * 1.13, tipY = cy - R * 0.93, w = R * 0.075;
+  ctx.save(); ctx.translate(cx, baseY); ctx.rotate(-kick * 0.38);
+  ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = R * 0.03; ctx.shadowOffsetY = R * 0.01;
+  const pg = ctx.createLinearGradient(-w, 0, w, 0);
+  pg.addColorStop(0, shade(P.rim, -0.5)); pg.addColorStop(0.5, '#fffbe6'); pg.addColorStop(1, shade(P.rim, -0.3));
+  ctx.fillStyle = pg;
+  ctx.beginPath(); ctx.moveTo(0, tipY - baseY); ctx.lineTo(-w, 0); ctx.arc(0, 0, w, Math.PI, 0); ctx.lineTo(0, tipY - baseY); ctx.closePath(); ctx.fill();
+  ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+  ctx.lineWidth = R * 0.006; ctx.strokeStyle = shade(P.rim, -0.6); ctx.stroke();
+  const jg = ctx.createRadialGradient(-w * 0.15, -w * 0.15, 0, 0, 0, w * 0.5);
+  jg.addColorStop(0, '#ffffff'); jg.addColorStop(0.35, P.glow); jg.addColorStop(1, shade(P.glow, -0.5));
+  ctx.fillStyle = jg; ctx.beginPath(); ctx.arc(0, 0, w * 0.48, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+/* =====================================================================
+   UI rendering
+   ===================================================================== */
+function renderChip() {
+  const n = entries.length, a = alive().length;
+  let t;
+  if (!n) t = `TYPE <b>${esc(CMD)}</b> TO ENTER`;
+  else if (phase === 'duel') t = '<b>FINAL DUEL</b> · ROCK PAPER SCISSORS';
+  else if (mode === 'gauntlet' && gLive) t = `GAUNTLET · <b>${a}</b> OF ${n} REMAIN`;
+  else if (phase === 'won') t = `<b>WINNER</b> · ${esc(winner || '')}`;
+  else t = `${mode === 'gauntlet' ? 'GAUNTLET' : 'CLASSIC'} · <b>${n}</b> ${n === 1 ? 'ENTRY' : 'ENTRIES'} · ${esc(CMD)} TO ENTER`;
+  $('chip').innerHTML = t;
+  $('count').textContent = n ? `(${n})` : '';
+}
+function renderList() {
+  $('list').innerHTML = entries.map((e, i) => {
+    const ai = alive().indexOf(e);
+    return `<li class="${e.out ? 'out' : ''}"><i style="background:${ai >= 0 ? sliceColor(ai, alive().length) : '#555'}"></i><span>${esc(e.name)}</span><button data-n="${i}" title="Remove" aria-label="Remove ${esc(e.name)}">✕</button></li>`;
+  }).join('');
+}
+function renderFallen() {
+  const f = entries.filter(e => e.out && e.name !== winner).map(e => e.name);
+  const el = $('fallen');
+  if (mode !== 'gauntlet' || !f.length) { el.hidden = true; return; }
+  el.hidden = false;
+  const show = f.slice(-10).reverse();
+  el.innerHTML = '<h4>☠ FALLEN</h4>' + show.map(n => `<div>${esc(n)}</div>`).join('') + (f.length > 10 ? `<div class="more">+${f.length - 10} more</div>` : '');
+}
+function renderButtons() {
+  const busy = phase === 'spinning' || phase === 'elim' || phase === 'duel';
+  $('spinBtn').disabled = busy;
+  $('spinBtn').textContent = busy ? (phase === 'duel' ? 'DUEL IN PROGRESS' : 'SPINNING…') : mode === 'gauntlet' ? 'START GAUNTLET' : 'SPIN';
+  $('pStatus').textContent = gLive ? 'Gauntlet running: entries are locked until it ends.' : '';
+}
+function renderSeal() {
+  if (phase === 'spinning') return;
+  const p = proofs[proofs.length - 1];
+  if (p && (phase === 'won' || phase === 'elim' || phase === 'duel')) return;
+  if (!nextSeal) return;
+  $('seal').hidden = false; $('seal').className = '';
+  $('sealLbl').textContent = '🔒 NEXT SPIN SEALED';
+  $('sealCode').textContent = nextSeal.commit.slice(0, 16) + '…' + nextSeal.commit.slice(-6);
+  $('sealCode').title = nextSeal.commit;
+  $('sealVerify').hidden = !p;
+}
+function renderSealSpinning(commit) {
+  $('seal').hidden = false; $('seal').className = '';
+  $('sealLbl').textContent = `🔒 SPIN #${spinNo} SEALED`;
+  $('sealCode').textContent = commit.slice(0, 16) + '…' + commit.slice(-6); $('sealCode').title = commit;
+  $('sealVerify').hidden = true;
+}
+function renderSealRevealed(p) {
+  $('seal').hidden = false; $('seal').className = 'open';
+  $('sealLbl').textContent = `🔓 SPIN #${p.spin} SEED`;
+  $('sealCode').textContent = p.seed.slice(0, 16) + '…' + p.seed.slice(-6); $('sealCode').title = p.seed;
+  $('sealVerify').hidden = false;
+}
+
+/* =====================================================================
+   Rounds
+   ===================================================================== */
+function stopRound(silent) {
+  clearTimers();
+  if (spin) { clearTimeout(spin.failsafe); spin = null; musicStop(); }
+  clearInterval(duelTick); duelTick = null; duel = null;
+  $('duel').hidden = true; $('elim').hidden = true;
+  closeWinCard(); stopClaim();
+  entries.forEach(e => { e.out = false; e.growAt = 0; });
+  gLive = false; phase = 'idle'; landedName = ''; hubName = ''; winner = null; zoomTarget = 1;
+  proofs = []; spinNo = 0;
+  wheelDirty = true; renderFallen(); renderList(); renderChip(); renderButtons(); renderSeal();
+  if (!silent) toast('New round: everyone is back on the wheel');
+}
+function setMode(m) {
+  if (m !== 'classic' && m !== 'gauntlet') return;
+  if (phase === 'spinning' || gLive || phase === 'duel') { $('modeSel').value = mode; return toast('Wait for this round to finish'); }
+  mode = m; store.set('legends_mode', m); $('modeSel').value = m;
+  if (phase === 'won') stopRound(true);
+  renderChip(); renderButtons(); renderFallen();
+}
+
+/* =====================================================================
+   postMessage API (namespace: legends)
+   ===================================================================== */
+window.addEventListener('message', e => {
+  if (e.source === window) return;   // ignore our own outbound echoes when running top level
+  const d = e.data;
+  if (!d || typeof d !== 'object' || typeof d.type !== 'string' || !d.type.startsWith('legends:')) return;
+  const reply = msg => { try { (e.source || window.parent).postMessage(msg, '*'); } catch {} };
+  switch (d.type.slice(8)) {
+    case 'add': case 'join':
+      if (Array.isArray(d.names)) addNames(d.names); else if (d.name != null) addNames([d.name]);
+      break;
+    case 'remove': if (d.name != null) removeName(d.name); break;
+    case 'clear': clearNames(); break;
+    case 'names': if (!Array.isArray(d.names)) reply({ type: 'legends:names', names: listed(), alive: aliveNames(), phase, mode }); break;
+    case 'start': case 'spin': startSpin(false); break;
+    case 'pick': duelPick(d.name, d.choice); break;
+    case 'charge': charge(d.name); break;
+    case 'claim': claimBy(d.name); break;
+    case 'mode': setMode(d.mode); break;
+    case 'reset': stopRound(false); break;
+  }
+});
+
+/* =====================================================================
+   Wiring
+   ===================================================================== */
+if (qs.get('bg') === 'transparent') { document.body.classList.add('transparent'); document.documentElement.classList.add('transparent'); }
+const theme = qs.get('theme');
+if (theme === 'light' || theme === 'neon') document.documentElement.dataset.theme = theme;
+const adminOn = qs.get('admin') !== 'false';
+if (!adminOn) { document.body.classList.remove('admin'); document.body.classList.add('closed'); $('gear').hidden = true; }
+else if (innerWidth < 760 || store.get('legends_panel') === 'closed') document.body.classList.add('closed');
+$('gear').onclick = () => { document.body.classList.toggle('closed'); store.set('legends_panel', document.body.classList.contains('closed') ? 'closed' : 'open'); resize(); };
+
+$('spinBtn').onclick = () => startSpin(false);
+cv.onclick = () => { if (adminOn) startSpin(false); };
+$('modeSel').value = mode; $('modeSel').onchange = () => setMode($('modeSel').value);
+$('paceSel').value = store.get('legends_pace') === 'quick' ? 'quick' : 'epic';
+$('paceSel').onchange = () => store.set('legends_pace', $('paceSel').value);
+$('newBtn').onclick = () => { if (phase === 'spinning') return; stopRound(false); };
+$('addBtn').onclick = () => {
+  const list = $('paste').value.split(/[\n,]+/);
+  if (!entriesOpen()) return toast('Entries are locked while a round is running');
+  const n = addNames(list); $('paste').value = ''; toast(n ? `Added ${n}` : 'No new names');
+};
+$('paste').onkeydown = e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('addBtn').click(); };
+$('clearBtn').onclick = () => {
+  const b = $('clearBtn');
+  if (b.dataset.armed) { clearNames(); b.textContent = '🗑 Clear all'; delete b.dataset.armed; return; }
+  b.dataset.armed = '1'; b.textContent = 'Tap again to clear';
+  setTimeout(() => { b.textContent = '🗑 Clear all'; delete b.dataset.armed; }, 3000);
+};
+$('list').onclick = e => { const b = e.target.closest('button[data-n]'); if (b && entries[+b.dataset.n]) removeName(entries[+b.dataset.n].name); };
+$('chatHint').innerHTML = `Chat: <code>${esc(CMD)}</code> to enter, <code>${esc(CMD)} charge</code> to power the spin, finalists <code>${esc(CMD)} rock</code>/<code>paper</code>/<code>scissors</code>, winners <code>${esc(CMD)} claim</code>. Hook it up with <a href="../chat/?game=wheel-legends" target="_blank" rel="noopener">Chat Play</a>.`;
+$('mHint').innerHTML = `${esc(CMD)} charge<br><span style="opacity:.7">looks only</span>`;
+
+$('claimSel').value = ['0', '30', '60', '90', '120'].includes(store.get('legends_claim')) ? store.get('legends_claim') : '60';
+$('claimSel').onchange = () => store.set('legends_claim', $('claimSel').value);
+$('rmWin').checked = store.get('legends_rmWin') === '1';
+$('rmWin').onchange = () => store.set('legends_rmWin', $('rmWin').checked ? '1' : '0');
+$('tabBtn').onclick = $('wTab').onclick = () => updateWinTab(true);
+$('logBtn').onclick = () => { renderWinlog(); $('winlog').hidden = false; };
+$('lClose').onclick = () => { $('winlog').hidden = true; };
+$('lCopy').onclick = () => {
+  const txt = readLog().map(r => `${new Date(r.at).toLocaleString()}: ${r.winner} (${r.status}, ${r.mode}${r.seed ? ', seed ' + r.seed : ''})`).join('\n');
+  try { navigator.clipboard.writeText(txt); $('lCopy').textContent = '✓ Copied'; } catch { $('lCopy').textContent = 'Copy failed'; }
+  setTimeout(() => { $('lCopy').textContent = '📋 Copy'; }, 1500);
+};
+$('lClear').onclick = () => {
+  const b = $('lClear');
+  if (b.dataset.armed) { writeLog([]); renderWinlog(); b.textContent = '🗑 Clear log'; delete b.dataset.armed; return; }
+  b.dataset.armed = '1'; b.textContent = 'Tap again to clear';
+  setTimeout(() => { b.textContent = '🗑 Clear log'; delete b.dataset.armed; }, 3000);
+};
+
+$('wVerify').onclick = $('verifyBtn').onclick = $('sealVerify').onclick = () => openVerify();
+$('vPrev').onclick = () => openVerify(vIdx - 1);
+$('vNext').onclick = () => openVerify(vIdx + 1);
+$('vClose').onclick = () => { $('verify').hidden = true; };
+$('vCopy').onclick = () => {
+  const p = proofs[vIdx]; if (!p) return;
+  try { navigator.clipboard.writeText(proofText(p)); $('vCopy').textContent = '✓ Copied'; } catch { $('vCopy').textContent = 'Copy failed'; }
+  setTimeout(() => { $('vCopy').textContent = '📋 Copy proof'; }, 1500);
+};
+$('wClose').onclick = () => closeWinCard();
+$('wNew').onclick = () => stopRound(false);
+$('win').onclick = e => { if (e.target === $('win') && adminOn) closeWinCard(); };
+$('dA').onclick = () => declareFinalist(0);
+$('dB').onclick = () => declareFinalist(1);
+[$('verify'), $('winlog')].forEach(m => { m.onclick = e => { if (e.target === m) m.hidden = true; }; });
+
+// branding
+$('hubText').value = hubText;
+$('hubText').oninput = () => { hubText = cleanName($('hubText').value); store.set('legends_hubText', hubText); };
+function loadHubImg(src) { if (!src) { hubImg = null; return; } const im = new Image(); im.onload = () => { hubImg = im; }; im.src = src; }
+loadHubImg(store.get('legends_hubImage'));
+$('logoBtn').onclick = () => $('logoFile').click();
+$('logoClr').onclick = () => { hubImg = null; store.del('legends_hubImage'); toast('Logo removed'); };
+$('logoFile').onchange = () => {
+  const f = $('logoFile').files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const im = new Image();
+    im.onload = () => {   // shrink to 512px so it fits in localStorage
+      const s = Math.min(1, 512 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(im.naturalWidth * s)); c.height = Math.max(1, Math.round(im.naturalHeight * s));
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      const url = c.toDataURL('image/png');
+      store.set('legends_hubImage', url); loadHubImg(url); toast('Logo set');
+    };
+    im.src = rd.result;
+  };
+  rd.readAsDataURL(f); $('logoFile').value = '';
+};
+for (const [k, p] of Object.entries(PALETTES)) $('palSel').add(new Option(p.name, k));
+$('palSel').value = palKey;
+$('palSel').onchange = () => { palKey = $('palSel').value; store.set('legends_palette', palKey); wheelDirty = true; layersDirty = true; renderList(); };
+
+$('sndChk').checked = soundOn; $('musChk').checked = musicOn;
+$('sndChk').onchange = () => { soundOn = $('sndChk').checked; store.set('legends_sound', soundOn ? '1' : '0'); if (!soundOn) musicStop(); };
+$('musChk').onchange = () => { musicOn = $('musChk').checked; store.set('legends_music', musicOn ? '1' : '0'); if (!musicOn) musicStop(); };
+
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input, textarea, select')) return;
+  if (e.key === 'Escape') { $('verify').hidden = true; $('winlog').hidden = true; if (!$('win').hidden) closeWinCard(); }
+  else if (!adminOn) return;
+  else if (e.code === 'Space' || e.key === 'Enter') { if (e.target.closest('button, a')) return; e.preventDefault(); startSpin(false); }
+  else if (e.key === 'v' || e.key === 'V') openVerify();
+});
+window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+
+// entries: saved list, then ?names=
+try { const saved = JSON.parse(store.get('legends_names') || '[]'); if (Array.isArray(saved)) addNames(saved, { instant: true }); } catch {}
+resize();
+if (qs.get('names')) addNames(qs.get('names').split(','));
+renderChip(); renderList(); renderButtons(); renderMeter(); renderClaim();
+reseal();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
