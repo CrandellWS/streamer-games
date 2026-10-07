@@ -1798,6 +1798,7 @@ h1, .game-title, .panel-title, .app-title {
     var fire = function (el, type, init) { el.dispatchEvent(new KeyboardEvent(type, init)); };
     ch.onmessage = function (e) {
       var m = e.data || {};
+      if (m.t === 'snap') return;                              // another overlay's snapshot: not a remote
       if (m.t === 'hello') { remoteSeen = Date.now(); queue(); return; }
       remoteSeen = Date.now();
       if (m.t === 'key') {
