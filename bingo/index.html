@@ -1719,6 +1719,11 @@ function stampCell(name, number) {
               }
             }
             cardEl.classList.add('winner', 'winner-pulse');
+            // Announce the first completed card right away (Check for Winner stays as a manual re-check).
+            if (!state.gameOver) {
+              state.gameOver = true;
+              setTimeout(() => announceWinner(name, patternName(lines)), 700);
+            }
           }
         }
       }
