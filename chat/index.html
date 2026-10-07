@@ -58,6 +58,9 @@ body.transparent { background: transparent; }
 
 <div id="panel">
   <h2>💬 Chat Play</h2>
+  <!-- TODO(botrix-adapter): that branch replaces this Slot Tools-only copy with a chatbot picker
+       (BotRix, StreamElements, Nightbot, ...) and a new relay; keep this intro short so it merges cleanly. -->
+  <p class="help" id="intro">Viewers play this game from your chat by typing <code>!play</code>. Your chat bot (MyPrize <b>Slot Tools</b>) forwards each <code>!play</code> here: click <b>Show Slot Tools command</b>, then paste it into Slot Tools as a new command named <code>play</code>. Click the pill at the top left to hide or show this panel.</p>
   <label for="gamePick">Game</label>
   <select id="gamePick"></select>
   <div class="help" id="gameHelp"></div>
@@ -246,6 +249,8 @@ function setOn(v) {
 }
 $("toggle").onclick = () => setOn(!on);
 $("pill").onclick = () => $("panel").classList.toggle("open");
+// First visit: open the setup panel so a new streamer sees what to do (not in OBS overlay mode).
+if (qs.get("admin") !== "false" && !store.get("hos.chatSeen")) { $("panel").classList.add("open"); store.set("hos.chatSeen", "1"); }
 
 const command = () => `$(urlfetch ${RELAY}/c/${key}?user=$(user)&q=$(query))`;
 $("showCmd").onclick = () => {
