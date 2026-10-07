@@ -16,7 +16,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="bar"><div class="wrap">
   <a class="brand" href="./"><img src="./assets/favicon.svg" alt="">Home Office Studios</a>
-  <nav class="nav" aria-label="Main"><a href="./" aria-current="page">Home</a><a href="./games/">Games</a><a href="./chat/">Chat Play</a><a href="./music/">Music</a><a href="./studio/">Studio</a><a href="./about/">About</a></nav>
+  <nav class="nav" aria-label="Main"><a href="./" aria-current="page">Home</a><a href="./games/">Games</a><a href="./chat/">Chat Play</a><a href="./kit/">Stream Kit</a><a href="./guides/obs/">OBS Guide</a><a href="./music/">Music</a><a href="./studio/">Studio</a><a href="./about/">About</a></nav>
 </div></header>
 <main id="main">
 
@@ -25,7 +25,7 @@
     <h1>Home Office Studios</h1>
     <p class="lede">Games for streamers, music for the room. Built at a home office desk at 4 AM, played live on stream.</p>
     <div class="actions">
-      <a class="btn go" href="games/">Put a game on your stream, free</a>
+      <a class="btn go" href="guides/obs/">Put a game on your stream, free</a>
       <a class="btn" href="music/">Hear the music</a>
     </div>
   </div>
@@ -78,8 +78,11 @@
     Southern country-rap, boom-bap and big hooks.</p>
     <div class="actions"><a class="btn" href="music/">Hear the albums</a></div>
   </div>
-  <div class="slot"><span class="todo">[Bill: pick 3 featured tracks]</span><br><br>
-    Three featured tracks go here once picked. The full catalog is already on the music page.</div>
+  <ul class="picklist">
+      <li><span class="ico" aria-hidden="true">🎵</span><div><h3><a href="https://suno.com/song/7aac2e5a-312a-4d7b-84af-fffe8912763d" rel="noopener">Porch Light</a></h3><p>acoustic rock, ballad, 4:03</p></div></li>
+      <li><span class="ico" aria-hidden="true">🎵</span><div><h3><a href="https://suno.com/song/dfbfadff-c61e-4696-aab5-1e0379089eb1" rel="noopener">Out Here Trying</a></h3><p>alternative rock, pop-rock, 3:36</p></div></li>
+      <li><span class="ico" aria-hidden="true">🎵</span><div><h3><a href="https://suno.com/song/b9066daa-fbd3-46e2-b5ec-1f31d784a4cd" rel="noopener">Dead Man&#x27;s Funhouse</a></h3><p>alternative rock, pop-rock, 3:30</p></div></li>
+  </ul>
 </section>
 
 <section class="wrap row flip">
@@ -89,8 +92,8 @@
     a scene that plays around the board while you spin. In Redline, cars race a track around the reels.</p>
     <div class="actions"><a class="btn" href="studio/">See the studio</a></div>
   </div>
-  <div class="slot"><span class="todo">[Bill: approve a Redline still or clip]</span><br><br>
-    No platform interface or branding may be visible in the frame.</div>
+  <!-- BILL: approve a Redline still or clip for this slot. No platform interface or branding may be visible in the frame. -->
+  <div class="slot">A first look at Redline Racing is coming soon.</div>
 </section>
 
 <section class="wrap row">
@@ -109,7 +112,7 @@ if (location.hash === "#games") location.replace("games/");
 <footer class="foot"><div class="wrap">
   <div><strong>Home Office Studios</strong><br>Free games are MIT-licensed and
   <a href="https://github.com/CrandellWS/streamer-games">open source</a>.</div>
-  <nav aria-label="Footer"><a href="./games/">Games</a><a href="./chat/">Chat Play</a><a href="./music/">Music</a><a href="./studio/">Studio</a><a href="./about/">About</a><a href="https://kick.com/forthetwo">Kick</a></nav>
+  <nav aria-label="Footer"><a href="./games/">Games</a><a href="./chat/">Chat Play</a><a href="./kit/">Stream Kit</a><a href="./guides/obs/">OBS Guide</a><a href="./music/">Music</a><a href="./studio/">Studio</a><a href="./about/">About</a><a href="https://kick.com/forthetwo">Kick</a></nav>
 </div></footer>
 </body>
 </html>

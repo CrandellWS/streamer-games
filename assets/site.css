@@ -61,6 +61,7 @@ p { margin: 0 0 1em; max-width: 64ch; }
 
 /* Rows: text left, media or list right */
 .row { display: grid; grid-template-columns: 5fr 6fr; gap: 48px; align-items: start; padding: 72px 0; border-bottom: 1px solid var(--line); }
+.row > * { min-width: 0; }
 .row.flip > :first-child { order: 2; }
 .row:last-of-type { border-bottom: 0; }
 

@@ -1,8 +1,8 @@
 """Shared header/footer for the Home Office Studios site pages (not the games).
 Used by build_music.py and kept here so new pages can copy the same shell."""
-NAV = [("", "Home"), ("games/", "Games"), ("chat/", "Chat Play"), ("music/", "Music"),
-       ("studio/", "Studio"), ("about/", "About")]
-KICK = "https://kick.com/forthetwo"  # BILL: confirm channel (draft open question 3)
+NAV = [("", "Home"), ("games/", "Games"), ("chat/", "Chat Play"), ("kit/", "Stream Kit"),
+       ("guides/obs/", "OBS Guide"), ("music/", "Music"), ("studio/", "Studio"), ("about/", "About")]
+KICK = "https://kick.com/forthetwo"  # confirmed 2026-10-07
 
 
 def head(title, desc, prefix, current):

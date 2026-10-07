@@ -24,6 +24,9 @@ from shell import head, foot  # noqa: E402
 CATALOG = os.path.expanduser(os.environ.get("SUNO_CATALOG", "~/.config/bits-chat/suno-catalog.json"))
 MUSIC = os.path.join(ROOT, "music")
 # Albums are matched by title. Add more here as albums go public.
+# Featured on /music/ and the home page, in this order (picked 2026-10-07). A title that is
+# missing from the public catalog or denylisted is simply skipped.
+FEATURED = ["Porch Light", "Out Here Trying", "Dead Man's Funhouse"]
 ALBUMS = [
     {"name": "Purple Lambo", "blurb": "Purple, night, engines, one green light. Slow and hypnotic.",
      "match": r"\(purple lambo\)\s*$"},
@@ -106,6 +109,11 @@ def main():
                                  f'<span class="ln">{t["length"]}</span></li>' for t in items)
                        + '</ol><p class="made">Made with Suno.</p></section>')
 
+    by_title = {t["title"].lower(): t for t in out}
+    feat = [by_title[f.lower()] for f in FEATURED if f.lower() in by_title]
+    feat_html = (('<ul class="tracks" style="columns:1;max-width:640px">' + "".join(row(t) for t in feat) + '</ul>')
+                 if feat else '<div class="slot">Featured tracks appear here soon.</div>')
+
     page = head("H.O.S. Music | Home Office Studios",
                 "Original songs from the home office: anthems for the crew, songs for streamers, soundtracks for our games.",
                 "../", "music/") + f"""
@@ -146,7 +154,7 @@ def main():
 
 <section class="wrap block" id="featured">
   <h2>Featured</h2>
-  <div class="slot"><span class="todo">[Bill: pick 3 featured tracks]</span></div>
+  {feat_html}
 </section>
 
 <section class="wrap block" id="albums">
