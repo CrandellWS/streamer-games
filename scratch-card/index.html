@@ -1633,6 +1633,7 @@ function escapeHtml(str) {
    postMessage
    ═══════════════════════════════════════════════ */
 function sendMessage(type, data) {
+  if (window.parent === window) return; // standalone: posting to ourselves loops on scratch:names
   window.parent.postMessage({ type, ...data }, '*');
 }
 

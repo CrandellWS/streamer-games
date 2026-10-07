@@ -1493,7 +1493,7 @@ window.addEventListener('message',(e)=>{
       state.results=[];state.winCounts={};renderResults();
       startSession(d.position); break;
     case 'plinko:names':
-      window.parent.postMessage({type:'plinko:names',names:[...state.names]},'*'); break;
+      if (window.parent !== window) window.parent.postMessage({type:'plinko:names',names:[...state.names]},'*'); break;
   }
 });
 

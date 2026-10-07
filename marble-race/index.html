@@ -1952,7 +1952,7 @@ window.addEventListener('message', (e) => {
       resetRace();
       break;
     case 'marble:names':
-      if (e.source) e.source.postMessage({ type: 'marble:names', names: players.map(p => p.name) }, '*');
+      if (e.source && e.source !== window) e.source.postMessage({ type: 'marble:names', names: players.map(p => p.name) }, '*');
       break;
     case 'marble:length':
       if (data.length && ['short','medium','long'].includes(data.length)) {

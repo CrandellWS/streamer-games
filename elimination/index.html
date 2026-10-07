@@ -1864,6 +1864,7 @@ document.addEventListener('keydown', e => {
    POSTMESSAGE API
    ═══════════════════════════════════════════ */
 function postOut(type, data) {
+  if (window.parent === window) return; // standalone: no parent, and posting to ourselves loops on eliminate:names
   const msg = Object.assign({ type }, data || {});
   try { window.parent.postMessage(msg, '*'); } catch(e) {}
 }
