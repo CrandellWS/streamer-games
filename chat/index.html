@@ -60,7 +60,7 @@ body.transparent { background: transparent; }
   <h2>💬 Chat Play</h2>
   <!-- TODO(botrix-adapter): that branch replaces this Slot Tools-only copy with a chatbot picker
        (BotRix, StreamElements, Nightbot, ...) and a new relay; keep this intro short so it merges cleanly. -->
-  <p class="help" id="intro">Viewers play this game from your chat by typing <code>!play</code>. Your chat bot (MyPrize <b>Slot Tools</b>) forwards each <code>!play</code> here: click <b>Show Slot Tools command</b>, then paste it into Slot Tools as a new command named <code>play</code>. Click the pill at the top left to hide or show this panel.</p>
+  <p class="help" id="intro">Viewers play this game from your chat by typing <code>!play</code>. Your chat bot (<b>Slot Tools</b>) forwards each <code>!play</code> here: click <b>Show Slot Tools command</b>, then paste it into Slot Tools as a new command named <code>play</code>. Click the pill at the top left to hide or show this panel.</p>
   <label for="gamePick">Game</label>
   <select id="gamePick"></select>
   <div class="help" id="gameHelp"></div>
@@ -199,7 +199,7 @@ async function answer(user, q) {
   }
   if (verb === "help") return `🎮 ${g.title}: ${g.help.replace(/<[^>]+>/g, "")}`;
 
-  // $(user) sometimes arrives as a raw MyPrize id: never add it, never echo it.
+  // $(user) sometimes arrives as a raw platform id: never add it, never echo it.
   if (!name || /^[0-9a-f]{8}-[0-9a-f]{4}-|^\d{6,}$/i.test(name)) return "🎮 Couldn't read your name, try again in a sec";
 
   if (verb === "join" || verb === "enter" || verb === "in") {
