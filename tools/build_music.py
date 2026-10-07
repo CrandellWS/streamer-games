@@ -4,10 +4,13 @@
 Input : ~/.config/bits-chat/suno-catalog.json (written by ~/bin/claude-scripts/suno-catalog;
         it only ever contains PUBLIC clips, fetched anonymously from Bill's Suno profile).
 Output: music/tracks.json and music/index.html (track list baked in, so it works without JS).
-Rules : drop anything matching music/denylist.txt (Fight Club + embargo), keep one take per title
+Rules : drop anything matching music/denylist.txt (Fight Club + embargo) or music/denylist-lyrics.txt
+        (lyric audit), keep one take per title
         (the most played), link out to Suno pages (direct audio streaming is unreliable).
 Videos: music/videos.json is hand/pipeline maintained and is NOT touched here. The page reads it
-        at runtime; the lyric-video pipeline appends {"youtube_id", "title", "suno_id"} entries.
+        at runtime; the lyric-video pipeline appends {"songId", "youtubeId", "title"} entries
+        (snake_case youtube_id/suno_id also accepted). "youtubeId": null = planned, not shown.
+        The "Videos" section stays hidden until at least one entry has a real 11-char YouTube id.
 Run   : nice -n 19 python3 tools/build_music.py   (no network, stdlib only)
 """
 import html, json, os, re, sys
@@ -26,9 +29,21 @@ ALBUMS = [
 ]
 
 
+DENYLISTS = ["denylist.txt",          # titles: Fight Club + embargo (exact or re:)
+             "denylist-lyrics.txt"]   # lyric audit 2026-10-07: titles whose LYRICS hit the blocklist
+
+
+def deny_lines():
+    for name in DENYLISTS:
+        path = os.path.join(MUSIC, name)
+        if not os.path.exists(path):
+            sys.exit(f"missing {path}: refusing to build without every denylist")
+        yield from open(path, encoding="utf-8")
+
+
 def load_deny():
     exact, rx = set(), []
-    for line in open(os.path.join(MUSIC, "denylist.txt"), encoding="utf-8"):
+    for line in deny_lines():
         line = line.strip()
         if not line or line.startswith("#"):
             continue
@@ -91,7 +106,8 @@ def main():
 <style>
 .vids {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }}
 .vids iframe {{ width: 100%; aspect-ratio: 16/9; border: 0; border-radius: 10px; background: #000; }}
-.vids h3 {{ font-size: 1rem; margin: 10px 0 0; }}
+.vids h3 {{ font-size: 1rem; margin: 10px 0 0; }} .vids h3 a {{ color: var(--paper); }}
+#videos[hidden] {{ display: none; }}
 .albums {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 40px; }}
 .album {{ border-left: 4px solid var(--amber); padding-left: 20px; }}
 .album ol {{ padding-left: 1.3em; margin: 0 0 8px; }} .album li {{ padding: 3px 0; }}
@@ -109,7 +125,7 @@ def main():
 .tracks .ln, .album .ln {{ color: var(--dim); font-size: .85rem; font-variant-numeric: tabular-nums; }}
 .tracks .ln {{ grid-row: 1; grid-column: 2; }}
 .tracks li[hidden] {{ display: none; }}
-.block {{ padding: 56px 0; border-bottom: 1px solid var(--line); }}
+.block {{ padding-top: 56px; padding-bottom: 56px; border-bottom: 1px solid var(--line); }}
 </style>
 <section class="wrap pagehead">
   <h1>H.O.S. Music</h1>
@@ -117,11 +133,9 @@ def main():
   Every title opens on Suno, where you can play it.</p>
 </section>
 
-<section class="wrap block" id="videos">
-  <h2>Music videos</h2>
-  <div class="vids" id="vids">
-    <div class="slot">Lyric videos are on the way. They will appear here as they go up on YouTube.</div>
-  </div>
+<section class="wrap block" id="videos" hidden>
+  <h2>Videos</h2>
+  <div class="vids" id="vids"></div>
 </section>
 
 <section class="wrap block" id="featured">
@@ -155,16 +169,23 @@ def main():
     n.textContent = c + (c === 1 ? " song" : " songs");
   }});
   // Videos come from videos.json, which the lyric-video pipeline maintains.
+  // Entry: {{songId, youtubeId, title}}; youtubeId null = planned, skipped. Section stays hidden if none are live.
   fetch("videos.json").then(function (r) {{ return r.ok ? r.json() : []; }}).then(function (vs) {{
-    vs = (vs || []).filter(function (v) {{ return /^[\\w-]{{11}}$/.test(v.youtube_id || ""); }});
+    vs = (Array.isArray(vs) ? vs : []).map(function (v) {{
+      return {{ yt: v.youtubeId || v.youtube_id || "", song: v.songId || v.suno_id || "", title: v.title || "" }};
+    }}).filter(function (v) {{ return /^[\\w-]{{11}}$/.test(v.yt); }});
     if (!vs.length) return;
-    var box = document.getElementById("vids"); box.textContent = "";
+    var box = document.getElementById("vids");
     vs.forEach(function (v) {{
       var d = document.createElement("div"), f = document.createElement("iframe"), h = document.createElement("h3");
-      f.src = "https://www.youtube-nocookie.com/embed/" + v.youtube_id; f.title = v.title || "Music video";
+      f.src = "https://www.youtube-nocookie.com/embed/" + v.yt; f.title = v.title || "Music video";
       f.loading = "lazy"; f.allow = "encrypted-media; picture-in-picture"; f.allowFullscreen = true;
-      h.textContent = v.title || ""; d.appendChild(f); d.appendChild(h); box.appendChild(d);
+      var a = v.song && document.querySelector('#list a[href$="/song/' + v.song.replace(/[^\\w-]/g, "") + '"]');
+      if (a) {{ var l = document.createElement("a"); l.href = a.href; l.rel = "noopener"; l.textContent = v.title || a.textContent; h.appendChild(l); }}
+      else h.textContent = v.title;
+      d.appendChild(f); d.appendChild(h); box.appendChild(d);
     }});
+    document.getElementById("videos").hidden = false;
   }}).catch(function () {{}});
 }})();
 </script>

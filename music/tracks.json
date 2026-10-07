@@ -1,6 +1,6 @@
 {
 "generated": "2026-10-07",
-"count": 1049,
+"count": 938,
 "tracks": [
 {
 "id": "7f159668-d113-4bcf-bd89-1a290adf6caf",
@@ -88,14 +88,6 @@
 "url": "https://suno.com/song/47e3aa58-b2ce-4823-9df9-1afae470ca88",
 "tags": "alternative rock, rap-rock, pop-rock",
 "length": "3:22",
-"date": "2026-10-06"
-},
-{
-"id": "43bbbd25-0df5-4d97-9999-ea1f8834e7e1",
-"title": "Somewhere To Land",
-"url": "https://suno.com/song/43bbbd25-0df5-4d97-9999-ea1f8834e7e1",
-"tags": "alternative rap rock, industrial",
-"length": "3:52",
 "date": "2026-10-06"
 },
 {
@@ -195,14 +187,6 @@
 "date": "2026-10-05"
 },
 {
-"id": "55a63ca5-c8e2-4c60-a28c-9c9763b72b52",
-"title": "Blockburst: Jokers Wild",
-"url": "https://suno.com/song/55a63ca5-c8e2-4c60-a28c-9c9763b72b52",
-"tags": "hip-hop, rap-rock, honky-tonk",
-"length": "3:10",
-"date": "2026-10-04"
-},
-{
 "id": "b9066daa-fbd3-46e2-b5ec-1f31d784a4cd",
 "title": "Dead Man's Funhouse",
 "url": "https://suno.com/song/b9066daa-fbd3-46e2-b5ec-1f31d784a4cd",
@@ -227,14 +211,6 @@
 "date": "2026-10-04"
 },
 {
-"id": "f827e75c-4c3a-4936-b361-aeecb2219ff4",
-"title": "Enter the Game",
-"url": "https://suno.com/song/f827e75c-4c3a-4936-b361-aeecb2219ff4",
-"tags": "alternative rock, pop-rock, cinematic",
-"length": "3:17",
-"date": "2026-10-04"
-},
-{
 "id": "984d6043-4d4d-4d8b-b130-c582ef98a609",
 "title": "Rise and Read",
 "url": "https://suno.com/song/984d6043-4d4d-4d8b-b130-c582ef98a609",
@@ -248,22 +224,6 @@
 "url": "https://suno.com/song/800a222a-572a-4630-9921-60b39cee1a39",
 "tags": "alternative rock, pop-rock",
 "length": "3:06",
-"date": "2026-10-04"
-},
-{
-"id": "2b8d28b0-6f4d-4e8a-ab44-528d532e93dd",
-"title": "Notes and Memories",
-"url": "https://suno.com/song/2b8d28b0-6f4d-4e8a-ab44-528d532e93dd",
-"tags": "alternative rock, pop-rock",
-"length": "3:17",
-"date": "2026-10-04"
-},
-{
-"id": "36d27d9e-0236-477e-a56a-cc16e37269f7",
-"title": "Don't Leave It At The Door",
-"url": "https://suno.com/song/36d27d9e-0236-477e-a56a-cc16e37269f7",
-"tags": "alternative rock, pop-rock, cinematic",
-"length": "3:27",
 "date": "2026-10-04"
 },
 {
@@ -299,35 +259,11 @@
 "date": "2026-10-04"
 },
 {
-"id": "cd75c9c7-95cf-430a-b790-1bd4ef94ed44",
-"title": "Three Bots, One Verdict",
-"url": "https://suno.com/song/cd75c9c7-95cf-430a-b790-1bd4ef94ed44",
-"tags": "Country-rap",
-"length": "2:38",
-"date": "2026-10-03"
-},
-{
 "id": "77f8c278-4046-447e-a842-3bc1ffd995e1",
 "title": "We Aim To Please",
 "url": "https://suno.com/song/77f8c278-4046-447e-a842-3bc1ffd995e1",
 "tags": "hip-hop, party bounce",
 "length": "2:47",
-"date": "2026-10-03"
-},
-{
-"id": "b3897f64-2135-42f8-967d-cbdb7c0cc8a7",
-"title": "My Shit Always Works Sometimes (Full Length)",
-"url": "https://suno.com/song/b3897f64-2135-42f8-967d-cbdb7c0cc8a7",
-"tags": "Miami bass, hip-hop",
-"length": "3:38",
-"date": "2026-10-03"
-},
-{
-"id": "df755916-3eb8-4a47-ab06-58872ed702e6",
-"title": "My Shit Always Works Sometimes",
-"url": "https://suno.com/song/df755916-3eb8-4a47-ab06-58872ed702e6",
-"tags": "Miami bass, hip-hop",
-"length": "1:58",
 "date": "2026-10-03"
 },
 {
@@ -355,14 +291,6 @@
 "date": "2026-10-02"
 },
 {
-"id": "f8b3af3f-f6f9-4426-af5a-f1a699df2561",
-"title": "When Emotes Fly",
-"url": "https://suno.com/song/f8b3af3f-f6f9-4426-af5a-f1a699df2561",
-"tags": "country, comedy",
-"length": "2:12",
-"date": "2026-10-02"
-},
-{
 "id": "f44d67fc-0d9c-4eb6-83e8-a488466e0437",
 "title": "Player Experience My Game",
 "url": "https://suno.com/song/f44d67fc-0d9c-4eb6-83e8-a488466e0437",
@@ -376,14 +304,6 @@
 "url": "https://suno.com/song/b5430199-a149-46d3-bb5d-d3f5c477714b",
 "tags": "alternative rock, pop-rock",
 "length": "2:44",
-"date": "2026-10-01"
-},
-{
-"id": "877f9ac5-a162-4c60-a027-6b50ade23087",
-"title": "Empty Wallet",
-"url": "https://suno.com/song/877f9ac5-a162-4c60-a027-6b50ade23087",
-"tags": "alternative rock, pop-rock",
-"length": "2:22",
 "date": "2026-10-01"
 },
 {
@@ -427,14 +347,6 @@
 "date": "2026-10-01"
 },
 {
-"id": "8d4f9b78-0ce4-4a6e-a569-117dbff5134d",
-"title": "Hawk Mode (Purple Lambo)",
-"url": "https://suno.com/song/8d4f9b78-0ce4-4a6e-a569-117dbff5134d",
-"tags": "cloud trap, dark atmospheric",
-"length": "1:41",
-"date": "2026-10-01"
-},
-{
 "id": "fbc290b6-3f38-4eb6-b55d-48247aefa396",
 "title": "Do What You Feel (Purple Lambo)",
 "url": "https://suno.com/song/fbc290b6-3f38-4eb6-b55d-48247aefa396",
@@ -448,14 +360,6 @@
 "url": "https://suno.com/song/0555771b-0e25-4c2b-8c3b-762c1368a5f7",
 "tags": "cloud trap, dark atmospheric",
 "length": "2:23",
-"date": "2026-10-01"
-},
-{
-"id": "e5f40f1e-6451-46b2-bc67-ebbbaf1f3aaa",
-"title": "Financial Liberty",
-"url": "https://suno.com/song/e5f40f1e-6451-46b2-bc67-ebbbaf1f3aaa",
-"tags": "hip-hop, rock",
-"length": "2:53",
 "date": "2026-10-01"
 },
 {
@@ -489,22 +393,6 @@
 "tags": "heartland rock, rock anthem",
 "length": "3:26",
 "date": "2026-10-01"
-},
-{
-"id": "c64eaf91-cd38-432f-8169-6802668ab45b",
-"title": "Hurry Up And Deny Me",
-"url": "https://suno.com/song/c64eaf91-cd38-432f-8169-6802668ab45b",
-"tags": "pop-punk",
-"length": "2:55",
-"date": "2026-10-01"
-},
-{
-"id": "d9210970-5453-4284-811d-3fdd68692c4a",
-"title": "Both Ends",
-"url": "https://suno.com/song/d9210970-5453-4284-811d-3fdd68692c4a",
-"tags": "hip-hop, rap-rock, cinematic",
-"length": "3:28",
-"date": "2026-09-30"
 },
 {
 "id": "759783d1-7da2-4008-8050-ba1ee5b327ce",
@@ -587,14 +475,6 @@
 "date": "2026-09-30"
 },
 {
-"id": "2d1b381b-7b6a-4f54-95ea-37b7224176d9",
-"title": "Fixed It Live",
-"url": "https://suno.com/song/2d1b381b-7b6a-4f54-95ea-37b7224176d9",
-"tags": "funk, hip-hop",
-"length": "3:17",
-"date": "2026-09-29"
-},
-{
 "id": "8f127b78-d41c-43b5-8b21-c99a9b4ad4d6",
 "title": "Press To Continue",
 "url": "https://suno.com/song/8f127b78-d41c-43b5-8b21-c99a9b4ad4d6",
@@ -616,14 +496,6 @@
 "url": "https://suno.com/song/a1643f22-2fe2-4f8d-b482-54e565e42540",
 "tags": "funk, hip-hop",
 "length": "2:56",
-"date": "2026-09-29"
-},
-{
-"id": "bd24cb76-e82b-4b04-9a6c-34adbe9af0a8",
-"title": "Drift King Funk",
-"url": "https://suno.com/song/bd24cb76-e82b-4b04-9a6c-34adbe9af0a8",
-"tags": "funk, hip-hop",
-"length": "2:47",
 "date": "2026-09-29"
 },
 {
@@ -731,27 +603,11 @@
 "date": "2026-09-29"
 },
 {
-"id": "05523757-4bf2-40bf-8a61-34dd1e412e60",
-"title": "Gold On The Grid",
-"url": "https://suno.com/song/05523757-4bf2-40bf-8a61-34dd1e412e60",
-"tags": "hip-hop, funk",
-"length": "2:27",
-"date": "2026-09-29"
-},
-{
 "id": "5d818595-57db-4b3e-91d4-83b025b24e97",
 "title": "Get Loud Lane",
 "url": "https://suno.com/song/5d818595-57db-4b3e-91d4-83b025b24e97",
 "tags": "funk, hip-hop",
 "length": "2:26",
-"date": "2026-09-29"
-},
-{
-"id": "33c472ce-8534-44f6-9ada-8b02ffb60a2b",
-"title": "Pit Crew Party",
-"url": "https://suno.com/song/33c472ce-8534-44f6-9ada-8b02ffb60a2b",
-"tags": "Funk party hip-hop, crisp, intelligible male rap in the user's own recorded voice, huge shouted gang-vocal call-and-response hooks; slapping funk bass leads under wah guitar, bright horn blasts, punchy live drums, handclaps, cowbell; clear, punchy mix; 112 BPM racing block-party groove, starting straight on the beat.",
-"length": "2:44",
 "date": "2026-09-29"
 },
 {
@@ -768,14 +624,6 @@
 "url": "https://suno.com/song/e1434a44-d3e9-4ef8-8cdb-e67718e5ace3",
 "tags": "funk, hip-hop",
 "length": "2:38",
-"date": "2026-09-29"
-},
-{
-"id": "7fd7f2b4-1704-4646-9af4-9312527b0ee5",
-"title": "Victory Lap",
-"url": "https://suno.com/song/7fd7f2b4-1704-4646-9af4-9312527b0ee5",
-"tags": "Funk party hip-hop, slapping funk bass in front with wah guitar, bright horn fanfares, live drums, handclaps and ringing cowbell; 112 BPM racing block-party groove, straight in on the beat; male rap in the user's own recorded voice, crisp and intelligible, with huge shouted gang-vocal call-and-response hooks; clear, punchy mix.",
-"length": "2:45",
 "date": "2026-09-29"
 },
 {
@@ -803,22 +651,6 @@
 "date": "2026-09-29"
 },
 {
-"id": "273fde72-6db3-45a7-b0b5-a83e1b3fa901",
-"title": "Burn Rubber",
-"url": "https://suno.com/song/273fde72-6db3-45a7-b0b5-a83e1b3fa901",
-"tags": "hip-hop, funk",
-"length": "2:26",
-"date": "2026-09-29"
-},
-{
-"id": "652abd44-ec63-44e4-8a2e-a3d71386a0ff",
-"title": "Block Party Tuesday",
-"url": "https://suno.com/song/652abd44-ec63-44e4-8a2e-a3d71386a0ff",
-"tags": "funk, hip-hop",
-"length": "2:27",
-"date": "2026-09-29"
-},
-{
 "id": "a0ca0b8f-2006-4bc0-be8c-29a0ab32d495",
 "title": "Three O'Clock Rush",
 "url": "https://suno.com/song/a0ca0b8f-2006-4bc0-be8c-29a0ab32d495",
@@ -832,14 +664,6 @@
 "url": "https://suno.com/song/9e39224c-fd0b-42ba-bd88-28e5d7106508",
 "tags": "pop-punk, rock",
 "length": "2:28",
-"date": "2026-09-29"
-},
-{
-"id": "22248040-d912-498e-b989-c7f2c65e3628",
-"title": "Bass In The Floor",
-"url": "https://suno.com/song/22248040-d912-498e-b989-c7f2c65e3628",
-"tags": "trap, hip-hop",
-"length": "2:06",
 "date": "2026-09-29"
 },
 {
@@ -936,14 +760,6 @@
 "url": "https://suno.com/song/c98e5013-6180-4414-91cf-3dec6d7bd503",
 "tags": "hip-hop soul",
 "length": "2:21",
-"date": "2026-09-29"
-},
-{
-"id": "e1a6532e-ef7b-46a8-9e58-d89dbc430093",
-"title": "Pit Stop",
-"url": "https://suno.com/song/e1a6532e-ef7b-46a8-9e58-d89dbc430093",
-"tags": "hip-hop soul",
-"length": "2:05",
 "date": "2026-09-29"
 },
 {
@@ -1123,22 +939,6 @@
 "date": "2026-09-29"
 },
 {
-"id": "e5b74e84-aaa2-4845-a070-aed3daa2b945",
-"title": "Gold On The Edges",
-"url": "https://suno.com/song/e5b74e84-aaa2-4845-a070-aed3daa2b945",
-"tags": "hip-hop, soul",
-"length": "2:47",
-"date": "2026-09-29"
-},
-{
-"id": "3498c7c0-6b34-4b37-9262-a9fce6321be0",
-"title": "Before The Birds",
-"url": "https://suno.com/song/3498c7c0-6b34-4b37-9262-a9fce6321be0",
-"tags": "hip-hop, soul",
-"length": "2:28",
-"date": "2026-09-29"
-},
-{
 "id": "70af1bac-4bc3-41ae-b8a1-886e92129dba",
 "title": "Gear One Blue",
 "url": "https://suno.com/song/70af1bac-4bc3-41ae-b8a1-886e92129dba",
@@ -1176,14 +976,6 @@
 "url": "https://suno.com/song/3ef0e7a5-9eff-41be-94d6-a3f06fc3d79e",
 "tags": "hip-hop, soul",
 "length": "2:56",
-"date": "2026-09-29"
-},
-{
-"id": "8c5cd418-7172-4422-a527-6798731f577a",
-"title": "Lamp On At Six",
-"url": "https://suno.com/song/8c5cd418-7172-4422-a527-6798731f577a",
-"tags": "hip-hop, soul",
-"length": "3:09",
 "date": "2026-09-29"
 },
 {
@@ -1331,14 +1123,6 @@
 "date": "2026-09-28"
 },
 {
-"id": "5091d545-be17-404e-a3d6-627e675eff6d",
-"title": "Off-Ramp",
-"url": "https://suno.com/song/5091d545-be17-404e-a3d6-627e675eff6d",
-"tags": "synth-rock, synthwave",
-"length": "3:10",
-"date": "2026-09-28"
-},
-{
 "id": "3f18939a-8ad1-4031-a852-0a42c3458c40",
 "title": "Pace Car",
 "url": "https://suno.com/song/3f18939a-8ad1-4031-a852-0a42c3458c40",
@@ -1427,14 +1211,6 @@
 "date": "2026-09-28"
 },
 {
-"id": "f03616c7-c604-4786-9888-3b5f63e6b557",
-"title": "Do Not Complement Each Other",
-"url": "https://suno.com/song/f03616c7-c604-4786-9888-3b5f63e6b557",
-"tags": "ballad, emotional",
-"length": "3:40",
-"date": "2026-09-28"
-},
-{
 "id": "8b442cc8-1234-41c8-bcd4-bae85ffbacc2",
 "title": "Skin Engine Steps One to Nine",
 "url": "https://suno.com/song/8b442cc8-1234-41c8-bcd4-bae85ffbacc2",
@@ -1448,14 +1224,6 @@
 "url": "https://suno.com/song/bbd14269-d6ac-4240-b05e-ceafb8ca9118",
 "tags": "disco, bittersweet, melancholy",
 "length": "3:53",
-"date": "2026-09-28"
-},
-{
-"id": "23b64e29-b15e-4cd2-954f-1b6ae306511d",
-"title": "One Style Bible",
-"url": "https://suno.com/song/23b64e29-b15e-4cd2-954f-1b6ae306511d",
-"tags": "funk, upbeat",
-"length": "4:02",
 "date": "2026-09-28"
 },
 {
@@ -1496,14 +1264,6 @@
 "url": "https://suno.com/song/94b43738-1e00-47ec-bb94-5a27ab6f0d77",
 "tags": "dream pop, ethereal",
 "length": "4:33",
-"date": "2026-09-28"
-},
-{
-"id": "51fd81b3-b257-4ec0-bba2-42ce2362c729",
-"title": "One Fourteen",
-"url": "https://suno.com/song/51fd81b3-b257-4ec0-bba2-42ce2362c729",
-"tags": "Drum and bass, euphoric",
-"length": "3:58",
 "date": "2026-09-28"
 },
 {
@@ -1592,14 +1352,6 @@
 "url": "https://suno.com/song/e4e715f8-e942-4bd3-ae69-6594304fe241",
 "tags": "Latin pop, 116 BPM, congas, clave, bright brass section, nylon guitar, sunny energetic male vocal, crowd chant, gang vocals, festive",
 "length": "3:52",
-"date": "2026-09-28"
-},
-{
-"id": "9485b630-4184-42ab-915c-a25ecf3c3e75",
-"title": "Till Tuesday",
-"url": "https://suno.com/song/9485b630-4184-42ab-915c-a25ecf3c3e75",
-"tags": "pop, cinematic",
-"length": "3:42",
 "date": "2026-09-28"
 },
 {
@@ -1744,14 +1496,6 @@
 "url": "https://suno.com/song/75aa0207-fe0a-4bc9-b547-a6c5d4f5793d",
 "tags": "big band jazz, brassy, celebratory",
 "length": "3:51",
-"date": "2026-09-28"
-},
-{
-"id": "2899c42f-7b92-4b5b-9564-b0fca0a4cb28",
-"title": "Tomorrow Is Tuesday",
-"url": "https://suno.com/song/2899c42f-7b92-4b5b-9564-b0fca0a4cb28",
-"tags": "indie synth-pop",
-"length": "3:28",
 "date": "2026-09-28"
 },
 {
@@ -2411,27 +2155,11 @@
 "date": "2026-09-27"
 },
 {
-"id": "9f22432c-70db-4a75-af7c-e41126c1ffd2",
-"title": "Dashboard Eyes",
-"url": "https://suno.com/song/9f22432c-70db-4a75-af7c-e41126c1ffd2",
-"tags": "hip-hop, cinematic",
-"length": "3:04",
-"date": "2026-09-27"
-},
-{
 "id": "52f7dc75-7366-4887-95ee-8050d2271700",
 "title": "Milk Chocolate Buttons",
 "url": "https://suno.com/song/52f7dc75-7366-4887-95ee-8050d2271700",
 "tags": "synth-pop, electronic",
 "length": "3:05",
-"date": "2026-09-27"
-},
-{
-"id": "8a2e8184-5ed2-4eb2-b0ac-88728070b41e",
-"title": "Twenty-One Hours",
-"url": "https://suno.com/song/8a2e8184-5ed2-4eb2-b0ac-88728070b41e",
-"tags": "soul, ballad, gospel",
-"length": "4:02",
 "date": "2026-09-27"
 },
 {
@@ -2459,35 +2187,11 @@
 "date": "2026-09-27"
 },
 {
-"id": "dcbe300a-4867-4f11-b287-83bf70ef7b32",
-"title": "Run It Again",
-"url": "https://suno.com/song/dcbe300a-4867-4f11-b287-83bf70ef7b32",
-"tags": "boom-bap, cinematic",
-"length": "3:00",
-"date": "2026-09-27"
-},
-{
 "id": "a5eacf5a-4085-4302-b86b-7e929ad933db",
 "title": "Fingertips",
 "url": "https://suno.com/song/a5eacf5a-4085-4302-b86b-7e929ad933db",
 "tags": "electronic rock",
 "length": "3:28",
-"date": "2026-09-27"
-},
-{
-"id": "e0b74580-83f7-44bd-a49e-498ec82669d2",
-"title": "The Gauntlet Run",
-"url": "https://suno.com/song/e0b74580-83f7-44bd-a49e-498ec82669d2",
-"tags": "trap-rock, cinematic",
-"length": "3:33",
-"date": "2026-09-27"
-},
-{
-"id": "60e05ed7-0d43-40ec-9d0f-e96fce3c4260",
-"title": "Home Stretch",
-"url": "https://suno.com/song/60e05ed7-0d43-40ec-9d0f-e96fce3c4260",
-"tags": "rock-rap, rock, rap",
-"length": "3:23",
 "date": "2026-09-27"
 },
 {
@@ -2507,22 +2211,6 @@
 "date": "2026-09-27"
 },
 {
-"id": "c867861d-1807-41f3-b70d-7857478b4267",
-"title": "The First One",
-"url": "https://suno.com/song/c867861d-1807-41f3-b70d-7857478b4267",
-"tags": "hip-hop, acoustic",
-"length": "1:31",
-"date": "2026-09-27"
-},
-{
-"id": "31782711-7e28-4247-a0fa-e3dbb11844e0",
-"title": "Just Starting",
-"url": "https://suno.com/song/31782711-7e28-4247-a0fa-e3dbb11844e0",
-"tags": "indie-pop, rap",
-"length": "0:53",
-"date": "2026-09-27"
-},
-{
 "id": "556389eb-4343-4f9e-9279-37e40db2141a",
 "title": "New Life",
 "url": "https://suno.com/song/556389eb-4343-4f9e-9279-37e40db2141a",
@@ -2536,30 +2224,6 @@
 "url": "https://suno.com/song/d58bde5d-1cca-4459-8972-f777b3894c46",
 "tags": "house, hip-hop",
 "length": "2:41",
-"date": "2026-09-27"
-},
-{
-"id": "a6e0f667-cffa-4d1d-a62a-ec0ea198fa17",
-"title": "Hard Way Lessons",
-"url": "https://suno.com/song/a6e0f667-cffa-4d1d-a62a-ec0ea198fa17",
-"tags": "boom-bap, soulful",
-"length": "2:20",
-"date": "2026-09-27"
-},
-{
-"id": "5310e2fc-7725-483e-91c6-7fbbfda6a89f",
-"title": "The Last Gate",
-"url": "https://suno.com/song/5310e2fc-7725-483e-91c6-7fbbfda6a89f",
-"tags": "rock-rap, rock, rap",
-"length": "2:18",
-"date": "2026-09-27"
-},
-{
-"id": "234dcc6b-823e-44f1-87d1-6f253b6d5861",
-"title": "Still Streaming",
-"url": "https://suno.com/song/234dcc6b-823e-44f1-87d1-6f253b6d5861",
-"tags": "hip-hop, boom-bap",
-"length": "2:10",
 "date": "2026-09-27"
 },
 {
@@ -2664,14 +2328,6 @@
 "url": "https://suno.com/song/e9c2b680-f998-4647-b348-adac71a2a0ee",
 "tags": "industrial, techno",
 "length": "3:52",
-"date": "2026-09-27"
-},
-{
-"id": "93157a75-ad80-44b1-8bab-127b09608330",
-"title": "Nine Lanes",
-"url": "https://suno.com/song/93157a75-ad80-44b1-8bab-127b09608330",
-"tags": "hip-hop, drill",
-"length": "3:27",
 "date": "2026-09-27"
 },
 {
@@ -2817,14 +2473,6 @@
 "tags": "stoner hip-hop, yacht-rock",
 "length": "2:59",
 "date": "2026-09-26"
-},
-{
-"id": "30b2e800-25a1-4c08-844c-4f126f77ebc7",
-"title": "The Alchemy of B12",
-"url": "https://suno.com/song/30b2e800-25a1-4c08-844c-4f126f77ebc7",
-"tags": "synth-funk, p-funk",
-"length": "3:41",
-"date": "2026-09-24"
 },
 {
 "id": "bd760755-cd70-48cc-8945-f1df1818c670",
@@ -3267,14 +2915,6 @@
 "date": "2026-09-20"
 },
 {
-"id": "e60f278d-3d30-4b70-8fac-e2f45e8e757f",
-"title": "Freeplay Freeway",
-"url": "https://suno.com/song/e60f278d-3d30-4b70-8fac-e2f45e8e757f",
-"tags": "hip-hop, melodic rap",
-"length": "4:00",
-"date": "2026-09-20"
-},
-{
 "id": "a7806c19-7269-49fe-a38f-67568f3c8814",
 "title": "Love When That Shit Happen",
 "url": "https://suno.com/song/a7806c19-7269-49fe-a38f-67568f3c8814",
@@ -3691,14 +3331,6 @@
 "date": "2026-09-18"
 },
 {
-"id": "96b3f33a-51ba-4b8c-a1ed-b1f6a9fdf542",
-"title": "My 42",
-"url": "https://suno.com/song/96b3f33a-51ba-4b8c-a1ed-b1f6a9fdf542",
-"tags": "pop, R&B, soul",
-"length": "3:37",
-"date": "2026-09-18"
-},
-{
 "id": "0bdd7349-4412-4455-a530-acf5f1d3653b",
 "title": "Funhouse Mirror",
 "url": "https://suno.com/song/0bdd7349-4412-4455-a530-acf5f1d3653b",
@@ -3800,14 +3432,6 @@
 "url": "https://suno.com/song/e8c1d7ca-2882-407e-8081-371d71234cfe",
 "tags": "hip-hop, carnival",
 "length": "2:06",
-"date": "2026-09-18"
-},
-{
-"id": "1ac770a4-0ccb-476d-8829-9a23f9f2340f",
-"title": "Top of the Wheel",
-"url": "https://suno.com/song/1ac770a4-0ccb-476d-8829-9a23f9f2340f",
-"tags": "hip-hop",
-"length": "2:55",
 "date": "2026-09-18"
 },
 {
@@ -3971,14 +3595,6 @@
 "date": "2026-09-17"
 },
 {
-"id": "bff5e5f4-f8af-47b0-b507-1705f2b0832c",
-"title": "Say It Out Loud",
-"url": "https://suno.com/song/bff5e5f4-f8af-47b0-b507-1705f2b0832c",
-"tags": "alternative, art-pop",
-"length": "3:35",
-"date": "2026-09-17"
-},
-{
 "id": "63f3d8fe-b3a9-4c40-a7fa-5e689bd5f3f7",
 "title": "Don't Make It Weird",
 "url": "https://suno.com/song/63f3d8fe-b3a9-4c40-a7fa-5e689bd5f3f7",
@@ -4075,14 +3691,6 @@
 "date": "2026-09-10"
 },
 {
-"id": "a4867f8f-9286-4b9e-a3af-ba9bf30c0557",
-"title": "Slot Gauntlet",
-"url": "https://suno.com/song/a4867f8f-9286-4b9e-a3af-ba9bf30c0557",
-"tags": "hip-hop, club",
-"length": "2:48",
-"date": "2026-09-09"
-},
-{
 "id": "da330168-6617-48bd-84c9-ce3258e95303",
 "title": "Frozen Shell",
 "url": "https://suno.com/song/da330168-6617-48bd-84c9-ce3258e95303",
@@ -4144,14 +3752,6 @@
 "url": "https://suno.com/song/a897a902-e26f-4390-965e-bb3c62d2da91",
 "tags": "pop-house, club",
 "length": "3:24",
-"date": "2026-09-09"
-},
-{
-"id": "52e5dae8-02b9-4718-a347-ebf16b518772",
-"title": "Fake Numbers",
-"url": "https://suno.com/song/52e5dae8-02b9-4718-a347-ebf16b518772",
-"tags": "techno-pop, hands-up",
-"length": "2:47",
 "date": "2026-09-09"
 },
 {
@@ -4256,14 +3856,6 @@
 "url": "https://suno.com/song/d63398a9-fb49-41b4-9030-0ca304b541f0",
 "tags": "deep house, after-hours",
 "length": "3:23",
-"date": "2026-09-03"
-},
-{
-"id": "9922b9bb-e074-41fd-af0d-e7657f67ea52",
-"title": "Fuck It, Spin",
-"url": "https://suno.com/song/9922b9bb-e074-41fd-af0d-e7657f67ea52",
-"tags": "hard techno, dark club",
-"length": "2:44",
 "date": "2026-09-03"
 },
 {
@@ -4571,14 +4163,6 @@
 "date": "2026-08-21"
 },
 {
-"id": "a1fcc998-9b86-43b7-87e9-4f1733f0e88a",
-"title": "Till It Actually Hits",
-"url": "https://suno.com/song/a1fcc998-9b86-43b7-87e9-4f1733f0e88a",
-"tags": "groove rock, hard rock, cinematic rock",
-"length": "4:12",
-"date": "2026-08-21"
-},
-{
 "id": "9e25c507-6e9f-4659-aba2-3a43dc240cbe",
 "title": "Prove It Red",
 "url": "https://suno.com/song/9e25c507-6e9f-4659-aba2-3a43dc240cbe",
@@ -4667,22 +4251,6 @@
 "date": "2026-08-16"
 },
 {
-"id": "5caf035d-23ee-4464-88aa-29f23a04a3fe",
-"title": "Still Part of This",
-"url": "https://suno.com/song/5caf035d-23ee-4464-88aa-29f23a04a3fe",
-"tags": "heartland rock, anthem",
-"length": "3:36",
-"date": "2026-08-16"
-},
-{
-"id": "08ba7880-adfe-42ba-b729-b9e889d5208f",
-"title": "The Fun Part",
-"url": "https://suno.com/song/08ba7880-adfe-42ba-b729-b9e889d5208f",
-"tags": "rock, ska-punk",
-"length": "3:02",
-"date": "2026-08-14"
-},
-{
 "id": "155401fc-76a9-42ae-a702-0f5421c29189",
 "title": "The Sweep",
 "url": "https://suno.com/song/155401fc-76a9-42ae-a702-0f5421c29189",
@@ -4699,27 +4267,11 @@
 "date": "2026-08-14"
 },
 {
-"id": "3c54fb96-9577-40e1-aac5-df7848eb8d73",
-"title": "The One Run",
-"url": "https://suno.com/song/3c54fb96-9577-40e1-aac5-df7848eb8d73",
-"tags": "synthwave, rock",
-"length": "4:06",
-"date": "2026-08-14"
-},
-{
 "id": "8d0830ab-436e-4bbb-9825-10fc9490a843",
 "title": "Never Leaves You Behind",
 "url": "https://suno.com/song/8d0830ab-436e-4bbb-9825-10fc9490a843",
 "tags": "blues rock, ballad",
 "length": "4:32",
-"date": "2026-08-14"
-},
-{
-"id": "026d983b-6ed2-4e81-b298-be61ec5150ce",
-"title": "Twos and Eights",
-"url": "https://suno.com/song/026d983b-6ed2-4e81-b298-be61ec5150ce",
-"tags": "electronic hip-hop, boom-bap",
-"length": "2:37",
 "date": "2026-08-14"
 },
 {
@@ -4777,22 +4329,6 @@
 "tags": "funk, R&B, slow jam",
 "length": "2:22",
 "date": "2026-08-10"
-},
-{
-"id": "27423a77-407e-485c-a73e-e2ccb4f5b6fb",
-"title": "Carry Me Over",
-"url": "https://suno.com/song/27423a77-407e-485c-a73e-e2ccb4f5b6fb",
-"tags": "hip-hop, gospel, cinematic",
-"length": "3:18",
-"date": "2026-08-09"
-},
-{
-"id": "42c1782b-8270-4d10-a027-5c9065e3b02a",
-"title": "Earn the Unicorn",
-"url": "https://suno.com/song/42c1782b-8270-4d10-a027-5c9065e3b02a",
-"tags": "cinematic hip-hop, dark hip-hop, orchestral hip-hop",
-"length": "3:19",
-"date": "2026-08-09"
 },
 {
 "id": "12b419d9-2625-4945-bd0e-486657235932",
@@ -4947,14 +4483,6 @@
 "date": "2026-07-30"
 },
 {
-"id": "f9d2335c-6344-4e4c-80f2-da61b4e55081",
-"title": "Nothing Left to Take",
-"url": "https://suno.com/song/f9d2335c-6344-4e4c-80f2-da61b4e55081",
-"tags": "",
-"length": "3:21",
-"date": "2026-07-29"
-},
-{
 "id": "af4d70d1-9e9d-4424-9e32-d9a54e89cb45",
 "title": "Week to Week",
 "url": "https://suno.com/song/af4d70d1-9e9d-4424-9e32-d9a54e89cb45",
@@ -5027,14 +4555,6 @@
 "date": "2026-07-25"
 },
 {
-"id": "bec27476-806c-49be-9c4c-ff1b568968d3",
-"title": "Basic On Purpose",
-"url": "https://suno.com/song/bec27476-806c-49be-9c4c-ff1b568968d3",
-"tags": "hip-hop, boom-bap",
-"length": "2:04",
-"date": "2026-07-25"
-},
-{
 "id": "32decacf-3001-40a9-bf6a-caff9fd0a5b4",
 "title": "It Don't Need Me Tonight",
 "url": "https://suno.com/song/32decacf-3001-40a9-bf6a-caff9fd0a5b4",
@@ -5056,14 +4576,6 @@
 "url": "https://suno.com/song/f98254f2-4836-4063-a89c-b61b961ad8f1",
 "tags": "hip-hop, spoken-word, ballad",
 "length": "2:11",
-"date": "2026-07-24"
-},
-{
-"id": "fa3a3991-a192-4d00-b165-20b632eceb07",
-"title": "Cuss Them Out For You",
-"url": "https://suno.com/song/fa3a3991-a192-4d00-b165-20b632eceb07",
-"tags": "hip hop, horrorcore",
-"length": "2:04",
 "date": "2026-07-24"
 },
 {
@@ -5235,14 +4747,6 @@
 "date": "2026-07-21"
 },
 {
-"id": "de8c8ea4-1622-48dd-bdad-12c14e930b82",
-"title": "Already Enough",
-"url": "https://suno.com/song/de8c8ea4-1622-48dd-bdad-12c14e930b82",
-"tags": "Americana, Folk Country, Southern Rock",
-"length": "4:19",
-"date": "2026-07-21"
-},
-{
 "id": "a6513dd7-7055-4f29-94fe-cb341dc1f2ad",
 "title": "Wave by Wave",
 "url": "https://suno.com/song/a6513dd7-7055-4f29-94fe-cb341dc1f2ad",
@@ -5251,35 +4755,11 @@
 "date": "2026-07-20"
 },
 {
-"id": "3441d691-7efd-45b9-b12a-949bece4df3b",
-"title": "Quiet Is A Hammer",
-"url": "https://suno.com/song/3441d691-7efd-45b9-b12a-949bece4df3b",
-"tags": "country-rap, southern country",
-"length": "2:34",
-"date": "2026-07-20"
-},
-{
-"id": "4e4a237c-9912-4236-a5e3-e0ed023e592c",
-"title": "Just the Room",
-"url": "https://suno.com/song/4e4a237c-9912-4236-a5e3-e0ed023e592c",
-"tags": "outlaw-country, Americana, heartland-rock",
-"length": "3:57",
-"date": "2026-07-20"
-},
-{
 "id": "d74e4c74-533f-4989-b3e1-da278baf8961",
 "title": "Fingerprints — bits",
 "url": "https://suno.com/song/d74e4c74-533f-4989-b3e1-da278baf8961",
 "tags": "outlaw-country, Americana, answer-ballad",
 "length": "2:55",
-"date": "2026-07-20"
-},
-{
-"id": "510a37e4-0c65-4681-bd64-c060266f93d9",
-"title": "Fingerprints",
-"url": "https://suno.com/song/510a37e4-0c65-4681-bd64-c060266f93d9",
-"tags": "outlaw-country, heartland-rock, Americana",
-"length": "3:50",
 "date": "2026-07-20"
 },
 {
@@ -5307,35 +4787,11 @@
 "date": "2026-07-16"
 },
 {
-"id": "7bc3dbfb-334d-4ccb-91a1-3bcd35f1c5ae",
-"title": "SUNLIGHT TWICE",
-"url": "https://suno.com/song/7bc3dbfb-334d-4ccb-91a1-3bcd35f1c5ae",
-"tags": "contemporary R&B, neo-soul, afrobeats",
-"length": "4:21",
-"date": "2026-07-16"
-},
-{
-"id": "c8bf931a-c087-4ebb-a9fc-a590082768d3",
-"title": "DIAMONDS & VIBES",
-"url": "https://suno.com/song/c8bf931a-c087-4ebb-a9fc-a590082768d3",
-"tags": "pop-rap, party anthem",
-"length": "4:44",
-"date": "2026-07-16"
-},
-{
 "id": "e12042c3-21d1-4e82-90ae-0008c772f727",
 "title": "Diamonds and Vibes",
 "url": "https://suno.com/song/e12042c3-21d1-4e82-90ae-0008c772f727",
 "tags": "glossy diamond-drip party anthem, pop-rap fusion, two warm confident female lead vocals trading verses, call and response, sparkling synths, heavy 808s, gang vocal chants, hand claps, 126 BPM, celebratory, radiant, hype, crisp bright production, clear intelligible delivery",
 "length": "3:00",
-"date": "2026-07-16"
-},
-{
-"id": "7e45ade6-ad97-486d-bc11-782b3a13ca0e",
-"title": "RELATABLE DIAMONDS",
-"url": "https://suno.com/song/7e45ade6-ad97-486d-bc11-782b3a13ca0e",
-"tags": "pop-rap, stadium anthem",
-"length": "4:24",
 "date": "2026-07-16"
 },
 {
@@ -5361,14 +4817,6 @@
 "tags": "electro, dance-pop",
 "length": "3:05",
 "date": "2026-07-16"
-},
-{
-"id": "8d9311ca-a7ca-4ea0-a695-9fef5fbd3de6",
-"title": "Won’t Hollow Me Out",
-"url": "https://suno.com/song/8d9311ca-a7ca-4ea0-a695-9fef5fbd3de6",
-"tags": "Southern-rock, industrial hip-hop, alternative metal",
-"length": "5:08",
-"date": "2026-07-15"
 },
 {
 "id": "b9470528-e9cb-48a6-a76e-ad2d7bf5fe4d",
@@ -5467,14 +4915,6 @@
 "date": "2026-07-13"
 },
 {
-"id": "c5e58423-da91-4344-9b10-15a19ad66cd7",
-"title": "The Other Open One",
-"url": "https://suno.com/song/c5e58423-da91-4344-9b10-15a19ad66cd7",
-"tags": "alternative hip-hop, rap-rock",
-"length": "4:42",
-"date": "2026-07-13"
-},
-{
 "id": "be92a799-e672-4973-890a-b6c036386def",
 "title": "You Missed Me",
 "url": "https://suno.com/song/be92a799-e672-4973-890a-b6c036386def",
@@ -5488,22 +4928,6 @@
 "url": "https://suno.com/song/197316c9-105b-447d-9bf4-33c419b5da0b",
 "tags": "trap, rock",
 "length": "4:05",
-"date": "2026-07-12"
-},
-{
-"id": "f2da223f-ea71-47a1-a871-d74b6149ebc2",
-"title": "CLUTCH",
-"url": "https://suno.com/song/f2da223f-ea71-47a1-a871-d74b6149ebc2",
-"tags": "hybrid, rock, drill",
-"length": "4:05",
-"date": "2026-07-12"
-},
-{
-"id": "92539cda-c325-4f88-91bf-a31390c72b10",
-"title": "FROM THE BITS",
-"url": "https://suno.com/song/92539cda-c325-4f88-91bf-a31390c72b10",
-"tags": "country rap, Southern-rock",
-"length": "3:58",
 "date": "2026-07-12"
 },
 {
@@ -5707,14 +5131,6 @@
 "date": "2026-07-11"
 },
 {
-"id": "dbcd3d95-81f9-4221-a39d-f79563311f26",
-"title": "Built Different (Cheers to 42)",
-"url": "https://suno.com/song/dbcd3d95-81f9-4221-a39d-f79563311f26",
-"tags": "trap, rap-rock",
-"length": "3:20",
-"date": "2026-07-11"
-},
-{
 "id": "cfd4ebaf-7f26-43f2-938a-165dba7d84fb",
 "title": "TWO TRAFFIC STOPS",
 "url": "https://suno.com/song/cfd4ebaf-7f26-43f2-938a-165dba7d84fb",
@@ -5739,38 +5155,6 @@
 "date": "2026-07-10"
 },
 {
-"id": "43e74a50-de61-4125-8638-d9ab77182ab4",
-"title": "Call Me Bill",
-"url": "https://suno.com/song/43e74a50-de61-4125-8638-d9ab77182ab4",
-"tags": "metal, cinematic, wizard-metal",
-"length": "4:12",
-"date": "2026-07-10"
-},
-{
-"id": "2693c411-0aaf-4484-b9a9-e9e38b90f15f",
-"title": "I Will",
-"url": "https://suno.com/song/2693c411-0aaf-4484-b9a9-e9e38b90f15f",
-"tags": "metal, cinematic, wizard-metal",
-"length": "3:58",
-"date": "2026-07-10"
-},
-{
-"id": "62997d9a-2ccf-45c0-92a0-73a70eeabd85",
-"title": "Web Wizard Will",
-"url": "https://suno.com/song/62997d9a-2ccf-45c0-92a0-73a70eeabd85",
-"tags": "cinematic, wizard-rock, alternative rock",
-"length": "4:13",
-"date": "2026-07-10"
-},
-{
-"id": "6ecbc058-7f7c-48d1-be9c-ba6d74c50a2f",
-"title": "AI Overlord",
-"url": "https://suno.com/song/6ecbc058-7f7c-48d1-be9c-ba6d74c50a2f",
-"tags": "industrial hip-hop, alternative metal, electronic rock",
-"length": "4:59",
-"date": "2026-07-10"
-},
-{
 "id": "1ebf7ca7-8dad-4614-9a0d-6319b3061554",
 "title": "THE WAKE",
 "url": "https://suno.com/song/1ebf7ca7-8dad-4614-9a0d-6319b3061554",
@@ -5784,14 +5168,6 @@
 "url": "https://suno.com/song/43777f71-08bf-4c9f-8212-dd00dc734adf",
 "tags": "R&B, slow-burn",
 "length": "3:31",
-"date": "2026-07-09"
-},
-{
-"id": "26fb14e1-f337-4033-af7e-06ba6c3b6d29",
-"title": "Just Respect",
-"url": "https://suno.com/song/26fb14e1-f337-4033-af7e-06ba6c3b6d29",
-"tags": "soul-rock, gospel",
-"length": "3:18",
 "date": "2026-07-09"
 },
 {
@@ -5843,14 +5219,6 @@
 "date": "2026-07-08"
 },
 {
-"id": "bb7bce86-f443-4cbb-86f6-f5c79ebd470d",
-"title": "Little Box, Big Magic",
-"url": "https://suno.com/song/bb7bce86-f443-4cbb-86f6-f5c79ebd470d",
-"tags": "big-band swing, showtune, vaudeville-jazz",
-"length": "2:55",
-"date": "2026-07-08"
-},
-{
 "id": "14ea81bb-ba37-4542-a3cb-23c415e3c60e",
 "title": "Get The Shit Done",
 "url": "https://suno.com/song/14ea81bb-ba37-4542-a3cb-23c415e3c60e",
@@ -5896,22 +5264,6 @@
 "url": "https://suno.com/song/456a53fd-1237-454e-b5e7-cbfb5dc27776",
 "tags": "synth-rock, cinematic",
 "length": "3:18",
-"date": "2026-07-07"
-},
-{
-"id": "1df1077e-4ff4-4f8a-b9dc-1fd26bbd4263",
-"title": "The Spark",
-"url": "https://suno.com/song/1df1077e-4ff4-4f8a-b9dc-1fd26bbd4263",
-"tags": "alt-pop-rock, cinematic, anthem",
-"length": "7:59",
-"date": "2026-07-07"
-},
-{
-"id": "d9cb794b-9148-4d39-9c3c-50637a99dc76",
-"title": "No Limits",
-"url": "https://suno.com/song/d9cb794b-9148-4d39-9c3c-50637a99dc76",
-"tags": "dark pop-rap, trap",
-"length": "2:26",
 "date": "2026-07-07"
 },
 {
@@ -5963,14 +5315,6 @@
 "date": "2026-07-07"
 },
 {
-"id": "7b2fd2ed-b294-4aa2-97ae-5c99f52eac63",
-"title": "Seen",
-"url": "https://suno.com/song/7b2fd2ed-b294-4aa2-97ae-5c99f52eac63",
-"tags": "pop-soul, gospel",
-"length": "4:10",
-"date": "2026-07-07"
-},
-{
 "id": "dfbc2781-610e-4e54-b6a2-f6081d190d3a",
 "title": "Staring At The Sun (Your Ceiling From Above, Pt. 2)",
 "url": "https://suno.com/song/dfbc2781-610e-4e54-b6a2-f6081d190d3a",
@@ -6003,67 +5347,11 @@
 "date": "2026-07-07"
 },
 {
-"id": "7d45b0cd-b77b-4770-809a-18b927075ce4",
-"title": "The Alchemist",
-"url": "https://suno.com/song/7d45b0cd-b77b-4770-809a-18b927075ce4",
-"tags": "hip-hop, soul",
-"length": "2:38",
-"date": "2026-07-07"
-},
-{
-"id": "052431aa-d7a8-4b25-8789-cd4b4a2c189f",
-"title": "No Ceiling",
-"url": "https://suno.com/song/052431aa-d7a8-4b25-8789-cd4b4a2c189f",
-"tags": "alternative rock, rap-rock",
-"length": "3:04",
-"date": "2026-07-07"
-},
-{
 "id": "1aa17d5b-3913-4195-ac46-4c7f05ba8214",
 "title": "Built With Love",
 "url": "https://suno.com/song/1aa17d5b-3913-4195-ac46-4c7f05ba8214",
 "tags": "Uplifting modern gospel-soul meets anthemic pop, warm and triumphant with tears-of-joy energy. Midtempo around 76 BPM, rich Hammond organ, gospel piano, deep pocket drums, warm bass, and a full choir that swells in the choruses. Soulful, powerful male lead — tender and grateful in the verses, soaring and unrestrained in the chorus, answered by a stacked gospel choir. Opens intimate on piano and voice, builds by adding organ and drums, lifts into a full choir chorus, then a key-change final chorus with hand-claps and ad-libs before a warm resolving chord.",
 "length": "3:13",
-"date": "2026-07-07"
-},
-{
-"id": "be568ea9-cb38-4409-a960-972c2bc89998",
-"title": "Click Every Button",
-"url": "https://suno.com/song/be568ea9-cb38-4409-a960-972c2bc89998",
-"tags": "electro-funk, hip-hop",
-"length": "2:20",
-"date": "2026-07-07"
-},
-{
-"id": "f2d7a2ff-355b-4b9d-969f-2a70c29dddcf",
-"title": "Build Mode (Never Sleep)",
-"url": "https://suno.com/song/f2d7a2ff-355b-4b9d-969f-2a70c29dddcf",
-"tags": "lo-fi hip-hop, neo-soul",
-"length": "4:53",
-"date": "2026-07-07"
-},
-{
-"id": "2a088352-65a9-494f-bfc4-f43581f1a06f",
-"title": "Build It Anyway",
-"url": "https://suno.com/song/2a088352-65a9-494f-bfc4-f43581f1a06f",
-"tags": "garage-punk, trap",
-"length": "3:30",
-"date": "2026-07-07"
-},
-{
-"id": "dd65dbd2-59e9-45b4-a6d9-9745339c3f72",
-"title": "Don't Give A Damn (Build It Anyway)",
-"url": "https://suno.com/song/dd65dbd2-59e9-45b4-a6d9-9745339c3f72",
-"tags": "garage punk, trap",
-"length": "1:46",
-"date": "2026-07-07"
-},
-{
-"id": "2f1a4a4b-ab94-4f18-8576-3757e8ae2b87",
-"title": "Wave After Wave",
-"url": "https://suno.com/song/2f1a4a4b-ab94-4f18-8576-3757e8ae2b87",
-"tags": "hip-hop, pop",
-"length": "1:41",
 "date": "2026-07-07"
 },
 {
@@ -6088,14 +5376,6 @@
 "url": "https://suno.com/song/1ad8ee71-e1a0-4193-b036-5fce971c788e",
 "tags": "contemporary R&B, seduction anthem",
 "length": "4:32",
-"date": "2026-07-06"
-},
-{
-"id": "38aa448d-171e-4f02-a17b-28cf02aeb6ae",
-"title": "More Hands",
-"url": "https://suno.com/song/38aa448d-171e-4f02-a17b-28cf02aeb6ae",
-"tags": "Americana, rock, anthem",
-"length": "6:36",
 "date": "2026-07-06"
 },
 {
@@ -6251,14 +5531,6 @@
 "date": "2026-07-03"
 },
 {
-"id": "a54d153c-d36f-4501-bf68-63e5cec3b369",
-"title": "Proof",
-"url": "https://suno.com/song/a54d153c-d36f-4501-bf68-63e5cec3b369",
-"tags": "hard rap, trap, cold confident male rap vocal, menacing 808s, understated flex, cinematic",
-"length": "2:05",
-"date": "2026-07-03"
-},
-{
 "id": "345ba70c-8a82-4769-be2b-e3af265b8b13",
 "title": "Golden",
 "url": "https://suno.com/song/345ba70c-8a82-4769-be2b-e3af265b8b13",
@@ -6272,14 +5544,6 @@
 "url": "https://suno.com/song/25574b52-029a-4583-ac4a-2b49c520e809",
 "tags": "late night hip hop, hard boom bap, driven male rap vocal, dark trap, motivational grind anthem",
 "length": "2:00",
-"date": "2026-07-03"
-},
-{
-"id": "3c9de12e-383d-47d2-ab5e-e5573acc32ad",
-"title": "Architect",
-"url": "https://suno.com/song/3c9de12e-383d-47d2-ab5e-e5573acc32ad",
-"tags": "hard rap, aggressive hip hop, boom bap, confident male rap vocal, heavy 808s, motivational",
-"length": "1:34",
 "date": "2026-07-03"
 },
 {
@@ -6368,14 +5632,6 @@
 "url": "https://suno.com/song/b1e8d201-7ed1-4f03-9949-6481a7b67da0",
 "tags": "outlaw country, americana, southern rock",
 "length": "3:11",
-"date": "2026-07-03"
-},
-{
-"id": "a5add349-5745-4c8f-bebc-1d61e5aa9049",
-"title": "Red Diamonds",
-"url": "https://suno.com/song/a5add349-5745-4c8f-bebc-1d61e5aa9049",
-"tags": "R&B, pop, soul",
-"length": "2:28",
 "date": "2026-07-03"
 },
 {
@@ -6481,14 +5737,6 @@
 "tags": "anthemic indie rock, uplifting, driving drums, soaring vocals, cinematic build",
 "length": "3:17",
 "date": "2026-07-01"
-},
-{
-"id": "252ea72e-cc15-4a63-be9c-43d5efeffbb8",
-"title": "Glad I'm Not the King",
-"url": "https://suno.com/song/252ea72e-cc15-4a63-be9c-43d5efeffbb8",
-"tags": "dark cinematic hip-hop, trap, aggressive intense, ominous cinematic rap",
-"length": "3:53",
-"date": "2026-06-29"
 },
 {
 "id": "600b9543-14f4-47ab-890b-f964e32c97f7",
@@ -6611,14 +5859,6 @@
 "date": "2026-06-25"
 },
 {
-"id": "a47bc957-e8c6-44e9-8edb-1c05b3245baa",
-"title": "Already Won",
-"url": "https://suno.com/song/a47bc957-e8c6-44e9-8edb-1c05b3245baa",
-"tags": "epic hardcore, orchestral trap, rap-rock",
-"length": "4:22",
-"date": "2026-06-25"
-},
-{
 "id": "f9f65d36-9412-4759-a094-677bf0b1dc8f",
 "title": "Everybody (This One's For You)",
 "url": "https://suno.com/song/f9f65d36-9412-4759-a094-677bf0b1dc8f",
@@ -6649,14 +5889,6 @@
 "tags": "alternative rock, protest rock, folk rock",
 "length": "3:35",
 "date": "2026-06-22"
-},
-{
-"id": "0a2d6476-d33c-4a57-b8b0-12a13df0c159",
-"title": "Another Vet",
-"url": "https://suno.com/song/0a2d6476-d33c-4a57-b8b0-12a13df0c159",
-"tags": "hard-hitting gritty rock, anthem rock, heavy rock",
-"length": "3:08",
-"date": "2026-06-21"
 },
 {
 "id": "c6b03b81-a153-4539-8d7a-aced9f7a9b85",
@@ -6739,14 +5971,6 @@
 "date": "2026-06-21"
 },
 {
-"id": "1104dcb7-b122-41f5-953f-864906e838a3",
-"title": "Still Standing Tall",
-"url": "https://suno.com/song/1104dcb7-b122-41f5-953f-864906e838a3",
-"tags": "hardcore rap, rap rock, southern country, rap metal",
-"length": "2:57",
-"date": "2026-06-21"
-},
-{
 "id": "81a3ef27-5463-4200-bdeb-190b3a91b8b7",
 "title": "Another Tumour In Mine",
 "url": "https://suno.com/song/81a3ef27-5463-4200-bdeb-190b3a91b8b7",
@@ -6768,14 +5992,6 @@
 "url": "https://suno.com/song/e787440f-abca-40a6-a43e-99b7d097434c",
 "tags": "hardcore rap, rap rock, southern country flavor",
 "length": "3:03",
-"date": "2026-06-21"
-},
-{
-"id": "1c4d5ca2-5745-4afc-8f5e-60097fbcf8b7",
-"title": "Prize City Bitch",
-"url": "https://suno.com/song/1c4d5ca2-5745-4afc-8f5e-60097fbcf8b7",
-"tags": "hip hop, trap, club banger",
-"length": "2:19",
 "date": "2026-06-21"
 },
 {
@@ -6979,14 +6195,6 @@
 "date": "2026-06-15"
 },
 {
-"id": "78038a8e-fd68-47da-b30c-1458d3bf562a",
-"title": "Sweet Hits 420 (Scope Creep Can't Hold Me)",
-"url": "https://suno.com/song/78038a8e-fd68-47da-b30c-1458d3bf562a",
-"tags": "West Coast hip hop, trap, G-funk",
-"length": "1:27",
-"date": "2026-06-15"
-},
-{
 "id": "71e55f25-69a7-4cde-9b14-b3179fa1b456",
 "title": "Out of Scope",
 "url": "https://suno.com/song/71e55f25-69a7-4cde-9b14-b3179fa1b456",
@@ -7000,14 +6208,6 @@
 "url": "https://suno.com/song/07e31914-b7f2-4aed-bf09-eacd712abcb1",
 "tags": "hard underground hip-hop, boom bap, trap",
 "length": "2:12",
-"date": "2026-06-14"
-},
-{
-"id": "022306d1-a38b-4d69-ad4a-15e31e26d244",
-"title": "The Heart Cannot Lie",
-"url": "https://suno.com/song/022306d1-a38b-4d69-ad4a-15e31e26d244",
-"tags": "hardcore rap, trap, dark hip-hop",
-"length": "2:37",
 "date": "2026-06-14"
 },
 {
@@ -7051,27 +6251,11 @@
 "date": "2026-06-13"
 },
 {
-"id": "5751ba66-cc74-41bc-87b8-97c031d14e89",
-"title": "Underground",
-"url": "https://suno.com/song/5751ba66-cc74-41bc-87b8-97c031d14e89",
-"tags": "techno, industrial techno, rave",
-"length": "3:23",
-"date": "2026-06-13"
-},
-{
 "id": "ef151cf7-a54a-4ee3-943e-1ed7f6b0eb41",
 "title": "Sweat",
 "url": "https://suno.com/song/ef151cf7-a54a-4ee3-943e-1ed7f6b0eb41",
 "tags": "bass house, electro, club banger (electro house)",
 "length": "3:22",
-"date": "2026-06-13"
-},
-{
-"id": "57adc15a-5af3-43ec-b908-f94003f945ce",
-"title": "Pulse",
-"url": "https://suno.com/song/57adc15a-5af3-43ec-b908-f94003f945ce",
-"tags": "tech-house, electronic dance music (EDM), techno",
-"length": "3:15",
 "date": "2026-06-13"
 },
 {
@@ -7163,14 +6347,6 @@
 "date": "2026-06-13"
 },
 {
-"id": "4bf31f25-08e5-42b9-baf5-862c7af4009c",
-"title": "Heart of a Lion",
-"url": "https://suno.com/song/4bf31f25-08e5-42b9-baf5-862c7af4009c",
-"tags": "epic cinematic, stadium rock, orchestral anthem",
-"length": "3:03",
-"date": "2026-06-13"
-},
-{
 "id": "549ae62c-9140-47fc-8e5e-464557ac8d19",
 "title": "Legends Never Die",
 "url": "https://suno.com/song/549ae62c-9140-47fc-8e5e-464557ac8d19",
@@ -7200,14 +6376,6 @@
 "url": "https://suno.com/song/5410f632-0420-4972-83ea-d4d9dd0b0693",
 "tags": "epic orchestral rock, cinematic rock, stadium anthem",
 "length": "3:10",
-"date": "2026-06-13"
-},
-{
-"id": "1f38c71d-195a-430f-b3ad-96f4185b4181",
-"title": "Run This Town",
-"url": "https://suno.com/song/1f38c71d-195a-430f-b3ad-96f4185b4181",
-"tags": "trap-pop, modern hip-hop, power anthem",
-"length": "2:06",
 "date": "2026-06-13"
 },
 {
@@ -7376,14 +6544,6 @@
 "url": "https://suno.com/song/7d01ad5b-1a9a-492f-a930-3c57793558fb",
 "tags": "dance-pop, pop, electronic",
 "length": "3:30",
-"date": "2026-06-13"
-},
-{
-"id": "5a7f1b15-c342-4e9b-aaf3-792d4b5ecf84",
-"title": "Through the Fire",
-"url": "https://suno.com/song/5a7f1b15-c342-4e9b-aaf3-792d4b5ecf84",
-"tags": "power ballad, rock (orchestral rock), cinematic",
-"length": "4:17",
 "date": "2026-06-13"
 },
 {
@@ -7763,14 +6923,6 @@
 "date": "2026-04-04"
 },
 {
-"id": "20ac5025-c79c-45b2-bb0a-24863345d564",
-"title": "Built Different",
-"url": "https://suno.com/song/20ac5025-c79c-45b2-bb0a-24863345d564",
-"tags": "outlaw country, swagger, storytelling country",
-"length": "4:24",
-"date": "2026-04-02"
-},
-{
 "id": "304fa3ba-9b10-420d-8655-e9ea02ea3df8",
 "title": "The Wizard's Webhook",
 "url": "https://suno.com/song/304fa3ba-9b10-420d-8655-e9ea02ea3df8",
@@ -7784,14 +6936,6 @@
 "url": "https://suno.com/song/e14add88-1546-4e7b-b97f-1ea679ac9c67",
 "tags": "Sweet Spin",
 "length": "3:11",
-"date": "2026-04-01"
-},
-{
-"id": "d9760431-586e-4824-948e-b868f13f4b1c",
-"title": "H-O-S",
-"url": "https://suno.com/song/d9760431-586e-4824-948e-b868f13f4b1c",
-"tags": "electropop, dance-pop, synth-pop",
-"length": "3:10",
 "date": "2026-04-01"
 },
 {
@@ -7987,22 +7131,6 @@
 "date": "2026-02-26"
 },
 {
-"id": "a591a9b0-23d6-4384-9a1d-d8e6b53b3f5a",
-"title": "Higher Than My SC",
-"url": "https://suno.com/song/a591a9b0-23d6-4384-9a1d-d8e6b53b3f5a",
-"tags": "lo-fi, trap, reggae",
-"length": "2:12",
-"date": "2026-02-25"
-},
-{
-"id": "72d8e495-9e58-4b3e-b241-d7c64a0c26a8",
-"title": "Cheers To The High",
-"url": "https://suno.com/song/72d8e495-9e58-4b3e-b241-d7c64a0c26a8",
-"tags": "reggae, hip hop",
-"length": "2:46",
-"date": "2026-02-25"
-},
-{
 "id": "968f8274-27db-41df-a7cb-26e2fa982f57",
 "title": "I was gonna save up my SC",
 "url": "https://suno.com/song/968f8274-27db-41df-a7cb-26e2fa982f57",
@@ -8049,14 +7177,6 @@
 "tags": "medieval, tavern, folk, humorous, upbeat, lute, bagpipe",
 "length": "1:44",
 "date": "2026-02-08"
-},
-{
-"id": "bf9c8408-3142-485d-ab49-1a21b0d1859b",
-"title": "The AIR We Breathe",
-"url": "https://suno.com/song/bf9c8408-3142-485d-ab49-1a21b0d1859b",
-"tags": "soulful r&b, emotional hip-hop, intense rap",
-"length": "4:25",
-"date": "2026-02-04"
 },
 {
 "id": "62d5308f-1ae6-404a-9766-44fca3573bdc",
@@ -8320,14 +7440,6 @@
 "url": "https://suno.com/song/b295d7ab-51fb-48e9-9ef7-f54a70b35318",
 "tags": "pop, EDM",
 "length": "3:28",
-"date": "2025-12-20"
-},
-{
-"id": "8d40d2e5-7f67-43d0-9970-1cd8bf9615e9",
-"title": "Birthday Vibe",
-"url": "https://suno.com/song/8d40d2e5-7f67-43d0-9970-1cd8bf9615e9",
-"tags": "lo-fi hip hop, cinematic R&B, smooth jazz",
-"length": "3:25",
 "date": "2025-12-20"
 },
 {
