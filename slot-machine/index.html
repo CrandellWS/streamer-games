@@ -4002,7 +4002,7 @@ function setStatus(msg, active, win) {
    ═══════════════════════════════════════════════ */
 function emitMessage(type, data) {
   const msg = Object.assign({ type }, data || {});
-  window.parent.postMessage(msg, '*');
+  if (window.parent !== window) window.parent.postMessage(msg, '*'); // standalone: posting to ourselves loops on slots:names
   // Local echo is tagged so our own handler below doesn't answer it (slots:names looped forever).
   window.dispatchEvent(new MessageEvent('message', { data: Object.assign({ _echo: true }, msg) }));
 }
