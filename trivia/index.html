@@ -1940,7 +1940,8 @@ function receiveAnswer(name, choice) {
    ═══════════════════════════════════════════════ */
 function postOut(msg) {
   if (window.parent !== window) window.parent.postMessage(msg, '*');
-  window.dispatchEvent(new MessageEvent('message', { data: msg }));
+  // Local echo is tagged so our own handler below doesn't answer it (trivia:scores looped forever).
+  window.dispatchEvent(new MessageEvent('message', { data: Object.assign({ _echo: true }, msg) }));
 }
 
 function getSortedScores() {
@@ -1951,7 +1952,7 @@ function getSortedScores() {
 
 window.addEventListener('message', e => {
   const msg = e.data;
-  if (!msg || typeof msg.type !== 'string') return;
+  if (!msg || typeof msg.type !== 'string' || msg._echo) return;
   if (!msg.type.startsWith('trivia:')) return;
 
   switch (msg.type) {
