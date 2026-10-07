@@ -1263,6 +1263,7 @@ const state = {
   calledSet: new Set(),
   autoDrawInterval: null,
   gameOver: false,
+  announceTimer: null, // pending auto-announce (cleared by reset)
   soundEnabled: true,
 };
 
@@ -1722,7 +1723,8 @@ function stampCell(name, number) {
             // Announce the first completed card right away (Check for Winner stays as a manual re-check).
             if (!state.gameOver) {
               state.gameOver = true;
-              setTimeout(() => announceWinner(name, patternName(lines)), 700);
+              clearTimeout(state.announceTimer);
+              state.announceTimer = setTimeout(() => { state.announceTimer = null; announceWinner(name, patternName(lines)); }, 700);
             }
           }
         }
@@ -1791,6 +1793,7 @@ function drawBall() {
    CHECK WINNER
    ═══════════════════════════════════════════════ */
 function checkForWinner(triggerName) {
+  if (state.gameOver) { showToast('Game over — reset to play again', 'info'); return null; }
   const names = triggerName ? [triggerName] : Object.keys(state.players);
   for (const name of names) {
     const p = state.players[name];
@@ -1851,6 +1854,8 @@ function spawnConfetti() {
    RESET
    ═══════════════════════════════════════════════ */
 function resetGame() {
+  clearTimeout(state.announceTimer);
+  state.announceTimer = null;
   state.drawnBalls = [];
   state.calledSet.clear();
   state.gameOver = false;
