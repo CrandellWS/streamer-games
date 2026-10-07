@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stream Night Kit | Home Office Studios</title>
+<meta name="description" content="One evening and your Kick stream has a live giveaway chat can see work. Set up in your OBS, first giveaway run with you, same day.">
+<meta property="og:title" content="Stream Night Kit | Home Office Studios">
+<meta property="og:description" content="One evening and your Kick stream has a live giveaway chat can see work. Set up in your OBS, first giveaway run with you, same day.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://homeofficestudios.com/kit/">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="bar"><div class="wrap">
+  <a class="brand" href="../"><img src="../assets/favicon.svg" alt="">Home Office Studios</a>
+  <nav class="nav" aria-label="Main"><a href="../">Home</a><a href="../games/">Games</a><a href="../chat/">Chat Play</a><a href="../music/">Music</a><a href="../studio/">Studio</a><a href="../about/">About</a></nav>
+</div></header>
+<main id="main">
+<style>
+.block { padding-top: 48px; padding-bottom: 48px; border-bottom: 1px solid var(--line); }
+.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 20px; }
+.steps > li { counter-increment: s; position: relative; padding: 18px 20px 18px 64px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px; }
+.steps > li::before { content: counter(s); position: absolute; left: 18px; top: 16px; width: 32px; height: 32px;
+  border-radius: 50%; background: var(--amber); color: var(--deep); font: 700 1rem/32px var(--display); text-align: center; }
+.steps h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.steps p { margin: 6px 0; }
+.url { display: block; font-family: var(--mono); font-size: .9rem; background: var(--deep); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px; margin: 8px 0; overflow-wrap: anywhere; color: var(--cyan); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+.card h3 { margin: 0 0 8px; font-size: 1.05rem; }
+.warn { border-left: 4px solid var(--amber); padding: 10px 16px; background: var(--panel); border-radius: 0 10px 10px 0; }
+table.t { border-collapse: collapse; width: 100%; } .t th, .t td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.t th { color: var(--dim); font-weight: 600; }
+.cta { text-align: center; padding-top: 56px; padding-bottom: 56px; }
+.cta .btn { font-size: 1.1rem; }
+</style>
+
+<section class="wrap pagehead">
+  <h1>Stream Night Kit</h1>
+  <p class="lede">One evening, and your stream has a live giveaway that chat can actually see work.
+  I set it up in your OBS and run the first one with you, so you have watched it work before I leave.</p>
+</section>
+
+<section class="wrap block">
+  <h2>What you get</h2>
+  <div class="grid2">
+    <div class="card"><h3>A giveaway tool on your Kick channel</h3>
+      <p>Keyword in chat, entries on screen, winner drawn where everybody can see it.</p></div>
+    <div class="card"><h3>Emote confetti overlay</h3>
+      <p>Chat's emotes rain across your stream when it counts. It sits in OBS like any other source.</p></div>
+    <div class="card"><h3>A 45-minute setup call</h3>
+      <p>I put every source into your OBS myself, then we run a real giveaway together, live.</p></div>
+    <div class="card"><h3>Running the same day</h3>
+      <p>No installs, no settings to learn. You go live that night with it already working.</p></div>
+  </div>
+</section>
+
+<section class="wrap block">
+  <h2>How it goes</h2>
+  <ol class="steps">
+    <li><h3>You DM me on Kick</h3><p>Tell me your channel and when you usually stream.</p></li>
+    <li><h3>I hook up your channel</h3><p>Your Kick channel gets connected to the giveaway tool and the confetti overlay.</p></li>
+    <li><h3>We get on a call</h3><p>45 minutes. I add the sources to your OBS and we run a real giveaway with your chat.</p></li>
+    <li><h3>You stream</h3><p>Next time you go live, it is already there. If something looks off mid-stream, message me.</p></li>
+  </ol>
+</section>
+
+<section class="wrap block">
+  <h2>Why bother, when free giveaway bots exist?</h2>
+  <p>The tool is the easy part. The value is that it is set up in <em>your</em> OBS, styled to sit right on your
+  stream, and you have already run one with a real chat before you are on your own. No guessing which box to tick at 9pm with viewers waiting.</p>
+  <p>Want to see the kind of thing I build first? Try the <a href="../games/">free stream games</a>.
+  They run in OBS the same way.</p>
+</section>
+
+<section class="wrap cta">
+  <h2>Want one for your stream?</h2>
+  <p>DM me on Kick and say "Stream Night Kit".</p>
+  <!-- BILL: confirm the Kick channel (tools/shell.py KICK, draft open question 3) before publishing. -->
+  <p><span class="todo">[Bill: confirm Kick channel]</span></p>
+  <div class="actions" style="justify-content:center">
+    <a class="btn go" href="https://kick.com/forthetwo" rel="noopener">DM me on Kick</a>
+  </div>
+</section>
+</main>
+<footer class="foot"><div class="wrap">
+  <div><strong>Home Office Studios</strong><br>Free games are MIT-licensed and
+  <a href="https://github.com/CrandellWS/streamer-games">open source</a>.</div>
+  <nav aria-label="Footer"><a href="../games/">Games</a><a href="../chat/">Chat Play</a><a href="../music/">Music</a><a href="../studio/">Studio</a><a href="../about/">About</a><a href="https://kick.com/forthetwo">Kick</a></nav>
+</div></footer>
+</body>
+</html>
