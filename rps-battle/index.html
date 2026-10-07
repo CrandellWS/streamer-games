@@ -2216,6 +2216,7 @@ h1, .game-title, .panel-title, .app-title {
         break;
 
       case 'rps:names':
+        if (Array.isArray(msg.names)) break; // our own reply echoed back when standalone
         emitNames();
         break;
     }

@@ -1674,6 +1674,7 @@ window.addEventListener('message', function(e) {
       clearPlayers();
       break;
     case 'dice:names':
+      if (Array.isArray(msg.names)) break; // our own reply echoed back when standalone
       emitNames();
       break;
   }

@@ -1440,6 +1440,7 @@ window.addEventListener('message', function(e) {
       break;
     }
     case 'coin:names': {
+      if (Array.isArray(e.data.heads)) break; // our own reply echoed back when standalone
       // Respond with current state
       window.parent.postMessage({
         type: 'coin:names',

@@ -1975,6 +1975,7 @@ function handleInbound(data) {
       break;
     }
     case 'bingo:names': {
+      if (Array.isArray(data.names)) break; // our own reply echoed back when standalone
       postOutbound({ type: 'bingo:names', names: Object.keys(state.players) });
       break;
     }

@@ -1473,6 +1473,7 @@ window.addEventListener('message', e => {
     }
 
     case 'treasure:names':
+      if (Array.isArray(msg.names)) break; // our own reply echoed back when standalone
       emit('treasure:names', { names: [...STATE.roster] });
       break;
 
