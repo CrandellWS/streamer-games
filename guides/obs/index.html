@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Put a free game on your stream in 2 minutes | Home Office Studios</title>
+<meta name="description" content="How to add a free Home Office Studios game to OBS: the overlay address, the controller, browser source size, and where your Chat Play key lives.">
+<meta property="og:title" content="Put a free game on your stream in 2 minutes | Home Office Studios">
+<meta property="og:description" content="How to add a free Home Office Studios game to OBS: the overlay address, the controller, browser source size, and where your Chat Play key lives.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://homeofficestudios.com/guides/obs/">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="bar"><div class="wrap">
+  <a class="brand" href="../../"><img src="../../assets/favicon.svg" alt="">Home Office Studios</a>
+  <nav class="nav" aria-label="Main"><a href="../../">Home</a><a href="../../games/">Games</a><a href="../../chat/">Chat Play</a><a href="../../music/">Music</a><a href="../../studio/">Studio</a><a href="../../about/">About</a></nav>
+</div></header>
+<main id="main">
+<style>
+.block { padding-top: 48px; padding-bottom: 48px; border-bottom: 1px solid var(--line); }
+.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 20px; }
+.steps > li { counter-increment: s; position: relative; padding: 18px 20px 18px 64px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px; }
+.steps > li::before { content: counter(s); position: absolute; left: 18px; top: 16px; width: 32px; height: 32px;
+  border-radius: 50%; background: var(--amber); color: var(--deep); font: 700 1rem/32px var(--display); text-align: center; }
+.steps h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.steps p { margin: 6px 0; }
+.url { display: block; font-family: var(--mono); font-size: .9rem; background: var(--deep); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px; margin: 8px 0; overflow-wrap: anywhere; color: var(--cyan); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+.card h3 { margin: 0 0 8px; font-size: 1.05rem; }
+.warn { border-left: 4px solid var(--amber); padding: 10px 16px; background: var(--panel); border-radius: 0 10px 10px 0; }
+table.t { border-collapse: collapse; width: 100%; } .t th, .t td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.t th { color: var(--dim); font-weight: 600; }
+.cta { text-align: center; padding-top: 56px; padding-bottom: 56px; }
+.cta .btn { font-size: 1.1rem; }
+</style>
+
+<!-- TODO(reconcile): the controller/overlay URLs below follow hos-games-retest's uncommitted remote-control work
+     (tools/hos-remote.js: overlay ?admin=false, controller ?view=remote) and games/index.html wording as of 2026-10-07.
+     If that change lands with different parameter names, update every .url block and step 3 here. -->
+<section class="wrap pagehead">
+  <h1>Put a free game on your stream in 2 minutes</h1>
+  <p class="lede">Every game is one web page. Viewers see a clean overlay. You run it from a controller that only you see.
+  No installs, no accounts, no cost.</p>
+</section>
+
+<section class="wrap block">
+  <h2>The two addresses</h2>
+  <p>Each game has two versions of the same address. Swap <code>spin-wheel</code> for the game you picked.</p>
+  <div class="grid2">
+    <div class="card"><h3>Overlay: what viewers see</h3>
+      <code class="url">https://homeofficestudios.com/spin-wheel/?admin=false&amp;bg=transparent</code>
+      <p>No panel, transparent background. This goes in OBS as a Browser Source.</p></div>
+    <div class="card"><h3>Controller: what you click</h3>
+      <code class="url">https://homeofficestudios.com/spin-wheel/?view=remote</code>
+      <p>The full control panel. Every button you press runs in the overlay. Keep this off stream.</p></div>
+  </div>
+</section>
+
+<section class="wrap block">
+  <h2>Set it up</h2>
+  <ol class="steps">
+    <li><h3>Pick a game</h3><p>Open the <a href="../../games/">games list</a> and choose one. Spin Wheel or Marble Race are easy first picks.</p></li>
+    <li><h3>Add the overlay as a Browser Source</h3>
+      <p>In OBS, click <b>+</b> under Sources, choose <b>Browser</b>, and paste the overlay address.</p>
+      <p>Set <b>Width 1920</b> and <b>Height 1080</b> to match a 1080p canvas, then resize it in the preview if you want it smaller.</p></li>
+    <li><h3>Open the controller in a dock</h3>
+      <p>In OBS go to <b>Docks</b>, then <b>Custom Browser Docks</b>. Paste the controller address and give it a name.</p>
+      <p>The controller bar turns green when it finds the overlay. Add names and press Start there.</p></li>
+    <li><h3>Go live</h3><p>Space starts most games. Esc closes a win screen.</p></li>
+  </ol>
+</section>
+
+<section class="wrap block">
+  <h2>Controller says "waiting for the overlay"?</h2>
+  <p>The overlay and the controller must run in the same browser. If your OBS dock and source will not connect, use one of these instead.</p>
+  <div class="grid2">
+    <div class="card"><h3>Window Capture</h3>
+      <p>Open the overlay address in a normal browser window and add that window to OBS with <b>Window Capture</b>.
+      Open the controller address in a second window of the same browser.</p></div>
+    <div class="card"><h3>Interact</h3>
+      <p>Right-click the Browser Source, choose <b>Interact</b>, and use the keyboard. Space starts most games.</p></div>
+  </div>
+  <p class="warn">Do not capture a tab that shows the control panel. In Number Guess the panel shows the secret number.</p>
+</section>
+
+<section class="wrap block">
+  <h2>Let chat play: where your room key is</h2>
+  <p>Some games take their moves from chat. Run those through <a href="../../chat/">Chat Play</a>.</p>
+  <ol class="steps">
+    <li><h3>Open Chat Play</h3><p>Click the <b>Chat off</b> button at the top left to open the setup panel.</p></li>
+    <li><h3>Find your key</h3><p>It is in the <b>Your key</b> box. A random one is made for you the first time. <b>New random key</b> replaces it.</p></li>
+    <li><h3>Copy the command</h3><p>Click <b>Show Slot Tools command</b> and paste it into Slot Tools as a command named <code>play</code>, permission Everyone.</p></li>
+  </ol>
+  <p class="warn">The command contains your private key. Close the setup panel before Chat Play is on screen, and never show it on stream.
+  If it leaks, press New random key and paste the new command.</p>
+  <h3 style="margin-top:28px">Games that need chat</h3>
+  <table class="t">
+    <tr><th>Game</th><th>What chat does</th></tr>
+    <tr><td><a href="../../trivia/">Trivia</a></td><td>Answers the questions</td></tr>
+    <tr><td><a href="../../auction/">Auction Wars</a></td><td>Places the bids</td></tr>
+    <tr><td><a href="../../word-scramble/">Word Scramble</a></td><td>Guesses the word</td></tr>
+    <tr><td><a href="../../number-guess/">Number Guess</a></td><td>Guesses the number</td></tr>
+  </table>
+  <p>Every other game works with just you at the controller.</p>
+</section>
+</main>
+<footer class="foot"><div class="wrap">
+  <div><strong>Home Office Studios</strong><br>Free games are MIT-licensed and
+  <a href="https://github.com/CrandellWS/streamer-games">open source</a>.</div>
+  <nav aria-label="Footer"><a href="../../games/">Games</a><a href="../../chat/">Chat Play</a><a href="../../music/">Music</a><a href="../../studio/">Studio</a><a href="../../about/">About</a><a href="https://kick.com/forthetwo">Kick</a></nav>
+</div></footer>
+</body>
+</html>
