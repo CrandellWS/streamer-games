@@ -1785,6 +1785,20 @@ h1, .game-title, .panel-title, .app-title {
         }
       }
     });
+    // A slot fed by an empty bye (no players at all) will never fill: give the other player a bye.
+    const dead = x => !x || (x.isBye && !x.winner);
+    thisRound.forEach((m, j) => {
+      if (m.winner || (m.p1 && m.p2)) return;
+      if (!m.p1 && !m.p2) {
+        if (dead(prevRound[2 * j]) && dead(prevRound[2 * j + 1])) m.isBye = true; // empty bye, carries no one
+        return;
+      }
+      const empty = m.p1 ? prevRound[2 * j + 1] : prevRound[2 * j];
+      if (dead(empty)) {
+        m.isBye = true;
+        m.winner = m.p1 || m.p2;
+      }
+    });
     advanceByes();
   }
 
@@ -1959,8 +1973,11 @@ h1, .game-title, .panel-title, .app-title {
     if (nextRound[targetMatch]) {
       if (isP1) nextRound[targetMatch].p1 = winner;
       else nextRound[targetMatch].p2 = winner;
-      // Check if both slots filled and one is null
-      if (!nextRound[targetMatch].p1 || !nextRound[targetMatch].p2) {
+      // Auto-advance only when the other feeder match is an empty bye (no player will ever arrive).
+      // An unplayed sibling match is not a bye: the first semifinal winner used to be crowned early.
+      const sibling = tournament.bracket[roundIdx][matchIdx ^ 1];
+      const siblingDead = !sibling || (sibling.isBye && !sibling.winner);
+      if (siblingDead && (!nextRound[targetMatch].p1 || !nextRound[targetMatch].p2)) {
         if (nextRound[targetMatch].p1 || nextRound[targetMatch].p2) {
           nextRound[targetMatch].isBye = true;
           nextRound[targetMatch].winner = nextRound[targetMatch].p1 || nextRound[targetMatch].p2;
@@ -2204,6 +2221,7 @@ h1, .game-title, .panel-title, .app-title {
 
       case 'rps:result':
         // Request current match result — no-op if no active match
+        if (msg.winner !== undefined) break; // our own result echoed back when standalone
         if (tournament) {
           const round = tournament.bracket[tournament.currentRound];
           const match = round && round[tournament.currentMatch];
