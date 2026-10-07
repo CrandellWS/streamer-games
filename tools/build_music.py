@@ -4,7 +4,7 @@
 Input : ~/.config/bits-chat/suno-catalog.json (written by ~/bin/claude-scripts/suno-catalog;
         it only ever contains PUBLIC clips, fetched anonymously from Bill's Suno profile).
 Output: music/tracks.json and music/index.html (track list baked in, so it works without JS).
-Rules : drop anything matching music/denylist.txt (Fight Club + embargo) or music/denylist-lyrics.txt
+Rules : drop anything matching music/denylist.txt (denylist + embargo) or music/denylist-lyrics.txt
         (lyric audit), keep one take per title
         (the most played), link out to Suno pages (direct audio streaming is unreliable).
 Videos: music/videos.json is hand/pipeline maintained and is NOT touched here. The page reads it
@@ -29,7 +29,7 @@ ALBUMS = [
 ]
 
 
-DENYLISTS = ["denylist.txt",          # titles: Fight Club + embargo (exact or re:)
+DENYLISTS = ["denylist.txt",          # titles: denylist + embargo (exact or re:)
              "denylist-lyrics.txt"]   # lyric audit 2026-10-07: titles whose LYRICS hit the blocklist
 
 
