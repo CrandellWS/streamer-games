@@ -1,1 +1,4 @@
 __pycache__/
+
+# music rules live in ~/.config/hos-music, never in the repo
+music/denylist*.txt

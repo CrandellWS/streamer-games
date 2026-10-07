@@ -4,8 +4,9 @@
 Input : ~/.config/bits-chat/suno-catalog.json (written by ~/bin/claude-scripts/suno-catalog;
         it only ever contains PUBLIC clips, fetched anonymously from Bill's Suno profile).
 Output: music/tracks.json and music/index.html (track list baked in, so it works without JS).
-Rules : drop anything matching music/denylist.txt (denylist + embargo) or music/denylist-lyrics.txt
-        (lyric audit), keep one take per title
+Rules : drop anything matching denylist.txt (denylist + embargo) or denylist-lyrics.txt (lyric audit),
+        both read from $HOS_DENYLIST_DIR (default ~/.config/hos-music, kept OUT of the repo so the
+        rules never ship); the build refuses to run if either file is missing. Keep one take per title
         (the most played), link out to Suno pages (direct audio streaming is unreliable).
 Videos: music/videos.json is hand/pipeline maintained and is NOT touched here. The page reads it
         at runtime; the lyric-video pipeline appends {"songId", "youtubeId", "title"} entries
@@ -29,15 +30,20 @@ ALBUMS = [
 ]
 
 
+DENYLIST_DIR = os.environ.get("HOS_DENYLIST_DIR", os.path.expanduser("~/.config/hos-music"))
 DENYLISTS = ["denylist.txt",          # titles: denylist + embargo (exact or re:)
              "denylist-lyrics.txt"]   # lyric audit 2026-10-07: titles whose LYRICS hit the blocklist
 
 
 def deny_lines():
+    if not os.path.isdir(DENYLIST_DIR):
+        sys.exit(f"ERROR: denylist dir {DENYLIST_DIR} not found (set HOS_DENYLIST_DIR). "
+                 "Refusing to build: without it every track would be published.")
     for name in DENYLISTS:
-        path = os.path.join(MUSIC, name)
-        if not os.path.exists(path):
-            sys.exit(f"missing {path}: refusing to build without every denylist")
+        path = os.path.join(DENYLIST_DIR, name)
+        if not os.path.isfile(path):
+            sys.exit(f"ERROR: missing {path}. Refusing to build without every denylist "
+                     "(would publish denied tracks).")
         yield from open(path, encoding="utf-8")
 
 
