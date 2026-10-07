@@ -215,8 +215,10 @@ body {
 .tag.visual { color: var(--accent); border-color: rgba(63, 216, 232, 0.3); }
 .tag.chat { color: var(--success); border-color: rgba(68, 255, 136, 0.3); }
 .tag.quick { color: var(--gold); border-color: rgba(255, 215, 0, 0.3); }
+.tag.needs { color: #ffb070; border-color: rgba(255, 150, 80, 0.45); background: rgba(255, 150, 80, 0.08); }
 
 /* ═══ HOW IT WORKS ═══ */
+.how-note { max-width: 860px; margin: 22px auto 0; color: var(--text-dim, #9a9ab8); font-size: 14px; line-height: 1.6; text-align: center; }
 .how-section {
   max-width: 1200px;
   margin: 0 auto;
@@ -335,7 +337,7 @@ footer .footer-links {
 
 <section class="games-section" id="games">
   <h2>Games</h2>
-  <p class="subtitle">Every game takes <code>?admin=false</code> and <code>?bg=transparent</code> for clean OBS sources.</p>
+  <p class="subtitle">Every game has a clean overlay (<code>?admin=false&amp;bg=transparent</code>) and a matching remote control (<code>?view=remote</code>). Games tagged <b>Needs Chat Play</b> take their answers from chat, so run them through <a href="../chat/">Chat Play</a>.</p>
   <p class="subtitle">Every game is a single HTML file. No installs, no accounts, no dependencies.</p>
   <a class="chatplay" href="../chat/">💬 <b>New: Chat Play</b> — viewers join and play any game from chat with one Slot Tools command (<code>!play</code>). Open it, pick a game, paste the command. →</a>
 
@@ -386,6 +388,7 @@ footer .footer-links {
       <h3>Trivia</h3>
       <p>Game show style trivia. Load your own questions, viewers answer A/B/C/D, live scoreboard tracks rounds.</p>
       <div class="tags">
+        <span class="tag needs" title="Viewers answer in chat, so this game needs Chat Play">Needs Chat Play</span>
         <span class="tag chat">Chat</span>
       </div>
     </a>
@@ -405,6 +408,7 @@ footer .footer-links {
       <h3>Auction Wars</h3>
       <p>Bid fake currency on mystery items. Rising bid ticker, going-going-gone gavel, highest bidder takes it.</p>
       <div class="tags">
+        <span class="tag needs" title="Viewers answer in chat, so this game needs Chat Play">Needs Chat Play</span>
         <span class="tag chat">Chat</span>
       </div>
     </a>
@@ -444,6 +448,7 @@ footer .footer-links {
       <h3>Word Scramble</h3>
       <p>Scrambled letter tiles appear — first viewer to unscramble the word in chat wins. Built-in categories and hints.</p>
       <div class="tags">
+        <span class="tag needs" title="Viewers answer in chat, so this game needs Chat Play">Needs Chat Play</span>
         <span class="tag chat">Chat</span>
         <span class="tag quick">Quick</span>
       </div>
@@ -484,6 +489,7 @@ footer .footer-links {
       <h3>Number Guess</h3>
       <p>Secret number, higher/lower hints, proximity heat meter. Closest guess wins, exact match for instant jackpot.</p>
       <div class="tags">
+        <span class="tag needs" title="Viewers answer in chat, so this game needs Chat Play">Needs Chat Play</span>
         <span class="tag chat">Chat</span>
         <span class="tag quick">Quick</span>
       </div>
@@ -518,24 +524,25 @@ footer .footer-links {
     <div class="step">
       <div class="number">1</div>
       <h3>Pick a Game</h3>
-      <p>Click any game above. It opens right in your browser — nothing to install.</p>
+      <p>Click any game above. It opens in your browser with its control panel. Try it there first.</p>
     </div>
     <div class="step">
       <div class="number">2</div>
-      <h3>Add to OBS</h3>
-      <p>Add as a Browser Source with <code>?admin=false&amp;bg=transparent</code> for a clean overlay.</p>
+      <h3>Add the Overlay</h3>
+      <p>In OBS add a Browser Source with the game's address plus <code>?admin=false&amp;bg=transparent</code>. Viewers see only the game, no panel.</p>
     </div>
     <div class="step">
       <div class="number">3</div>
-      <h3>Add Names</h3>
-      <p>Type viewer names in the admin panel, or connect a chat bot via the postMessage API.</p>
+      <h3>Open the Remote</h3>
+      <p>Open the same address plus <code>?view=remote</code> in an OBS Custom Browser Dock (Docks menu) or a second browser window. It shows the full panel, and every button runs in the overlay. The bar turns green when connected.</p>
     </div>
     <div class="step">
       <div class="number">4</div>
       <h3>Go Live</h3>
-      <p>Hit Start and let the game run. Winners announced automatically.</p>
+      <p>Add names and press Start in the remote. The overlay plays the game and shows the winner. Want chat to join? Use <a href="../chat/">Chat Play</a>.</p>
     </div>
   </div>
+  <p class="how-note">Remote stuck on “waiting for the overlay”? The overlay and the remote must run in the same browser. Open the overlay address in a browser window and add it to OBS with Window Capture, or right-click the Browser Source, choose Interact, and use the keyboard (Space starts most games).</p>
 </section>
 
 <footer>

@@ -26,9 +26,10 @@ A free, open-source collection of interactive games designed for live streamers.
 
 ## Quick Start
 
-1. Open any game's `index.html` in a browser
-2. Add it as an **OBS Browser Source** for stream overlay
-3. Use URL parameters to configure (e.g., `?admin=false&bg=transparent`)
+1. Open any game in a browser and try it with its control panel
+2. Add it to OBS as a **Browser Source** with `?admin=false&bg=transparent` (clean overlay, no panel)
+3. Open the same game with `?view=remote` in an OBS Custom Browser Dock or a second browser window: it mirrors the panel and every button runs in the overlay (both must run in the same browser; source: `tools/hos-remote.js`, inlined by `tools/inline_remote.py`)
+4. Games that take answers from chat (Trivia, Auction Wars, Word Scramble, Number Guess) need [Chat Play](chat/)
 
 ## Design Philosophy
 

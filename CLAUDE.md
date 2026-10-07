@@ -36,6 +36,7 @@ streamer-games/
 | `bg` | `transparent` | Transparent background for OBS |
 | `theme` | `dark`/`light`/`neon` | Color theme (default: dark) |
 | `names` | comma-separated | Pre-load names (for applicable games) |
+| `view` | `remote` | Remote control for the same game open with `?admin=false` in the same browser (OBS dock or second window). Mirrors the panel over BroadcastChannel; the overlay owns state. Source `tools/hos-remote.js`, inline with `tools/inline_remote.py` |
 
 ### postMessage Protocol
 
