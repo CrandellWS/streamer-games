@@ -1779,11 +1779,12 @@ function startQuestion() {
   }
   if (state.phase === 'active') return;
 
-  // Advance index
-  if (state.phase === 'idle' || state.currentIdx < 0) {
-    state.currentIdx = 0;
-  } else {
+  // Advance index: from a revealed question go to the next one; from idle
+  // (first Start, or Start after the game ended) begin a fresh run at question 1.
+  if (state.phase === 'revealed' && state.currentIdx >= 0) {
     state.currentIdx++;
+  } else {
+    state.currentIdx = 0;
   }
 
   if (state.currentIdx >= state.questions.length) {
@@ -1878,8 +1879,7 @@ function nextQuestion() {
     return;
   }
 
-  state.phase = 'idle'; // will be set to active in startQuestion
-  startQuestion();
+  startQuestion(); // phase is 'revealed' here, so startQuestion advances the index
 }
 
 function endGame() {
