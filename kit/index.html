@@ -45,8 +45,6 @@ table.t { border-collapse: collapse; width: 100%; } .t th, .t td { text-align: l
 .t th { color: var(--dim); font-weight: 600; }
 .cta { text-align: center; padding-top: 56px; padding-bottom: 56px; }
 .cta .btn { font-size: 1.1rem; }
-/* TODO markers: loud on purpose so a draft never ships unnoticed. */
-.todo { background: #ff2bd6; color: #000; outline: 3px dashed #000; padding: 2px 6px; font-weight: 700; }
 .price { font: 700 2rem/1.2 var(--display); margin: 8px 0 16px; }
 </style>
 
@@ -90,14 +88,14 @@ table.t { border-collapse: collapse; width: 100%; } .t th, .t td { text-align: l
 
 <section class="wrap cta">
   <h2>Want one for your stream?</h2>
-  <!-- TODO(Bill): set Kit price -->
-  <p class="price"><span class="todo">TODO(Bill): price, e.g. $XX one time</span></p>
+  <p class="price">The games are free and open source.</p>
+  <p>Every game here is MIT licensed. Grab the code on <a href="https://github.com/CrandellWS/streamer-games" rel="noopener">GitHub</a> and run it yourself, no account needed.</p>
+  <p>Want the hosted version with my bot running it for you? Subscribe to my Kick channel for $5 a month and it unlocks for your stream.</p>
   <div class="actions" style="justify-content:center">
-    <!-- TODO(Bill): paste Stripe Payment Link or Ko-fi shop URL -->
-    <a class="btn go todo" href="#TODO-payment-link">TODO(Bill): Buy the Kit (payment link)</a>
-    <a class="btn" href="https://kick.com/forthetwo" rel="noopener">DM me on Kick</a>
+    <a class="btn go" href="https://kick.com/forthetwo" rel="noopener">Subscribe on Kick</a>
+    <a class="btn" href="https://github.com/CrandellWS/streamer-games" rel="noopener">Get the code</a>
   </div>
-  <p>Rather talk first? DM me on Kick and say "Stream Night Kit".</p>
+  <p>Already subscribed? DM me on Kick and say "Stream Night Kit" so I can set yours up.</p>
 </section>
 </main>
 <footer class="foot"><div class="wrap">
