@@ -45,6 +45,9 @@ table.t { border-collapse: collapse; width: 100%; } .t th, .t td { text-align: l
 .t th { color: var(--dim); font-weight: 600; }
 .cta { text-align: center; padding-top: 56px; padding-bottom: 56px; }
 .cta .btn { font-size: 1.1rem; }
+/* TODO markers: loud on purpose so a draft never ships unnoticed. */
+.todo { background: #ff2bd6; color: #000; outline: 3px dashed #000; padding: 2px 6px; font-weight: 700; }
+.price { font: 700 2rem/1.2 var(--display); margin: 8px 0 16px; }
 </style>
 
 <section class="wrap pagehead">
@@ -87,10 +90,14 @@ table.t { border-collapse: collapse; width: 100%; } .t th, .t td { text-align: l
 
 <section class="wrap cta">
   <h2>Want one for your stream?</h2>
-  <p>DM me on Kick and say "Stream Night Kit".</p>
+  <!-- TODO(Bill): set Kit price -->
+  <p class="price"><span class="todo">TODO(Bill): price, e.g. $XX one time</span></p>
   <div class="actions" style="justify-content:center">
-    <a class="btn go" href="https://kick.com/forthetwo" rel="noopener">DM me on Kick</a>
+    <!-- TODO(Bill): paste Stripe Payment Link or Ko-fi shop URL -->
+    <a class="btn go todo" href="#TODO-payment-link">TODO(Bill): Buy the Kit (payment link)</a>
+    <a class="btn" href="https://kick.com/forthetwo" rel="noopener">DM me on Kick</a>
   </div>
+  <p>Rather talk first? DM me on Kick and say "Stream Night Kit".</p>
 </section>
 </main>
 <footer class="foot"><div class="wrap">
