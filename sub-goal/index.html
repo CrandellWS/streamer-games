@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sub Goal overlay | Home Office Studios</title>
+<meta name="description" content="Free OBS browser source: a sub goal bar with a celebration when you hit it. No login, no server.">
+<link rel="canonical" href="https://homeofficestudios.com/games/sub-goal/">
+<style>
+  :root { --accent: #53fc18; --accent2: #00d4ff; --text: #ffffff; --track: rgba(255,255,255,.14); --panel: rgba(12,12,24,.82); --w: 640px; --scale: 1; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b16; color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+  body.transparent-bg { background: transparent; }
+  #stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .goal { width: var(--w); max-width: 96vw; transform: scale(var(--scale)); transform-origin: center;
+    background: var(--panel); border: 1px solid rgba(255,255,255,.12); border-radius: 18px; padding: 18px 22px 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.45); transition: box-shadow .4s ease, border-color .4s ease; }
+  body.nopanel .goal { background: transparent; border-color: transparent; box-shadow: none; }
+  .row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .label { font-size: 26px; font-weight: 700; letter-spacing: .3px; text-shadow: 0 2px 8px rgba(0,0,0,.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .count { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; text-shadow: 0 2px 8px rgba(0,0,0,.6); white-space: nowrap; }
+  .count .of { opacity: .7; font-weight: 600; }
+  .track { position: relative; height: 30px; border-radius: 999px; background: var(--track); overflow: hidden; }
+  .fill { position: absolute; inset: 0 auto 0 0; width: 0%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .9s cubic-bezier(.22,1,.36,1); }
+  .fill::after { content: ""; position: absolute; inset: 0; border-radius: inherit;
+    background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.45) 45%, transparent 70%);
+    background-size: 220% 100%; animation: shine 3.2s ease-in-out infinite; }
+  @keyframes shine { 0% { background-position: 160% 0; } 100% { background-position: -60% 0; } }
+  .bump { animation: bump .5s ease; }
+  @keyframes bump { 0% { transform: scale(1); } 35% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  .goal.reached { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), 0 0 46px var(--accent); }
+  #banner { position: fixed; left: 50%; top: 18%; transform: translate(-50%, -50%) scale(.4); opacity: 0; pointer-events: none;
+    font-size: 72px; font-weight: 900; letter-spacing: 2px; color: var(--text); white-space: nowrap;
+    text-shadow: 0 0 18px var(--accent), 0 0 42px var(--accent), 0 4px 10px rgba(0,0,0,.7); transition: transform .5s cubic-bezier(.34,1.56,.64,1), opacity .4s ease; }
+  #banner.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  /* Admin panel: hidden with ?admin=false (standard across HOS games). */
+  #admin { position: fixed; right: 14px; bottom: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    background: rgba(20,20,34,.92); border: 1px solid rgba(255,255,255,.15); border-radius: 12px; padding: 10px; font-size: 14px; }
+  #admin button { font: 700 15px/1 inherit; padding: 9px 13px; border-radius: 9px; border: 0; cursor: pointer; background: #2c2c48; color: #fff; }
+  #admin button.go { background: var(--accent); color: #000; }
+  #admin a { color: var(--accent2); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="goal" id="goal" role="status" aria-live="polite">
+    <div class="row"><div class="label" id="label">Subs this month</div><div class="count" id="count">0 <span class="of">/ 10</span></div></div>
+    <div class="track"><div class="fill" id="fill"></div></div>
+  </div>
+</div>
+<div id="banner">GOAL!</div>
+<canvas id="confetti"></canvas>
+<div id="admin">
+  <button class="go" data-n="1">+1</button><button data-n="-1">-1</button><button data-n="5">+5</button><button id="resetBtn">Reset</button>
+  <a href="control.html" target="_blank" rel="noopener">Control page</a>
+</div>
+<script>
+(function () {
+  'use strict';
+  const qs = new URLSearchParams(location.search);
+  const $ = id => document.getElementById(id);
+  const hex = v => (/^[0-9a-f]{3,8}$/i.test(v || '') ? '#' + v : null);
+  const root = document.documentElement.style;
+
+  // ---- config from the URL ------------------------------------------------
+  const ID = (qs.get('id') || 'default').replace(/[^a-z0-9_-]/gi, '').slice(0, 32) || 'default';
+  const KEY = 'subgoal_' + ID;
+  const AUTO_RESET = qs.get('reset') !== 'off';             // new calendar month => back to 0
+  if (qs.get('bg') === 'transparent') document.body.classList.add('transparent-bg');
+  if (qs.get('panel') === 'off') document.body.classList.add('nopanel');
+  if (qs.get('admin') === 'false') $('admin').style.display = 'none';
+  if (hex(qs.get('color'))) root.setProperty('--accent', hex(qs.get('color')));
+  if (hex(qs.get('color2'))) root.setProperty('--accent2', hex(qs.get('color2')));
+  if (hex(qs.get('text'))) root.setProperty('--text', hex(qs.get('text')));
+  const sizes = { sm: '420px', md: '640px', lg: '900px', xl: '1200px' };
+  const size = qs.get('size');
+  if (sizes[size]) root.setProperty('--w', sizes[size]);
+  else if (/^\d{2,4}$/.test(size || '')) root.setProperty('--w', Math.min(+size, 3000) + 'px');
+  const scale = parseFloat(qs.get('scale'));
+  if (scale > 0.2 && scale < 5) root.setProperty('--scale', String(scale));
+  const SOUND = qs.get('sound') !== 'off';
+  $('label').textContent = (qs.get('label') || 'Subs this month').slice(0, 60);
+
+  // ---- state (localStorage, so a refresh keeps the count) -----------------
+  const month = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1); };
+  const clampN = n => Math.max(0, Math.min(1e6, Math.round(Number(n) || 0)));
+  function load() {
+    try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && typeof s.count === 'number') return s; } catch (e) {}
+    return null;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  let state = load();
+  const urlGoal = qs.has('goal') ? Math.max(1, clampN(qs.get('goal'))) : null;
+  if (!state) state = { count: clampN(qs.get('current')), goal: urlGoal || 10, month: month(), celebrated: false };
+  if (urlGoal) state.goal = urlGoal;                         // the URL always wins for the goal
+  if (AUTO_RESET && state.month !== month()) { state.count = 0; state.celebrated = false; state.month = month(); }
+  state.celebrated = state.count >= state.goal;              // never re-fire on reload
+  save();
+
+  // ---- render --------------------------------------------------------------
+  function render(bumped) {
+    $('count').innerHTML = '';
+    $('count').append(String(state.count) + ' ');
+    const of = document.createElement('span'); of.className = 'of'; of.textContent = '/ ' + state.goal; $('count').append(of);
+    $('fill').style.width = Math.min(100, state.count / state.goal * 100) + '%';
+    $('goal').classList.toggle('reached', state.count >= state.goal);
+    if (bumped) { const c = $('count'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }
+  }
+
+  function changed(prev) {
+    save(); render(state.count !== prev);
+    if (!state.celebrated && state.count >= state.goal) { state.celebrated = true; save(); celebrate(); post({ type: 'subgoal:reached', count: state.count, goal: state.goal }); }
+    if (state.count < state.goal) { state.celebrated = false; save(); }
+    broadcast();
+  }
+
+  // ---- actions -------------------------------------------------------------
+  function add(n) { const p = state.count; state.count = clampN(state.count + (Number(n) || 0)); changed(p); }
+  function set(n) { const p = state.count; state.count = clampN(n); changed(p); }
+  function setGoal(g) { const p = state.count; state.goal = Math.max(1, clampN(g)); state.celebrated = state.count >= state.goal; changed(p); }
+  function reset() { const p = state.count; state.count = 0; state.celebrated = false; state.month = month(); changed(p); }
+
+  function handle(d) {
+    if (!d || typeof d.type !== 'string' || d.type.indexOf('subgoal:') !== 0) return;
+    switch (d.type) {
+      case 'subgoal:add': add(d.n == null ? 1 : d.n); break;
+      case 'subgoal:remove': add(-(d.n == null ? 1 : d.n)); break;
+      case 'subgoal:set': set(d.count); break;
+      case 'subgoal:goal': setGoal(d.goal); break;
+      case 'subgoal:reset': reset(); break;
+      case 'subgoal:celebrate': celebrate(); break;
+      case 'subgoal:state': broadcast(); post(snapshot()); break;
+    }
+  }
+  const snapshot = () => ({ type: 'subgoal:count', id: ID, count: state.count, goal: state.goal, label: $('label').textContent });
+  function post(m) { try { if (window.parent !== window) window.parent.postMessage(m, '*'); } catch (e) {} }
+  window.addEventListener('message', e => handle(e.data));
+
+  // Companion control page (control.html) talks over BroadcastChannel. Works when
+  // both run in the same browser profile, e.g. this as an OBS Browser Source and
+  // control.html as an OBS Custom Browser Dock.
+  let bc = null;
+  try { bc = new BroadcastChannel('hos-subgoal-' + ID); bc.onmessage = e => handle(e.data); } catch (e) {}
+  function broadcast() { if (bc) try { bc.postMessage(snapshot()); } catch (e) {} }
+
+  document.querySelectorAll('#admin [data-n]').forEach(b => b.addEventListener('click', () => add(+b.dataset.n)));
+  $('resetBtn').addEventListener('click', reset);
+
+  // ---- celebration -----------------------------------------------------------
+  const cv = $('confetti'), cx = cv.getContext('2d');
+  let parts = [], raf = 0;
+  function celebrate() {
+    const b = $('banner'); b.textContent = (qs.get('done') || 'GOAL!').slice(0, 30); b.classList.add('show');
+    setTimeout(() => b.classList.remove('show'), 4200);
+    cv.width = innerWidth; cv.height = innerHeight;
+    const cs = getComputedStyle(document.documentElement);
+    const colors = [cs.getPropertyValue('--accent').trim(), cs.getPropertyValue('--accent2').trim(), '#ffd84a', '#ff4fa3', '#ffffff'];
+    for (let i = 0; i < 220; i++) parts.push({ x: innerWidth / 2 + (Math.random() - .5) * 200, y: innerHeight * .45,
+      vx: (Math.random() - .5) * 18, vy: -Math.random() * 18 - 6, r: Math.random() * 6 + 4, a: Math.random() * 6.28,
+      va: (Math.random() - .5) * .3, c: colors[i % colors.length], life: 0 });
+    if (!raf) raf = requestAnimationFrame(tick);
+    if (SOUND) chime();
+  }
+  function tick() {
+    cx.clearRect(0, 0, cv.width, cv.height);
+    parts = parts.filter(p => p.life < 240 && p.y < cv.height + 40);
+    for (const p of parts) { p.life++; p.vy += .42; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.a += p.va;
+      cx.save(); cx.translate(p.x, p.y); cx.rotate(p.a); cx.globalAlpha = Math.max(0, 1 - p.life / 240);
+      cx.fillStyle = p.c; cx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); cx.restore(); }
+    raf = parts.length ? requestAnimationFrame(tick) : 0;
+    if (!raf) cx.clearRect(0, 0, cv.width, cv.height);
+  }
+  function chime() {
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+        const o = ac.createOscillator(), g = ac.createGain(); o.type = 'triangle'; o.frequency.value = f;
+        const t = ac.currentTime + i * .12; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.18, t + .02);
+        g.gain.exponentialRampToValueAtTime(.001, t + .6); o.connect(g).connect(ac.destination); o.start(t); o.stop(t + .65);
+      });
+    } catch (e) {}
+  }
+
+  render(false); broadcast();
+})();
+</script>
+</body>
+</html>

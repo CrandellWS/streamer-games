@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sub Goal control | Home Office Studios</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { color-scheme: dark; --accent: #53fc18; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #14141f; color: #e8e8f0; font: 15px/1.45 'Segoe UI', system-ui, -apple-system, sans-serif; padding: 14px; }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  .status { font-size: 13px; color: #9a9ab0; margin: 0 0 12px; }
+  .status.ok { color: var(--accent); }
+  .big { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; margin: 4px 0 12px; }
+  .big span { opacity: .6; font-size: 26px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  button { font: 800 20px/1 inherit; padding: 16px 0; border-radius: 12px; border: 0; cursor: pointer; background: #2c2c48; color: #fff; }
+  button.go { background: var(--accent); color: #000; font-size: 26px; grid-column: span 2; }
+  button.small { font-size: 14px; padding: 10px 0; }
+  label { display: block; font-size: 13px; color: #9a9ab0; margin: 14px 0 4px; }
+  .line { display: flex; gap: 8px; }
+  input { flex: 1; min-width: 0; font: 600 16px inherit; padding: 9px 10px; border-radius: 9px; border: 1px solid #33334a; background: #0d0d16; color: #fff; }
+  .help { font-size: 12px; color: #8a8aa0; margin-top: 14px; }
+</style>
+</head>
+<body>
+<h1 id="title">Sub Goal control</h1>
+<p class="status" id="status">Looking for the overlay...</p>
+<div class="big" id="big">-- <span>/ --</span></div>
+<div class="grid">
+  <button class="go" data-n="1" aria-label="Add one sub">+1</button>
+  <button data-n="-1" aria-label="Remove one sub">-1</button>
+  <button class="small" data-n="5">+5</button>
+  <button class="small" data-n="10">+10</button>
+  <button class="small" id="celebrate">Party</button>
+</div>
+<label for="setCount">Set the count</label>
+<div class="line"><input id="setCount" type="number" min="0" inputmode="numeric"><button class="small" id="setBtn" style="padding:0 16px">Set</button></div>
+<label for="setGoal">Change the goal</label>
+<div class="line"><input id="setGoal" type="number" min="1" inputmode="numeric"><button class="small" id="goalBtn" style="padding:0 16px">Set</button></div>
+<div class="line" style="margin-top:14px"><button class="small" id="reset" style="flex:1">Reset to 0</button></div>
+<p class="help">Add this page to OBS as a Custom Browser Dock (Docks, Custom Browser Docks), using the same <code>id</code> as the overlay. Both have to run inside OBS, or both in the same browser, to hear each other.</p>
+<script>
+(function () {
+  'use strict';
+  const qs = new URLSearchParams(location.search);
+  const ID = (qs.get('id') || 'default').replace(/[^a-z0-9_-]/gi, '').slice(0, 32) || 'default';
+  const $ = id => document.getElementById(id);
+  let bc;
+  try { bc = new BroadcastChannel('hos-subgoal-' + ID); }
+  catch (e) { $('status').textContent = 'This browser has no BroadcastChannel. Use the overlay panel instead.'; return; }
+  const send = m => bc.postMessage(m);
+  let seen = 0;
+  bc.onmessage = e => {
+    const d = e.data; if (!d || d.type !== 'subgoal:count') return;
+    seen = Date.now();
+    $('status').textContent = 'Connected to overlay "' + ID + '"'; $('status').className = 'status ok';
+    $('big').textContent = d.count + ' '; const s = document.createElement('span'); s.textContent = '/ ' + d.goal; $('big').append(s);
+    if (d.label) $('title').textContent = d.label;
+  };
+  document.querySelectorAll('[data-n]').forEach(b => b.addEventListener('click', () => send({ type: 'subgoal:add', n: +b.dataset.n })));
+  $('celebrate').addEventListener('click', () => send({ type: 'subgoal:celebrate' }));
+  $('reset').addEventListener('click', () => { if (confirm('Reset the count to 0?')) send({ type: 'subgoal:reset' }); });
+  $('setBtn').addEventListener('click', () => { const v = $('setCount').value; if (v !== '') send({ type: 'subgoal:set', count: +v }); });
+  $('goalBtn').addEventListener('click', () => { const v = $('setGoal').value; if (v !== '') send({ type: 'subgoal:goal', goal: +v }); });
+  send({ type: 'subgoal:state' });
+  setInterval(() => { if (Date.now() - seen > 5000) { send({ type: 'subgoal:state' });
+    if (seen === 0 || Date.now() - seen > 8000) { $('status').textContent = 'Overlay not found. Is it open with id "' + ID + '" in this same browser or OBS?'; $('status').className = 'status'; } } }, 3000);
+})();
+</script>
+</body>
+</html>

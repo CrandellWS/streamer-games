@@ -29,6 +29,14 @@ Try them all at **[homeofficestudios.com/games/](https://homeofficestudios.com/g
 | [Pinko](pinko/) | Pinball board with bumpers and spinners that picks a winner | `!play` |
 | [Plinko](plinko/) | Drop a disc down the pegs and see whose slot it lands in | `!play` |
 
+## Tools
+
+| Tool | What it does | How you drive it |
+|------|--------------|------------------|
+| [Sub Goal](sub-goal/) | "Subs this month: 4 / 10" bar with confetti, a banner and a chime at the goal. Saves the count and resets monthly. | +1 / -1 from the [control page](sub-goal/control.html) in an OBS dock, or `postMessage` |
+
+[![Sub Goal](docs/screenshots/sub-goal.webp)](games/sub-goal/)
+
 Most game folders have their own README with URL options and the `postMessage` protocol. Each game also has a short how-to page at `homeofficestudios.com/games/<game>/`.
 
 ### Screenshots

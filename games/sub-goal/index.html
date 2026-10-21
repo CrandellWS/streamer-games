@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sub Goal: free OBS sub goal overlay | Home Office Studios</title>
+<meta name="description" content="Free OBS sub goal bar: Subs this month 4 / 10, a progress bar, and confetti when you hit it. Bump it from an OBS dock. No login, no server.">
+<meta property="og:title" content="Sub Goal: free OBS sub goal overlay">
+<meta property="og:description" content="Free OBS sub goal bar: Subs this month 4 / 10, a progress bar, and confetti when you hit it. Bump it from an OBS dock. No login, no server.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://homeofficestudios.com/games/sub-goal/">
+<link rel="canonical" href="https://homeofficestudios.com/games/sub-goal/">
+<meta property="og:site_name" content="Home Office Studios">
+<meta property="og:image" content="https://homeofficestudios.com/assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Sub Goal", "description": "Free OBS sub goal bar: Subs this month 4 / 10, a progress bar, and confetti when you hit it. Bump it from an OBS dock. No login, no server.", "url": "https://homeofficestudios.com/games/sub-goal/", "image": "https://homeofficestudios.com/docs/screenshots/sub-goal.webp", "applicationCategory": "MultimediaApplication", "operatingSystem": "Any web browser, OBS Browser Source", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "publisher": {"@type": "Organization", "name": "Home Office Studios", "url": "https://homeofficestudios.com/"}}</script>
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../assets/site.css">
+<style>
+.block { padding-top: 36px; padding-bottom: 36px; border-bottom: 1px solid var(--line); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.card h2 { margin: 0 0 8px; font-size: 1.05rem; }
+.card ol { margin: 0; padding-left: 1.2em; } .card li { margin: 6px 0; }
+.shot { aspect-ratio: 16 / 9; width: 100%; background: var(--deep); border: 2px dashed var(--line); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; text-align: center; color: var(--dim); padding: 16px; }
+.shot-img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
+.url { display: block; font-family: var(--mono); font-size: .9rem; background: var(--deep); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px; margin: 8px 0; overflow-wrap: anywhere; color: var(--cyan); }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="bar"><div class="wrap">
+  <a class="brand" href="../../"><img src="../../assets/favicon.svg" alt="">Home Office Studios</a>
+  <nav class="nav" aria-label="Main"><a href="../../">Home</a><a href="../../games/">Games</a><a href="../../chat/">Chat Play</a><a href="../../kit/">Stream Kit</a><a href="../../guides/obs/">OBS Guide</a><a href="../../music/">Music</a><a href="../../studio/">Studio</a><a href="../../about/">About</a></nav>
+</div></header>
+<main id="main">
+<section class="wrap pagehead">
+  <h1>Sub Goal</h1>
+  <p class="lede">A sub goal bar for your stream: "Subs this month: 4 / 10", a bar that fills, and confetti with a chime when you hit it. You bump it with one click from an OBS dock. No login, no server, no Kick account linking. Free.</p>
+  <div class="actions">
+    <a class="btn go" href="../../sub-goal/?goal=10&amp;current=4">Open the overlay</a>
+    <a class="btn" href="../../sub-goal/control.html">Open the control page</a>
+  </div>
+</section>
+
+<section class="wrap block">
+  <img class="shot-img" src="../../docs/screenshots/sub-goal.webp" width="1280" height="720" loading="lazy" alt="Sub Goal overlay hitting 10 of 10 with confetti and a GOAL banner">
+</section>
+
+<section class="wrap block">
+  <div class="facts">
+    <div class="card"><h2>How it works on stream</h2><ol>
+      <li>Add the overlay to OBS as a Browser Source.</li>
+      <li>Add the control page as an OBS Custom Browser Dock (Docks, Custom Browser Docks).</li>
+      <li>Someone subs, you press <b>+1</b> in the dock. The bar moves. At the goal, confetti, a banner and a chime.</li>
+      <li>The count is saved, so a refresh keeps it. It goes back to 0 on the 1st of each month, unless you add <code>reset=off</code>.</li>
+    </ol></div>
+    <div class="card"><h2>What you need</h2><p>OBS (or any streaming app with a Browser Source and docks). The overlay and the dock must both run inside OBS so they can hear each other. Nothing reads Kick for you: you count the subs, so it never needs your login.</p>
+      <p>Browser Source URL, size 1920 x 1080:</p><code class="url">https://homeofficestudios.com/sub-goal/?goal=10&amp;admin=false&amp;bg=transparent</code>
+      <p>Dock URL:</p><code class="url">https://homeofficestudios.com/sub-goal/control.html</code></div>
+    <div class="card"><h2>Make it yours</h2><p>Add these to the overlay URL: <code>label=</code> for the text, <code>goal=</code>, <code>color=</code> and <code>color2=</code> (hex, no #), <code>size=sm</code> to <code>xl</code>, <code>done=</code> for the banner text, <code>sound=off</code>. Running two goals? Give the overlay and the dock the same <code>id=</code>. Every option is in the <a href="https://github.com/CrandellWS/streamer-games/tree/main/sub-goal">README</a>.</p></div>
+  </div>
+  <p><a href="../">All games</a> · <a href="../../guides/obs/">OBS setup guide</a></p>
+</section>
+</main>
+<footer class="foot"><div class="wrap">
+  <div><strong>Home Office Studios</strong><br>Free games are MIT-licensed and
+  <a href="https://github.com/CrandellWS/streamer-games">open source</a>.</div>
+  <nav aria-label="Footer"><a href="../../games/">Games</a><a href="../../chat/">Chat Play</a><a href="../../kit/">Stream Kit</a><a href="../../guides/obs/">OBS Guide</a><a href="../../music/">Music</a><a href="../../studio/">Studio</a><a href="../../about/">About</a><a href="https://kick.com/forthetwo">Kick</a></nav>
+</div></footer>
+</body>
+</html>
+

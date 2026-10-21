@@ -51,6 +51,10 @@ Every game is a plain file, so any host that serves files works. On Netlify, you
 
 Chat Play passes chat through a small relay run by Home Office Studios. It is free, and it carries the `!play` text and the username of whoever typed it. Today this works with **Kick** and the Slot Tools bot.
 
+## Sub Goal on your own copy
+
+The Sub Goal overlay works the same on any copy: add `sub-goal/?goal=10&admin=false&bg=transparent` as a Browser Source and `sub-goal/control.html` as an OBS Custom Browser Dock, both from the same address. If you use Option 1 (a local file), the dock and the overlay may not be able to talk to each other, so use Option 2 or the homeofficestudios.com copy for Sub Goal.
+
 ## Stuck?
 
 - A blank or white source usually means a typo in the URL. Open the same URL in Chrome first to check it.
