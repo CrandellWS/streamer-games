@@ -103,7 +103,7 @@ Each game must include a `test.html` that:
 
 ## Chat Play (`chat/`)
 
-`chat/index.html` wraps any game in an iframe and feeds it MyPrize chat through one Slot Tools command
+`chat/index.html` wraps any game in an iframe and feeds it chat through one Slot Tools command
 (`!play` → `$(urlfetch https://blingo-relay.floral-meadow-2593.workers.dev/c/<key>?user=$(user)&q=$(query))`).
 The relay (source: CrandellWS/blingo `relay/`) forwards to the open page over a WebSocket; page closed = empty reply.
 The page speaks each game's postMessage protocol (the `GAMES` table maps folder → prefix, join verb, chat moves),
