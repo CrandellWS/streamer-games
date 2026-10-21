@@ -1050,12 +1050,14 @@ h1, .game-title, .panel-title, .app-title {
 
     const names = p.get('names');
     const startBal = parseInt(p.get('balance') || '1000', 10);
-    if (names) {
+    // Deferred: addBidder renders through DOM refs declared further down, so
+    // calling it here hit the temporal dead zone and killed the whole script.
+    if (names) queueMicrotask(() => {
       names.split(',').forEach(n => {
         const name = esc(n.trim());
         if (name) addBidder(name, startBal);
       });
-    }
+    });
   })();
 
   // ═══════════════════════════════════════════════
