@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coin Flip: free OBS chat game | Home Office Studios</title>
+<meta name="description" content="Heads or tails. 3D animated coin flip with team split view. Great for decisions, team picks, or viewer battles. Free OBS browser source game. Chat plays it with !play.">
+<meta property="og:title" content="Coin Flip: free OBS chat game">
+<meta property="og:description" content="Heads or tails. 3D animated coin flip with team split view. Great for decisions, team picks, or viewer battles. Free OBS browser source game. Chat plays it with !play.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://homeofficestudios.com/games/coin-flip/">
+<link rel="canonical" href="https://homeofficestudios.com/games/coin-flip/">
+<meta property="og:site_name" content="Home Office Studios">
+<meta property="og:image" content="https://homeofficestudios.com/assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Coin Flip", "description": "Heads or tails. 3D animated coin flip with team split view. Great for decisions, team picks, or viewer battles.", "url": "https://homeofficestudios.com/games/coin-flip/", "applicationCategory": "GameApplication", "operatingSystem": "Any web browser, OBS Browser Source", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "publisher": {"@type": "Organization", "name": "Home Office Studios", "url": "https://homeofficestudios.com/"}}</script>
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../assets/site.css">
+<style>
+.block { padding-top: 36px; padding-bottom: 36px; border-bottom: 1px solid var(--line); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.card h2 { margin: 0 0 8px; font-size: 1.05rem; }
+.card ol { margin: 0; padding-left: 1.2em; } .card li { margin: 6px 0; }
+.shot { aspect-ratio: 16 / 9; width: 100%; background: var(--deep); border: 2px dashed var(--line); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; text-align: center; color: var(--dim); padding: 16px; }
+.url { display: block; font-family: var(--mono); font-size: .9rem; background: var(--deep); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px; margin: 8px 0; overflow-wrap: anywhere; color: var(--cyan); }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="bar"><div class="wrap">
+  <a class="brand" href="../../"><img src="../../assets/favicon.svg" alt="">Home Office Studios</a>
+  <nav class="nav" aria-label="Main"><a href="../../">Home</a><a href="../../games/">Games</a><a href="../../chat/">Chat Play</a><a href="../../kit/">Stream Kit</a><a href="../../guides/obs/">OBS Guide</a><a href="../../music/">Music</a><a href="../../studio/">Studio</a><a href="../../about/">About</a></nav>
+</div></header>
+<main id="main">
+<section class="wrap pagehead">
+  <h1>Coin Flip</h1>
+  <p class="lede">Heads or tails. 3D animated coin flip with team split view. Great for decisions, team picks, or viewer battles. Chat plays it with <code>!play</code>. Free.</p>
+  <div class="actions">
+    <a class="btn go" href="../../coin-flip/">Open the game</a>
+    <a class="btn" href="../../kit/">Have me set it up</a>
+  </div>
+</section>
+
+<section class="wrap block">
+  <!-- TODO(Bill): 16:9 screenshot or short clip of Coin Flip on stream. None exists in the repo yet. -->
+  <div class="shot" role="img" aria-label="Coin Flip preview">Screenshot coming. <a href="../../coin-flip/">&nbsp;Open the game to see it live.</a></div>
+</section>
+
+<section class="wrap block">
+  <div class="facts">
+    <div class="card"><h2>How chat plays</h2><ol>
+      <li>Open <a href="../../chat/?game=coin-flip">Chat Play</a> and pick Coin Flip. It runs the game and listens for chat.</li>
+      <li>Viewers type: !play heads or !play tails. <code>!play count</code> shows how many are in.</li>
+      <li>You start the round from the game's admin panel. The winner shows on screen.</li>
+    </ol></div>
+    <div class="card"><h2>What you need</h2><p>A Kick channel with the Slot Tools chat bot (one <code>!play</code> command, copied from the Chat Play page), and OBS or any streaming app with a Browser Source.</p>
+      <p>Browser Source URL, size 1920 x 1080 (or your canvas size):</p><code class="url">https://homeofficestudios.com/chat/?game=coin-flip&amp;admin=false&amp;bg=transparent</code></div>
+    <div class="card"><h2>Want it on your stream tonight?</h2>
+      <p>I can set it up in your OBS with you and run the first round together. See the <a href="../../kit/">Stream Night Kit</a>, or DM me on <a href="https://kick.com/forthetwo" rel="noopener">Kick</a>.</p></div>
+  </div>
+  <p><a href="../">All games</a> · <a href="../../guides/obs/">OBS setup guide</a></p>
+</section>
+</main>
+<footer class="foot"><div class="wrap">
+  <div><strong>Home Office Studios</strong><br>Free games are MIT-licensed and
+  <a href="https://github.com/CrandellWS/streamer-games">open source</a>.</div>
+  <nav aria-label="Footer"><a href="../../games/">Games</a><a href="../../chat/">Chat Play</a><a href="../../kit/">Stream Kit</a><a href="../../guides/obs/">OBS Guide</a><a href="../../music/">Music</a><a href="../../studio/">Studio</a><a href="../../about/">About</a><a href="https://kick.com/forthetwo">Kick</a></nav>
+</div></footer>
+</body>
+</html>
+
