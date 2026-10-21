@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Allow: /docs/screenshots/
 Disallow: /docs/
 
 Sitemap: https://homeofficestudios.com/sitemap.xml

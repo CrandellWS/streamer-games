@@ -4,7 +4,7 @@ Free, open-source games for live streams, made by [Home Office Studios](https://
 
 Try them all at **[homeofficestudios.com/games/](https://homeofficestudios.com/games/)**.
 
-<!-- TODO(Bill): add a 16:9 screenshot or GIF here, saved as docs/screenshots/hero.png -->
+![Wheel of Legends running as an OBS overlay](docs/screenshots/wheel-legends.webp)
 
 ## The 18 games
 
@@ -31,7 +31,18 @@ Try them all at **[homeofficestudios.com/games/](https://homeofficestudios.com/g
 
 Most game folders have their own README with URL options and the `postMessage` protocol. Each game also has a short how-to page at `homeofficestudios.com/games/<game>/`.
 
-<!-- TODO(Bill): one screenshot per game in docs/screenshots/<game>.png (16:9, 1280x720 is plenty). None exist yet. -->
+### Screenshots
+
+Captured from the real games at 1920x1080 with eight test players, scaled to 1280x720.
+
+| | | |
+|---|---|---|
+| [![auction](docs/screenshots/auction.webp)](games/auction/)<br>auction | [![bingo](docs/screenshots/bingo.webp)](games/bingo/)<br>bingo | [![coin-flip](docs/screenshots/coin-flip.webp)](games/coin-flip/)<br>coin-flip |
+| [![dice-roll](docs/screenshots/dice-roll.webp)](games/dice-roll/)<br>dice-roll | [![elimination](docs/screenshots/elimination.webp)](games/elimination/)<br>elimination | [![hot-potato](docs/screenshots/hot-potato.webp)](games/hot-potato/)<br>hot-potato |
+| [![marble-race](docs/screenshots/marble-race.webp)](games/marble-race/)<br>marble-race | [![number-guess](docs/screenshots/number-guess.webp)](games/number-guess/)<br>number-guess | [![pinko](docs/screenshots/pinko.webp)](games/pinko/)<br>pinko |
+| [![plinko](docs/screenshots/plinko.webp)](games/plinko/)<br>plinko | [![rps-battle](docs/screenshots/rps-battle.webp)](games/rps-battle/)<br>rps-battle | [![scratch-card](docs/screenshots/scratch-card.webp)](games/scratch-card/)<br>scratch-card |
+| [![slot-machine](docs/screenshots/slot-machine.webp)](games/slot-machine/)<br>slot-machine | [![spin-wheel](docs/screenshots/spin-wheel.webp)](games/spin-wheel/)<br>spin-wheel | [![treasure-dig](docs/screenshots/treasure-dig.webp)](games/treasure-dig/)<br>treasure-dig |
+| [![trivia](docs/screenshots/trivia.webp)](games/trivia/)<br>trivia | [![wheel-legends](docs/screenshots/wheel-legends.webp)](games/wheel-legends/)<br>wheel-legends | [![word-scramble](docs/screenshots/word-scramble.webp)](games/word-scramble/)<br>word-scramble |
 
 ## Use it for free
 

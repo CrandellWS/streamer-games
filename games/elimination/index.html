@@ -26,6 +26,7 @@
 .card ol { margin: 0; padding-left: 1.2em; } .card li { margin: 6px 0; }
 .shot { aspect-ratio: 16 / 9; width: 100%; background: var(--deep); border: 2px dashed var(--line); border-radius: 12px;
   display: flex; align-items: center; justify-content: center; text-align: center; color: var(--dim); padding: 16px; }
+.shot-img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
 .url { display: block; font-family: var(--mono); font-size: .9rem; background: var(--deep); border: 1px solid var(--line);
   border-radius: 8px; padding: 10px 12px; margin: 8px 0; overflow-wrap: anywhere; color: var(--cyan); }
 </style>
@@ -47,8 +48,7 @@
 </section>
 
 <section class="wrap block">
-  <!-- TODO(Bill): 16:9 screenshot or short clip of Elimination on stream. None exists in the repo yet. -->
-  <div class="shot" role="img" aria-label="Elimination preview">Screenshot coming. <a href="../../elimination/">&nbsp;Open the game to see it live.</a></div>
+  <img class="shot-img" src="../../docs/screenshots/elimination.webp" width="1280" height="720" loading="lazy" alt="Elimination running as an OBS overlay with eight test players">
 </section>
 
 <section class="wrap block">
